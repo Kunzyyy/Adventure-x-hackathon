@@ -1,0 +1,19 @@
+# Render 部署配置 — 一键部署后端(+静态前端页面)到 Render
+# 部署后访问 Render 给的网址(如 https://xxx.onrender.com),前后端同源,完整可用。
+# 点 README 里的 "Deploy to Render" 按钮即可,无需手动配置。
+services:
+  - type: web
+    name: ai-career-copilot
+    runtime: node
+    plan: free
+    branch: main
+    buildCommand: npm install -g pnpm@9 && pnpm install --config.strict-peer-dependencies=false && pnpm --filter backend build
+    startCommand: node backend/dist/server.js
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: LLM_MODE
+        value: mock
+      - key: NODE_ENV
+        value: production
+      # 如需接入真实 AI,在 Render 控制台添加 AI_API_KEY 环境变量,并把 LLM_MODE 改为 live

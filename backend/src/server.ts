@@ -48,11 +48,6 @@ const MVP_HTML_FILES = [
   "index.html",
   "student.html",
   "enterprise.html",
-  "resume.html",
-  "resume-builder.html",
-  "chat.html",
-  "interview.html",
-  "lab.html",
   // 新页面(求职者端改造)
   "student-resume.html",
   "student-match.html",
@@ -65,24 +60,28 @@ for (const file of MVP_HTML_FILES) {
   });
 }
 
+// 任意 .html 路径兜底(避免部署后访问某页 404,如旧的演示页)。
+// 注意:在显式白名单之后注册,所以白名单页面优先。
+app.get("/:file.html", (req, res, next) => {
+  const f = req.params.file;
+  if (!/^[\w.-]+$/.test(f)) return next();
+  res.sendFile(path.join(REPO_ROOT, f + ".html"), (err) => {
+    if (err) next(); // 文件不存在则交给下一个处理器(最终 404)
+  });
+});
+
 // "/" serves the landing page.
 app.get("/", (_req, res) => {
   res.sendFile(path.join(REPO_ROOT, "index.html"));
 });
 
-// Whitelisted static asset directories under repo root.
+// 静态资源目录。
 app.use("/css", express.static(path.join(REPO_ROOT, "css")));
 app.use("/js", express.static(path.join(REPO_ROOT, "js")));
-app.use("/resume-editor", express.static(path.join(REPO_ROOT, "resume-editor")));
+app.use("/images", express.static(path.join(REPO_ROOT, "images")));
 
-// SPA fallback for the React app's client routing (frontend/dist), if built.
-// Kept separate so the root MVP pages above still win for /student.html etc.
-app.use(
-  express.static(path.join(REPO_ROOT, "frontend", "dist"), {
-    index: false,
-    fallthrough: true,
-  }),
-);
+// 根目录的图标类静态文件(favicon 等,可选)。
+app.use(express.static(REPO_ROOT, { index: false, fallthrough: true }));
 
 // Centralized error handler — never leak stack traces / env to the client.
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
