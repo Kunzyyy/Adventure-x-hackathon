@@ -4,6 +4,7 @@ AI 求职助手
 ## 项目方案
 
 - [三人开发统一要求：所有成员开始对接前先读](team-contract/README.md)
+- [Task 1—9 新窗口完整提示词](task-prompts/README.md)
 - [Codex 当前任务交接文件](handoff.md)
 - [三天最小 MVP 工作流与 AI 后端契约](docs/MVP-WORKFLOW.md)
 

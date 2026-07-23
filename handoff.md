@@ -12,7 +12,7 @@
 
 用户正在参加一个三人、三天的 AI 求职助手黑客松。用户是第三名成员，负责“AI与后端”，但目前是初学者，不熟悉 TypeScript、API、MOCK、Zod 等术语。解释和实施时必须先用通俗中文说明“它解决什么问题”，再给技术方案，不能假设用户已经理解专业词汇。
 
-当前已经完成产品范围、五个后端流程、分支规则，以及 Task 1 的“文档契约部分”；团队统一要求已经推送到 `Jin-Ziyao` 的 `team-contract/` 文件夹。**尚未建立公共 Next.js 项目，尚未写业务代码，也尚未创建可运行的 TypeScript/Zod 和五个 MOCK 接口。**
+当前已经完成产品范围、五个后端流程、分支规则，以及 Task 1 的“文档契约部分”；团队统一要求已经推送到 `Jin-Ziyao` 的 `team-contract/` 文件夹。只读检查已在 `Zheng-Xinyao` 找到 Vite + React + Express 候选骨架，但尚未确认最终页面和同步方式。**公共骨架尚未进入 `Jin-Ziyao`，尚未写业务代码，也尚未创建可运行的 TypeScript/Zod 和五个 MOCK 接口。**
 
 开始任何工作前：
 
@@ -20,9 +20,9 @@
 2. 运行 `git branch --show-current`，结果必须严格为 `Jin-Ziyao`。
 3. 运行 `git status --short --branch`，先保护用户已有改动。
 4. 不得检出、修改、合并或推送 `main`、`Zheng-Xinyao`、`Chen-Pengyu` 或其他成员分支。
-5. 当前仓库还没有 Next.js 项目骨架。编码前先向用户确认：公共项目骨架是否会由负责“企业端和公共前端”的队友建立并提供。这个决定会影响全队，不能默默创建另一套冲突的工程。
+5. 当前 `Jin-Ziyao` 还没有可运行工程。`Zheng-Xinyao` 已有 Vite + React + Express 候选骨架，但最终页面和同步方式未确认。编码前必须等待这两个答案，不能默默创建另一套冲突工程。
 
-如果用户确认由 Jin Ziyao 先建工程，则在 `Jin-Ziyao` 创建最小 Next.js + TypeScript 后端骨架，然后立即开始“共享类型 + 五个 MOCK 接口”。
+公共骨架同步完成后，Jin Ziyao 只在现有 Express + TypeScript `backend/` 中实现“共享类型 + 五个 MOCK 接口”，不再创建 Next.js。
 
 ### 0.1 文档的权威顺序
 
@@ -33,7 +33,8 @@
 3. `team-contract/README.md`：三个人共同理解的产品流程和大白话说明。
 4. `team-contract/API-CONTRACT.md`：API 路径、字段名、层级、必填规则、错误格式和示例的唯一来源。
 5. `team-contract/TEAM-RULES.md`：前端和后端不能擅自改变的内容。
-6. `docs/MVP-WORKFLOW.md`：完整产品背景、AI逻辑和三天范围。
+6. `task-prompts/TASK-N-*.md`：用户开启新窗口时，对应 Task 的完整可执行提示词。
+7. `docs/MVP-WORKFLOW.md`：完整产品背景、AI逻辑和三天范围。
 
 如果数据字段出现冲突，以 `team-contract/API-CONTRACT.md` 为准，但必须同步修正文档，不能让冲突继续存在。如果任何实现会违反 `AGENTS.md`，立即停止。
 
@@ -41,7 +42,7 @@
 
 | Task | 名称 | 当前状态 | 下一步判断 |
 | --- | --- | --- | --- |
-| Task 0 | 确认或建立公共工程骨架 | 未完成 | 必须先确认由谁创建；仓库目前无 `package.json` |
+| Task 0 | 确认或建立公共工程骨架 | 部分完成、等待队友 | 已在 `Zheng-Xinyao` 找到 Vite + React + Express 骨架；最终页面和同步方式未确认，`Jin-Ziyao` 目前仍无 `package.json` |
 | Task 1 | 共享类型、校验规则和统一响应 | 部分完成 | 文档契约已完成；TypeScript/Zod 可执行代码待骨架确定后落地 |
 | Task 2 | 五个稳定 MOCK 接口 | 未开始 | 依赖 Task 0 和 Task 1 可执行代码 |
 | Task 3 | LLM 统一调用基础设施 | 未开始 | 依赖 Task 0—2；模型提供商仍未确定 |
@@ -83,16 +84,23 @@ Task 1 文档成果已在提交 `caa7fe4 docs: add shared team API contract` 推
 
 #### Task 0：确认或建立公共工程骨架
 
-解决的问题：确定三个人的页面和后端最终放进哪一套 Next.js + TypeScript 工程，避免出现两份 `package.json`、两套 `app/` 和不同依赖。
+解决的问题：确定三个人最终使用哪一套页面，以及现有 Vite + React + Express 工程怎样成为共同开发基础，避免出现两份 `package.json`、两套后端和不同依赖。
+
+2026-07-23 最新只读检查发现：`Zheng-Xinyao` 分支已经包含 Vite + React 前端、根目录静态 `student.html`/`enterprise.html`，以及 Express + TypeScript 的 `backend/`。因此后续不再创建 Next.js。当前仍等待队友明确回答：
+
+1. 最终演示使用根目录静态页面，还是 `frontend/` React 页面。
+2. 公共前端和 `backend/` 骨架怎样同步到共同开发基础或 `Jin-Ziyao`。
+
+在这两个问题没有答复、且公共 `backend/` 没有真实进入 `Jin-Ziyao` 前，Task 0 不能标记完成，Task 1—9 不能开始写代码。
 
 基本逻辑：
 
-1. 询问公共前端成员是否已经创建骨架。
+1. 询问公共前端成员最终使用哪套页面，以及怎样同步已经创建的骨架。
 2. 如果已创建，把它同步到当前协作流程，检查目录、版本、启动命令和依赖。
-3. 如果未创建且用户明确让 Jin Ziyao 创建，只建立最小 Next.js + TypeScript 工程，不做页面视觉。
+3. 如果团队确认把现有骨架同步给 Jin Ziyao，只接收并验证这一套 Vite + React + Express 工程，不另建 Next.js 或第二套后端。
 4. 启动开发服务器，确认最小项目可以运行。
 
-完成标准：仓库中只有一套被全队认可的工程；能明确说出页面、API、共享代码放在哪里；开发服务器可以启动。
+完成标准：`Jin-Ziyao` 或团队明确的共同开发基础中只有一套被认可的 Vite + React + Express 工程；能明确说出最终页面、API和共享代码放在哪里；前后端开发服务器可以启动。
 
 禁止事项：未经确认不能新建另一套工程；不能修改队友分支；不能顺便设计页面视觉。
 
@@ -327,7 +335,7 @@ D:\ai-job-assistant
 - 企业补充问题页面
 - 标准JD、筛选维度和面试题展示
 - 公共页面切换和适配
-- 可能负责建立公共 Next.js 项目骨架；这一点尚未确认
+- 已在个人分支建立 Vite + React + Express 候选骨架；最终页面和同步方式尚未确认
 
 ### 用户 Jin Ziyao：AI与后端
 
@@ -634,13 +642,14 @@ AI第一次返回错误格式时，后端自动再请求一次。
 - `team-contract/README.md`
 - `team-contract/API-CONTRACT.md`
 - `team-contract/TEAM-RULES.md`
+- `task-prompts/README.md` 及 Task 1—9 完整提示词
 - 本交接文件
 
 还没有 `package.json`、`app/`、`lib/` 和可运行项目。
 
 因此，新窗口不能直接假设工程已经存在。先问用户一句：
 
-> 公共 Next.js 项目骨架是由负责公共前端的队友创建，还是由我们现在在 `Jin-Ziyao` 先创建？
+> 队友最终使用根目录静态页面还是 `frontend/` React 页面？现有 Vite + React + Express 骨架准备怎样同步给 Jin Ziyao 开发和最终集成？
 
 这是一个会影响队友的决定。不要未经确认就建立一套可能与队友冲突的项目。
 
@@ -828,7 +837,8 @@ D:\ai-job-assistant
 
 ## 14. 尚未确定、不能擅自决定的事项
 
-- 公共Next.js项目骨架由哪位成员创建。
+- 最终演示使用根目录静态页面还是 `frontend/` React 页面。
+- `Zheng-Xinyao` 中已有的 Vite + React + Express 骨架怎样同步到共同开发基础或 `Jin-Ziyao`。
 - 最终使用DeepSeek、OpenAI还是其他模型。
 - 部署到Vercel还是其他平台。
 - PDF导出的最终技术方案。
@@ -850,4 +860,4 @@ D:\ai-job-assistant
 
 在没有新需求覆盖本文件前，下一项实际任务是：
 
-> 先完成 Task 0，确认公共项目骨架归属；然后完成 Task 1 剩余的 TypeScript/Zod 可执行代码和 Task 2 五个稳定 MOCK。只有这些前置完成后，才能依次开始 Task 3、Task 4 和 Task 5。
+> 等待队友回答最终页面和骨架同步方式，完成 Task 0；然后按 `task-prompts/` 依次执行 Task 1—9。公共 `backend/` 未进入 `Jin-Ziyao` 前，不得开始 Task 1 写操作。
