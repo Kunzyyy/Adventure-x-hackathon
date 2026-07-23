@@ -7,7 +7,7 @@ const ENV_SECRET = /AI_API_KEY\s*=\s*[^\n]*/gi;
 
 export function redactLog(s: string): void {
   let out = s.replace(SECRET, "[REDACTED]").replace(ENV_SECRET, "AI_API_KEY=[REDACTED]");
-  if (out.length > 500) out = out.slice(0, 500) + "…[truncated]";
+  if (out.length > 500) out = out.slice(0, 487) + "…[truncated]";
   // eslint-disable-next-line no-console
   console.log(out);
 }

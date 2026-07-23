@@ -48,6 +48,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC"
 .ai-input::placeholder{color:rgba(255,255,255,.25);}
 .ai-select{background:rgba(20,20,40,.8);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px 20px;color:#e2e8f0;font-size:16px;width:100%;outline:none;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%236366f1' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 16px center;}
 .ai-select:focus{border-color:rgba(99,102,241,.5);box-shadow:0 0 20px rgba(99,102,241,.15);}
+.mode-badge{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:4px;}
+.mode-mock{background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.3);}
+.mode-live{background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.3);}
+.mode-fallback{background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.3);}
 @keyframes fadeInUp{from{opacity:0;transform:translateY(30px);}to{opacity:1;transform:translateY(0);}}
 .fade-in-up{animation:fadeInUp .6s ease-out forwards;}
 .fade-in-up-delay-1{animation:fadeInUp .6s .1s ease-out forwards;opacity:0;}
@@ -77,124 +81,88 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC"
     <div class="max-w-4xl mx-auto">
       <div class="text-center mb-10 fade-in-up">
         <span class="text-sm text-amber-400 bg-amber-400/10 px-4 py-1.5 rounded-full">🏢 企业端 · 岗位智能建模</span>
+        <span class="mode-badge mode-mock ml-2" id="ent-mode-badge">🔸 MOCK 演示数据</span>
         <h2 class="text-3xl md:text-4xl font-bold text-white mt-4 mb-3">创建岗位智能模型</h2>
-        <p class="text-gray-400">AI帮你明确真实需求，生成精准JD与人才评分体系</p>
+        <p class="text-gray-400">AI帮你明确真实需求，生成可编辑的标准JD与人工筛选参考维度（非AI自动录用）</p>
       </div>
 
-      <!-- Input Form -->
+      <!-- Step indicator -->
+      <div class="flex items-center justify-center gap-2 mb-8 fade-in-up-d1 text-sm">
+        <span id="estep1" class="px-3 py-1 rounded-full bg-tech-blue/20 text-tech-cyan">① 模糊需求</span>
+        <span class="text-gray-600">→</span>
+        <span id="estep2" class="px-3 py-1 rounded-full bg-white/5 text-gray-500">② 补充问题</span>
+        <span class="text-gray-600">→</span>
+        <span id="estep3" class="px-3 py-1 rounded-full bg-white/5 text-gray-500">③ 生成招聘材料</span>
+      </div>
+
+      <!-- STEP 1: Input Form -->
       <div class="glass-card p-6 md:p-8 mb-8" id="jd-form">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div><label class="text-sm text-gray-400 mb-1.5 block">公司名称</label><input type="text" placeholder="例如：字节跳动" class="ai-input" id="ent-company"></div>
-          <div><label class="text-sm text-gray-400 mb-1.5 block">岗位名称</label><input type="text" placeholder="例如：产品经理" class="ai-input" id="ent-job-title"></div>
-          <div><label class="text-sm text-gray-400 mb-1.5 block">薪资范围</label><input type="text" placeholder="例如：15K-25K" class="ai-input" id="ent-salary"></div>
-          <div><label class="text-sm text-gray-400 mb-1.5 block">工作地点</label><input type="text" placeholder="例如：北京" class="ai-input" id="ent-location"></div>
+        <div class="mb-4">
+          <label class="text-sm text-gray-400 mb-1.5 block">岗位名称 <span class="text-red-400">*</span></label>
+          <input type="text" placeholder="例如：新媒体运营实习生" class="ai-input" id="ent-job-title">
         </div>
-        <div class="mb-4"><label class="text-sm text-gray-400 mb-1.5 block">岗位描述（原始JD）</label><textarea class="ai-input h-32 resize-none" id="ent-jd-raw" placeholder="请描述这个岗位的工作内容...&#10;例如：负责产品运营工作，跟进用户反馈，协调研发团队。"></textarea></div>
-        <button class="glow-btn w-full" onclick="generateJD()">AI生成优化JD →</button>
+        <div class="mb-4">
+          <label class="text-sm text-gray-400 mb-1.5 block">模糊招聘需求 <span class="text-red-400">*</span></label>
+          <textarea class="ai-input h-32 resize-none" id="ent-jd-raw" placeholder="用一句话描述你的招聘需求，AI会追问补充...&#10;例如：会剪视频，平时发发小红书，最好长期实习"></textarea>
+          <p class="text-xs text-gray-500 mt-1">提示：薪资、地点、年限等你尚未确认的条件，AI只会列为"待确认"，不会替你补写。</p>
+        </div>
+        <button class="glow-btn w-full" onclick="entAnalyze()">AI解析需求并追问 →</button>
       </div>
 
-      <!-- Results -->
-      <div id="jd-results" class="hidden space-y-6">
-        <!-- Optimized JD -->
+      <!-- Loading -->
+      <div id="ent-loading" class="hidden glass-card p-8 text-center">
+        <div class="flex items-center justify-center gap-3 mb-3"><div class="typing-dots inline-flex gap-1"><span class="w-2 h-2 rounded-full bg-tech-cyan animate-bounce"></span><span class="w-2 h-2 rounded-full bg-tech-cyan animate-bounce" style="animation-delay:.1s"></span><span class="w-2 h-2 rounded-full bg-tech-cyan animate-bounce" style="animation-delay:.2s"></span></div></div>
+        <p class="text-gray-400 text-sm" id="ent-loading-text">AI正在解析需求...</p>
+      </div>
+
+      <!-- STEP 2: Questions -->
+      <div id="ent-questions-card" class="hidden glass-card p-6 md:p-8 mb-8">
+        <div class="flex items-center justify-between mb-4">
+          <div><h3 class="text-white font-semibold text-lg">🤖 AI补充问题</h3><p class="text-gray-400 text-sm">根据需求，AI生成了 <span id="ent-q-count">0</span> 道补充问题</p></div>
+        </div>
+        <div class="space-y-4" id="ent-questions-container"></div>
+        <button class="glow-btn w-full mt-5" onclick="entGenerate()">生成招聘材料 →</button>
+      </div>
+
+      <!-- STEP 3: Results -->
+      <div id="ent-results" class="hidden space-y-6">
+        <!-- Standardized JD -->
         <div class="glass-card p-6 md:p-8 fade-in-up">
-          <div class="flex items-center gap-2 mb-4"><span class="text-green-400 text-lg">✨</span><h3 class="text-white font-semibold text-lg">AI优化JD</h3></div>
-          <div class="bg-white/[0.02] rounded-xl p-6 border border-white/5 space-y-4">
-            <div>
-              <h4 class="text-tech-cyan font-semibold text-sm mb-2">岗位职责</h4>
-              <ul class="space-y-2 text-sm text-gray-300">
-                <li>• 负责用户增长策略制定，通过数据分析优化产品转化率</li>
-                <li>• 深度理解用户需求，输出产品优化方案并推动落地</li>
-                <li>• 协调设计、研发、测试等多方资源，确保产品迭代质量</li>
-                <li>• 建立产品数据监控体系，通过A/B实验驱动产品决策</li>
-              </ul>
-            </div>
-            <div>
-              <h4 class="text-tech-cyan font-semibold text-sm mb-2">任职要求</h4>
-              <ul class="space-y-2 text-sm text-gray-300">
-                <li>• 本科及以上学历，1-3年产品相关经验</li>
-                <li>• 具备数据分析能力，熟练使用SQL和常用BI工具</li>
-                <li>• 优秀的沟通协调能力，能推动跨部门协作</li>
-                <li>• 有用户增长或商业化方向经验优先</li>
-              </ul>
-            </div>
-            <div>
-              <h4 class="text-tech-cyan font-semibold text-sm mb-2">优秀候选人画像</h4>
-              <p class="text-sm text-gray-300">具备1-3年互联网产品经验，数据驱动思维，拥有从0到1的项目经历。擅长跨团队协作，能在模糊需求中找到清晰方向。对用户增长有热情和方法论。</p>
-            </div>
-          </div>
+          <div class="flex items-center gap-2 mb-4"><span class="text-green-400 text-lg">✨</span><h3 class="text-white font-semibold text-lg">标准化JD（可编辑复制）</h3></div>
+          <div class="bg-white/[0.02] rounded-xl p-6 border border-white/5 space-y-4" id="ent-jd-display"></div>
         </div>
 
-        <!-- Scoring Model -->
+        <!-- Screening Dimensions (人工筛选参考维度) -->
         <div class="glass-card p-6 md:p-8 fade-in-up-delay-1">
-          <h3 class="text-white font-semibold text-lg mb-4">📊 人才评分模型</h3>
-          <div class="space-y-4">
-            <div class="flex items-center gap-4"><span class="text-sm text-gray-300 w-24">技术能力</span><div class="flex-1 match-bar"><div class="match-bar-fill" style="width:30%"></div></div><span class="text-sm text-tech-cyan w-10">30%</span></div>
-            <div class="flex items-center gap-4"><span class="text-sm text-gray-300 w-24">项目经验</span><div class="flex-1 match-bar"><div class="match-bar-fill" style="width:25%"></div></div><span class="text-sm text-tech-cyan w-10">25%</span></div>
-            <div class="flex items-center gap-4"><span class="text-sm text-gray-300 w-24">沟通能力</span><div class="flex-1 match-bar"><div class="match-bar-fill" style="width:20%"></div></div><span class="text-sm text-tech-cyan w-10">20%</span></div>
-            <div class="flex items-center gap-4"><span class="text-sm text-gray-300 w-24">学习能力</span><div class="flex-1 match-bar"><div class="match-bar-fill" style="width:25%"></div></div><span class="text-sm text-tech-cyan w-10">25%</span></div>
-          </div>
+          <h3 class="text-white font-semibold text-lg mb-1">📊 人工筛选参考维度</h3>
+          <p class="text-gray-400 text-xs mb-4">仅供人工筛选与面试参考，<strong class="text-amber-400">不是AI自动录用或淘汰决定</strong>。权重总和为100。</p>
+          <div class="space-y-4" id="ent-dimensions"></div>
         </div>
 
-        <!-- Interview Questions -->
+        <!-- Interview Questions (5) -->
         <div class="glass-card p-6 md:p-8 fade-in-up-delay-2">
-          <h3 class="text-white font-semibold text-lg mb-4">🎤 AI面试问题生成</h3>
-          <div class="space-y-4">
-            <div class="p-4 rounded-xl bg-white/3 border border-white/5"><p class="text-sm text-indigo-300 font-medium mb-2">第一轮 · 基础能力</p><p class="text-sm text-gray-300">1. 请分享一个你通过数据分析发现问题并推动产品改进的案例。</p><p class="text-sm text-gray-300 mt-1">2. 如何处理多个紧急需求的优先级排序？</p></div>
-            <div class="p-4 rounded-xl bg-white/3 border border-white/5"><p class="text-sm text-purple-300 font-medium mb-2">第二轮 · 项目深挖</p><p class="text-sm text-gray-300">1. 在你负责的项目中，遇到的最大挑战是什么？你是如何解决的？</p><p class="text-sm text-gray-300 mt-1">2. 如果产品上线后数据不达预期，你会怎么做？</p></div>
-            <div class="p-4 rounded-xl bg-white/3 border border-white/5"><p class="text-sm text-cyan-300 font-medium mb-2">第三轮 · 价值观匹配</p><p class="text-sm text-gray-300">1. 你如何看待用户需求与商业目标之间的冲突？</p><p class="text-sm text-gray-300 mt-1">2. 描述一次你与团队成员产生分歧的经历，以及如何解决。</p></div>
-          </div>
-          <button class="glow-btn w-full mt-6" onclick="nav('match')">查看AI匹配引擎 →</button>
+          <h3 class="text-white font-semibold text-lg mb-4">🎤 面试题（固定5道）</h3>
+          <div class="space-y-4" id="ent-interview-questions"></div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex gap-3 justify-center">
+          <button class="glow-btn-outline" onclick="entReset()">🔄 重新生成</button>
+          <a href="student.html" class="glow-btn-outline inline-flex items-center">切换到学生端 →</a>
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ===== PAGE: AI匹配引擎 ===== -->
-<div id="page-match" class="page">
+<!-- ===== PAGE: AI匹配引擎（候选人匹配/评分不在MVP范围，已隐藏）===== -->
+<div id="page-match" class="page hidden">
   <div class="min-h-screen pt-24 pb-16 px-4">
-    <div class="max-w-5xl mx-auto">
-      <div class="text-center mb-10 fade-in-up">
-        <span class="text-sm text-pink-400 bg-pink-400/10 px-4 py-1.5 rounded-full">🔮 AI人才匹配引擎</span>
-        <h2 class="text-3xl md:text-4xl font-bold text-white mt-4 mb-3">智能匹配分析</h2>
-        <p class="text-gray-400">AI深度分析学生能力模型与岗位需求，实现精准匹配</p>
-      </div>
-
-      <div class="glass-card p-6 md:p-8 mb-8">
-        <div class="flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-16">
-          <div class="text-center flex-1 max-w-xs">
-            <div class="w-24 h-24 rounded-full bg-gradient-to-br from-tech-blue to-tech-cyan mx-auto mb-4 flex items-center justify-center text-3xl shadow-lg shadow-blue-500/20">🎓</div>
-            <h3 class="text-white font-semibold text-lg">学生能力模型</h3>
-            <div class="flex flex-wrap gap-1.5 justify-center mt-3"><span class="skill-tag text-xs !px-3 !py-1">内容运营</span><span class="skill-tag text-xs !px-3 !py-1">视觉设计</span><span class="skill-tag text-xs !px-3 !py-1">团队协作</span><span class="skill-tag text-xs !px-3 !py-1">活动策划</span></div>
-          </div>
-          <div class="text-center flex-shrink-0">
-            <div class="relative w-40 h-40">
-              <svg viewBox="0 0 160 160" class="w-full h-full -rotate-90">
-                <defs><linearGradient id="matchGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#3b82f6"/><stop offset="50%" stop-color="#8b5cf6"/><stop offset="100%" stop-color="#06b6d4"/></linearGradient></defs>
-                <circle cx="80" cy="80" r="70" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="10"/>
-                <circle cx="80" cy="80" r="70" fill="none" stroke="url(#matchGrad)" stroke-width="10" stroke-linecap="round" stroke-dasharray="440" stroke-dashoffset="35" id="match-ring"/>
-              </svg>
-              <div class="absolute inset-0 flex flex-col items-center justify-center"><span class="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-tech-blue to-gradient-purple" id="match-score-num">92</span><span class="text-3xl font-bold text-white">%</span></div>
-            </div>
-            <p class="text-gray-400 text-sm mt-2">匹配度</p>
-          </div>
-          <div class="text-center flex-1 max-w-xs">
-            <div class="w-24 h-24 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 mx-auto mb-4 flex items-center justify-center text-3xl shadow-lg shadow-amber-500/20">🏢</div>
-            <h3 class="text-white font-semibold text-lg" id="match-job-title">岗位需求模型</h3>
-            <p class="text-sm text-gray-400" id="match-company-name">产品经理 · 字节跳动</p>
-            <div class="flex flex-wrap gap-1.5 justify-center mt-3"><span class="skill-tag text-xs !px-3 !py-1">数据分析</span><span class="skill-tag text-xs !px-3 !py-1">用户研究</span><span class="skill-tag text-xs !px-3 !py-1">项目管理</span><span class="skill-tag text-xs !px-3 !py-1">SQL</span></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="glass-card p-6"><h3 class="text-green-400 font-semibold text-sm mb-3 flex items-center gap-1.5">✅ 匹配优势</h3><ul class="space-y-2 text-sm text-gray-300"><li class="flex items-start gap-2"><span class="text-green-400 mt-0.5">•</span>具有用户运营经验，与增长方向匹配</li><li class="flex items-start gap-2"><span class="text-green-400 mt-0.5">•</span>项目经历体现跨部门协作能力</li><li class="flex items-start gap-2"><span class="text-green-400 mt-0.5">•</span>内容创作能力与产品文案需求契合</li></ul></div>
-        <div class="glass-card p-6"><h3 class="text-amber-400 font-semibold text-sm mb-3 flex items-center gap-1.5">⚠️ 不足之处</h3><ul class="space-y-2 text-sm text-gray-300"><li class="flex items-start gap-2"><span class="text-amber-400 mt-0.5">•</span>缺少商业数据分析经验</li><li class="flex items-start gap-2"><span class="text-amber-400 mt-0.5">•</span>SQL技能需要加强</li></ul></div>
-        <div class="glass-card p-6"><h3 class="text-tech-cyan font-semibold text-sm mb-3 flex items-center gap-1.5">💡 提升建议</h3><ul class="space-y-2 text-sm text-gray-300"><li class="flex items-start gap-2"><span class="text-tech-cyan mt-0.5">•</span>学习SQL基础课程</li><li class="flex items-start gap-2"><span class="text-tech-cyan mt-0.5">•</span>参与数据分析实践项目</li><li class="flex items-start gap-2"><span class="text-tech-cyan mt-0.5">•</span>阅读产品经理经典书籍</li></ul></div>
-      </div>
-
-      <div class="text-center mt-10">
-        <a href="student.html" class="glow-btn-outline">切换到学生端 →</a>
+    <div class="max-w-3xl mx-auto text-center">
+      <div class="glass-card p-8 fade-in-up">
+        <h2 class="text-2xl font-bold text-white mb-3">该功能不在当前MVP范围</h2>
+        <p class="text-gray-400 text-sm mb-6">第一版不提供AI候选人匹配、评分、排名或自动录用。当前企业端聚焦：模糊需求 → 标准JD → 人工筛选参考维度 → 5道面试题。</p>
+        <button class="glow-btn-outline" onclick="nav('jd')">返回岗位建模 →</button>
       </div>
     </div>
   </div>
@@ -217,19 +185,153 @@ function nav(pageId){
   if(t){t.classList.add('active');window.scrollTo({top:0,behavior:'smooth'});}
 }
 
-// JD Generation
-function generateJD(){
-  const company=document.getElementById('ent-company').value.trim();
-  const jobTitle=document.getElementById('ent-job-title').value.trim();
-  if(!company||!jobTitle){alert('请填写公司名称和岗位名称');return;}
-  document.getElementById('jd-results').classList.remove('hidden');
-  document.getElementById('match-company-name').textContent=jobTitle+' · '+company;
-  document.getElementById('match-job-title').textContent='岗位需求模型';
-  document.getElementById('jd-results').scrollIntoView({behavior:'smooth'});
+/* ================================================================
+   API CLIENT — real fetch('/api/employer/...') against the contract.
+   Two-step backend flow: analyze (rough need → 3-5 questions) then
+   generate (answers → standardizedJD + screening dimensions + 5 Qs).
+   ================================================================ */
+var entJobTitle='', entRoughRequirement='', entJobProfile=null, entQuestions=[];
+
+function setEntMode(mode){
+  var m = mode||'mock';
+  var b=document.getElementById('ent-mode-badge');
+  if(b){b.classList.remove('mode-mock','mode-live','mode-fallback');b.classList.add('mode-'+m);
+    b.textContent = m==='live'?'🟢 LIVE 真实AI':m==='fallback'?'⚠️ FALLBACK 降级数据':'🔸 MOCK 演示数据';}
+}
+function setEntStep(n){
+  for(var i=1;i<=3;i++){var el=document.getElementById('estep'+i);if(!el)continue;
+    if(i<n){el.className='px-3 py-1 rounded-full bg-green-500/20 text-green-300';}
+    else if(i===n){el.className='px-3 py-1 rounded-full bg-tech-blue/20 text-tech-cyan';}
+    else{el.className='px-3 py-1 rounded-full bg-white/5 text-gray-500';}
+  }
+}
+function showEntError(json,where){
+  var msg=(json&&json.error&&json.error.message)?json.error.message:'请求失败';
+  alert('['+where+'] '+msg);
+}
+
+async function entApi(url,body){
+  var res;
+  try{res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});}
+  catch(e){throw new Error('网络错误：无法连接服务器');}
+  var txt=await res.text();var json;try{json=JSON.parse(txt);}catch(e){throw new Error('服务器返回不是合法JSON');}
+  return json;
+}
+
+/* STEP 1 → POST /api/employer/analyze */
+async function entAnalyze(){
+  var jobTitle=document.getElementById('ent-job-title').value.trim();
+  var rough=document.getElementById('ent-jd-raw').value.trim();
+  if(!jobTitle||!rough){alert('请填写岗位名称和模糊招聘需求');return;}
+  entJobTitle=jobTitle; entRoughRequirement=rough;
+  document.getElementById('jd-form').classList.add('hidden');
+  var load=document.getElementById('ent-loading');load.classList.remove('hidden');
+  document.getElementById('ent-loading-text').textContent='AI正在解析需求并生成补充问题...';
+  try{
+    var json=await entApi('/api/employer/analyze',{jobTitle:jobTitle,roughRequirement:rough});
+    if(!json.ok){showEntError(json,'需求解析');document.getElementById('jd-form').classList.remove('hidden');load.classList.add('hidden');return;}
+    setEntMode(json.mode);
+    entJobProfile=json.data.jobProfile;
+    entQuestions=json.data.questions;
+    load.classList.add('hidden');
+    setEntStep(2);
+    renderEntQuestions();
+    document.getElementById('ent-questions-card').classList.remove('hidden');
+    document.getElementById('ent-questions-card').scrollIntoView({behavior:'smooth'});
+  }catch(e){
+    document.getElementById('jd-form').classList.remove('hidden');load.classList.add('hidden');
+    alert('需求解析失败：'+e.message);
+  }
+}
+
+function renderEntQuestions(){
+  document.getElementById('ent-q-count').textContent=entQuestions.length;
+  var html='';
+  entQuestions.forEach(function(q,i){
+    var input;
+    if(q.answerType==='choice'){
+      input='<select class="ai-select" id="eans-'+q.id+'">'+(q.options||[]).map(function(o){return '<option value="'+o+'">'+o+'</option>';}).join('')+'</select>';
+    }else if(q.answerType==='number'){
+      input='<input type="number" class="ai-input" id="eans-'+q.id+'" placeholder="输入数字...">';
+    }else{
+      input='<textarea class="ai-input h-20" id="eans-'+q.id+'" placeholder="输入回答..."></textarea>';
+    }
+    html+='<div class="p-4 rounded-xl bg-white/3 border border-white/5"><div class="flex items-start justify-between mb-2"><div><span class="text-xs text-gray-500">问题 '+(i+1)+'</span> '+(q.required?'<span class="text-xs text-red-400 ml-2">*必答</span>':'<span class="text-xs text-gray-500 ml-2">选答</span>')+'</div></div><p class="text-gray-200 text-sm mb-2">'+q.text+'</p><p class="text-xs text-gray-500 mb-3">💡 '+q.reason+'</p>'+input+'</div>';
+  });
+  document.getElementById('ent-questions-container').innerHTML=html;
+}
+
+/* STEP 2 → POST /api/employer/generate */
+async function entGenerate(){
+  var answers=[];var ok=true;
+  entQuestions.forEach(function(q){
+    var el=document.getElementById('eans-'+q.id);
+    if(!el)return;var v=(el.value||'').trim();
+    if(q.required&&!v){ok=false;el.style.borderColor='rgba(239,68,68,.5)';}
+    else{answers.push({questionId:q.id,answer:v});}
+  });
+  if(!ok){alert('请完成所有必答补充问题');return;}
+  document.getElementById('ent-questions-card').classList.add('hidden');
+  var load=document.getElementById('ent-loading');load.classList.remove('hidden');
+  document.getElementById('ent-loading-text').textContent='AI正在生成标准JD、筛选维度和面试题...';
+  try{
+    var json=await entApi('/api/employer/generate',{
+      jobTitle:entJobTitle, roughRequirement:entRoughRequirement,
+      jobProfile:entJobProfile, questions:entQuestions, answers:answers
+    });
+    if(!json.ok){showEntError(json,'材料生成');document.getElementById('ent-questions-card').classList.remove('hidden');load.classList.add('hidden');return;}
+    setEntMode(json.mode);
+    renderEntResults(json.data);
+    setEntStep(3);
+    load.classList.add('hidden');
+    document.getElementById('ent-results').classList.remove('hidden');
+    document.getElementById('ent-results').scrollIntoView({behavior:'smooth'});
+  }catch(e){
+    document.getElementById('ent-questions-card').classList.remove('hidden');load.classList.add('hidden');
+    alert('材料生成失败：'+e.message);
+  }
+}
+
+function renderEntResults(kit){
+  // Standardized JD
+  var jd=kit.standardizedJD;
+  var jdHtml='<div><h4 class="text-tech-cyan font-semibold text-sm mb-2">'+jd.title+'</h4><p class="text-sm text-gray-300">'+jd.summary+'</p></div>';
+  jdHtml+='<div><h4 class="text-tech-cyan font-semibold text-sm mb-2 mt-4">岗位职责</h4><ul class="space-y-1 text-sm text-gray-300">'+jd.responsibilities.map(function(r){return '<li>• '+r+'</li>';}).join('')+'</ul></div>';
+  jdHtml+='<div><h4 class="text-tech-cyan font-semibold text-sm mb-2 mt-4">任职要求（必须条件）</h4><ul class="space-y-1 text-sm text-gray-300">'+jd.requirements.map(function(r){return '<li>• '+r+'</li>';}).join('')+'</ul></div>';
+  if(jd.niceToHaves&&jd.niceToHaves.length){jdHtml+='<div><h4 class="text-tech-cyan font-semibold text-sm mb-2 mt-4">加分条件</h4><ul class="space-y-1 text-sm text-gray-300">'+jd.niceToHaves.map(function(r){return '<li>• '+r+'</li>';}).join('')+'</ul></div>';}
+  if(jd.workingConditions&&jd.workingConditions.length){jdHtml+='<div><h4 class="text-tech-cyan font-semibold text-sm mb-2 mt-4">工作条件</h4><ul class="space-y-1 text-sm text-gray-300">'+jd.workingConditions.map(function(r){return '<li>• '+r+'</li>';}).join('')+'</ul></div>';}
+  document.getElementById('ent-jd-display').innerHTML=jdHtml;
+
+  // Screening dimensions — weights sum to 100
+  var dims=kit.screeningDimensions;
+  var sum=dims.reduce(function(a,d){return a+d.weight;},0);
+  var dimHtml='<div class="text-xs text-gray-400 mb-3">权重总和：<strong class="text-tech-cyan">'+sum+'</strong>/100'+(sum===100?' ✅':' ⚠️应=100')+'</div>';
+  dims.forEach(function(d){
+    dimHtml+='<div class="p-4 rounded-xl bg-white/3 border border-white/5"><div class="flex items-center justify-between mb-2"><span class="text-white font-semibold text-sm">'+d.name+'</span><span class="text-tech-cyan text-sm font-bold">'+d.weight+'%</span></div><div class="match-bar mb-2"><div class="match-bar-fill" style="width:'+d.weight+'%"></div></div><p class="text-xs text-gray-400 mb-2">'+d.description+'</p><div class="text-xs text-gray-500">证据线索：'+d.evidenceToLookFor.map(function(e){return '<span class="skill-tag !text-xs !px-2 !py-0.5 mr-1 mb-1 inline-block">'+e+'</span>';}).join('')+'</div></div>';
+  });
+  document.getElementById('ent-dimensions').innerHTML=dimHtml;
+
+  // Interview questions — exactly 5
+  var qs=kit.interviewQuestions;
+  var qHtml='<p class="text-xs text-gray-400 mb-4">共 <strong class="text-tech-cyan">'+qs.length+'</strong> 道面试题'+(qs.length===5?' ✅':' ⚠️应=5')+'，每题包含考察能力、目的与优秀回答信号。</p>';
+  qs.forEach(function(q,i){
+    qHtml+='<div class="p-4 rounded-xl bg-white/3 border border-white/5"><div class="flex items-start gap-2 mb-2"><span class="text-tech-cyan text-xs font-bold mt-0.5">Q'+(i+1)+'</span><p class="text-gray-200 text-sm flex-1">'+q.question+'</p></div><p class="text-xs text-gray-500 mb-1">考察能力：<span class="text-indigo-300">'+q.competency+'</span></p><p class="text-xs text-gray-500 mb-1">目的：'+q.purpose+'</p><div class="text-xs text-gray-500">优秀回答信号：'+q.strongAnswerSignals.map(function(s){return '<span class="skill-tag !text-xs !px-2 !py-0.5 mr-1 mb-1 inline-block">'+s+'</span>';}).join('')+'</div></div>';
+  });
+  document.getElementById('ent-interview-questions').innerHTML=qHtml;
+}
+
+function entReset(){
+  entJobTitle='';entRoughRequirement='';entJobProfile=null;entQuestions=[];
+  document.getElementById('ent-results').classList.add('hidden');
+  document.getElementById('ent-questions-card').classList.add('hidden');
+  document.getElementById('jd-form').classList.remove('hidden');
+  document.getElementById('ent-job-title').value='';document.getElementById('ent-jd-raw').value='';
+  setEntStep(1);
 }
 
 // Init
-document.addEventListener('DOMContentLoaded',()=>{new ParticleSystem();});
+document.addEventListener('DOMContentLoaded',()=>{new ParticleSystem();setEntStep(1);});
+
 </script>
 </body>
 </html>

@@ -397,72 +397,85 @@ function setStep(n){
 }
 
 /* ================================================================
-   MOCK API — simulates backend responses per API-CONTRACT.md
+   API CLIENT — real fetch('/api/...') against the contract endpoints.
+   Mode badges reflect the real response mode (mock/live/fallback).
    ================================================================ */
 var currentMode='mock';
 var jobProfile=null, questions=[], facts=[], generatedResume=null, missingInfo=[], interviewRisks=[];
 
-var MOCK_QUESTIONS=[
-  {id:'q1',text:'请介绍一个你参与制作的短视频或图文内容，你在其中具体负责什么？',reason:'确认候选人真实的内容制作经验',answerType:'text',required:true},
-  {id:'q2',text:'你平时使用哪些剪辑或设计工具？请描述你的熟练程度。',reason:'评估工具能力和学习曲线',answerType:'text',required:true},
-  {id:'q3',text:'你会怎样为一个新账号规划第一周的小红书内容？',reason:'观察选题能力和内容策划思路',answerType:'text',required:true},
-  {id:'q4',text:'发布内容后你一般会关注哪些数据指标？请举例说明一次你根据数据调整内容的经历。',reason:'确认是否具备数据复盘思维',answerType:'text',required:true},
-  {id:'q5',text:'你是否组织过团队活动或带领过项目？请描述你在其中的角色。',reason:'了解团队协作和领导力',answerType:'text',required:true},
-  {id:'q6',text:'面对一个你完全不了解的领域，你会如何快速上手？',reason:'评估学习能力和适应力',answerType:'text',required:true},
-  {id:'q7',text:'你未来6个月的到岗安排是怎样的？',reason:'核实实习稳定性和到岗时间',answerType:'text',required:true},
-];
+function setModeBadge(mode){
+  currentMode=mode||'mock';
+  var badges=document.querySelectorAll('.mode-badge');
+  badges.forEach(function(b){
+    b.classList.remove('mode-mock','mode-live','mode-fallback');
+    b.classList.add('mode-'+(mode||'mock'));
+    b.textContent = mode==='live'?'🟢 LIVE 真实AI'
+      : mode==='fallback'?'⚠️ FALLBACK 降级数据'
+      : '🔸 MOCK 演示数据';
+  });
+}
 
-var MOCK_FACTS=[
-  {id:'f1',category:'project',statement:'独立负责校园美食账号的视频剪辑和发布，使用剪映和Premiere Pro完成制作。',sourceQuestionId:'q1',sourceQuote:'我负责学校美食社的抖音账号，拍视频剪辑都是我独立完成的，用的剪映和PR。',confirmed:false},
-  {id:'f2',category:'skill',statement:'熟练使用剪映进行短视频剪辑，掌握基础Premiere Pro操作。',sourceQuestionId:'q2',sourceQuote:'剪映用得比较多，PR也会一些基础的。',confirmed:false},
-  {id:'f3',category:'project',statement:'策划"校园美食地图"系列内容，围绕食堂隐藏菜单和周边小店进行选题。',sourceQuestionId:'q3',sourceQuote:'我想做一个校园美食地图系列，先盘点食堂隐藏菜单，再扩展到学校周边的小店。',confirmed:false},
-  {id:'f4',category:'project',statement:'关注播放量、完播率和互动率三个核心指标，曾根据数据将视频时长从90秒缩短到45秒以提升完播率。',sourceQuestionId:'q4',sourceQuote:'我主要看播放量和点赞评论，有一次发现视频太长完播率很低，就改短了一点数据就上去了。',confirmed:false},
-  {id:'f5',category:'activity',statement:'担任美食社副社长，组织过3场校内美食活动，协调10人以上团队。',sourceQuestionId:'q5',sourceQuote:'我是美食社副社长，组织过几次活动，大概十几个人一起做。',confirmed:false},
-  {id:'f6',category:'skill',statement:'具备快速学习能力：遇到不熟悉的领域时先收集资料、请教有经验的人，再动手实践。',sourceQuestionId:'q6',sourceQuote:'我会先上网搜一下，看看有没有人做过类似的东西，然后找懂的人问一下，再自己试试。',confirmed:false},
-  {id:'f7',category:'other',statement:'可保证每周到岗4天，连续实习6个月。',sourceQuestionId:'q7',sourceQuote:'我下学期课比较少，每周可以来4天，至少能做满6个月。',confirmed:false},
-];
+/** Parse the unified APIResponse. Throws on network failure; returns {ok,data,error,mode}. */
+async function api(url,body){
+  var res;
+  try{
+    res=await fetch(url,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(body),
+    });
+  }catch(e){
+    throw new Error('网络错误：无法连接服务器 ('+url+')');
+  }
+  var text=await res.text();
+  var json;
+  try{json=JSON.parse(text);}catch(e){throw new Error('服务器返回不是合法JSON');}
+  return json;
+}
 
-var MOCK_RESUME={
-  title:'张同学 · 新媒体运营实习生简历',
-  summary:[{text:'具备短视频内容策划与制作经验，独立运营过校园美食类账号，熟练使用剪映和基础Premiere Pro。',evidenceIds:['f1','f2']},{text:'具备内容数据复盘能力，能够根据完播率、互动率等指标优化内容策略。',evidenceIds:['f4']}],
-  education:[{text:'北京大学 · 新闻传播学院 · 广告学 · 本科 · 2023 - 2027',evidenceIds:[]}],
-  experiences:[
-    {name:'校园美食社 · 副社长 / 内容运营',bullets:[
-      {text:'独立负责美食社抖音账号的短视频剪辑与发布，使用剪映和PR制作内容。',evidenceIds:['f1','f2']},
-      {text:'策划"校园美食地图"系列选题，围绕食堂隐藏菜单和周边美食进行内容组织。',evidenceIds:['f3']},
-      {text:'关注播放量、完播率、互动率指标，通过将视频时长从90秒优化至45秒提升完播率。',evidenceIds:['f4']},
-      {text:'作为副社长组织3场校内美食活动，协调10人以上团队。',evidenceIds:['f5']}
-    ]}
-  ],
-  skills:[{text:'视频剪辑：剪映、基础Premiere Pro',evidenceIds:['f2']},{text:'内容策划与选题',evidenceIds:['f3']},{text:'基础数据复盘',evidenceIds:['f4']},{text:'团队协作与活动组织',evidenceIds:['f5']}]
-};
+/** Render a unified error for the user. */
+function showApiError(json,where){
+  var msg=(json&&json.error&&json.error.message)?json.error.message:'请求失败';
+  var fe=json&&json.error&&json.error.fieldErrors;
+  if(fe){
+    var parts=[];
+    Object.keys(fe).forEach(function(k){parts.push(k+': '+(fe[k]||[]).join('、'));});
+    msg=msg+'\n'+parts.join('\n');
+  }
+  alert('['+(where||'')+'] '+msg);
+}
 
-var MOCK_MISSING=[
-  '缺少实习/工作经历的起止时间', '缺少可展示的具体作品链接', '缺少教育背景中的GPA或相关课程'
-];
-var MOCK_RISKS=[
-  {risk:'面试官可能追问"你独立完成"的具体含义，需要准备好说明团队中的个人贡献比例。',relatedFactId:'f1'},
-  {risk:'PR仅提及"基础"操作，如果岗位要求较高剪辑水平可能被追问。',relatedFactId:'f2'}
-];
-
-/* ===== STEP 1: Submit JD ===== */
-function step1Submit(){
+/* ===== STEP 1: Submit JD → /api/seeker/analyze ===== */
+async function step1Submit(){
   var title=document.getElementById('jd-title').value.trim();
   var text=document.getElementById('jd-text').value.trim();
+  var oldResume=document.getElementById('jd-old-resume').value.trim();
   if(!title||!text){alert('请填写岗位名称和岗位描述');return;}
+  // Merge job title into jdText per contract (no separate jobTitle request field).
+  var jdText = title + '\n' + text;
   document.getElementById('step1').classList.add('hidden');
   var load=document.getElementById('step-loading');load.classList.remove('hidden');
   document.getElementById('loading-text').textContent='AI正在分析岗位结构...';
-  // Simulate API call
-  setTimeout(function(){
-    jobProfile={jobTitle:title,responsibilities:[text],coreCompetencies:['视频剪辑','内容策划','数据复盘'],mustHaves:['基础视频剪辑能力','每周到岗4天','连续实习6个月'],niceToHaves:['小红书内容经验'],keywords:['视频剪辑','小红书','内容运营','数据复盘']};
-    questions=MOCK_QUESTIONS;
+  try{
+    var json=await api('/api/seeker/analyze', oldResume?{jdText:jdText,oldResume:oldResume}:{jdText:jdText});
+    if(!json.ok){showApiError(json,'岗位分析');load.classList.add('hidden');document.getElementById('step1').classList.remove('hidden');return;}
+    setModeBadge(json.mode);
+    jobProfile=json.data.jobProfile;
+    // Ensure all contract arrays exist (defensive).
+    ['responsibilities','coreCompetencies','mustHaves','niceToHaves','expectedOutcomes','constraints','keywords','uncertainties'].forEach(function(k){
+      if(!Array.isArray(jobProfile[k]))jobProfile[k]=[];
+    });
+    questions=json.data.questions;
     load.classList.add('hidden');
     setStep(2);
     renderQuestions();
     document.getElementById('step2').classList.remove('hidden');
     document.getElementById('step2').scrollIntoView({behavior:'smooth',block:'start'});
-  },1800);
+  }catch(e){
+    load.classList.add('hidden');
+    document.getElementById('step1').classList.remove('hidden');
+    alert('岗位分析失败：'+e.message);
+  }
 }
 
 /* ===== STEP 2: Render Questions ===== */
@@ -470,30 +483,51 @@ function renderQuestions(){
   document.getElementById('q-count').textContent=questions.length;
   var html='';
   questions.forEach(function(q,i){
-    html+='<div class="fact-card"><div class="flex items-start justify-between mb-2"><div><span class="text-xs text-gray-500">问题 '+(i+1)+'</span> <span class="text-xs '+(q.required?'text-red-400':'text-gray-500')+'">'+(q.required?'*必答':'选答')+'</span></div><span class="text-xs text-gray-500">ID: '+q.id+'</span></div><p class="text-gray-200 text-sm mb-2">'+q.text+'</p><p class="text-xs text-gray-500 mb-3">💡 AI关注点：'+q.reason+'</p><textarea class="ai-input h-20 text-sm" id="ans-'+q.id+'" placeholder="输入你的回答..."></textarea></div>';
+    var inputHtml;
+    if(q.answerType==='choice'){
+      inputHtml='<select class="ai-input" id="ans-'+q.id+'">'+(q.options||[]).map(function(o){return '<option value="'+o+'">'+o+'</option>';}).join('')+'</select>';
+    }else{
+      inputHtml='<textarea class="ai-input '+(q.answerType==='number'?'h-12':'h-20')+' text-sm" id="ans-'+q.id+'" placeholder="输入你的回答..."></textarea>';
+    }
+    html+='<div class="fact-card"><div class="flex items-start justify-between mb-2"><div><span class="text-xs text-gray-500">问题 '+(i+1)+'</span> <span class="text-xs '+(q.required?'text-red-400':'text-gray-500')+'">'+(q.required?'*必答':'选答')+'</span> <span class="text-xs text-tech-cyan ml-2">'+(q.answerType==='choice'?'选择题':q.answerType==='number'?'数字题':'文本题')+'</span></div><span class="text-xs text-gray-500">ID: '+q.id+'</span></div><p class="text-gray-200 text-sm mb-2">'+q.text+'</p><p class="text-xs text-gray-500 mb-3">💡 AI关注点：'+q.reason+'</p>'+inputHtml+'</div>';
   });
   document.getElementById('questions-container').innerHTML=html;
 }
 
-/* ===== STEP 2: Submit Answers ===== */
-function step2Submit(){
+/* ===== STEP 2: Submit Answers → /api/seeker/facts ===== */
+async function step2Submit(){
   var allFilled=true;
+  var answers=[];
   questions.forEach(function(q){
     var el=document.getElementById('ans-'+q.id);
-    if(q.required&&(!el||!el.value.trim())){allFilled=false;el.style.borderColor='rgba(239,68,68,.5)';}
+    if(!el)return;
+    var val=el.value.trim();
+    if(q.required&&!val){allFilled=false;el.style.borderColor='rgba(239,68,68,.5)';}
+    else{answers.push({questionId:q.id,answer:val});}
   });
   if(!allFilled){alert('请完成所有必答题');return;}
   document.getElementById('step2').classList.add('hidden');
   var load=document.getElementById('step-loading');load.classList.remove('hidden');
   document.getElementById('loading-text').textContent='AI正在从你的回答中提炼事实...';
-  setTimeout(function(){
-    facts=JSON.parse(JSON.stringify(MOCK_FACTS));
+  try{
+    var body={jobProfile:jobProfile,questions:questions,answers:answers};
+    var oldResume=document.getElementById('jd-old-resume').value.trim();
+    if(oldResume)body.oldResume=oldResume;
+    var json=await api('/api/seeker/facts',body);
+    if(!json.ok){showApiError(json,'事实提取');document.getElementById('step2').classList.remove('hidden');load.classList.add('hidden');return;}
+    setModeBadge(json.mode);
+    facts=json.data.facts;
+    missingInfo=json.data.missingInformation||[];
     load.classList.add('hidden');
     setStep(3);
     renderFacts();
     document.getElementById('step3').classList.remove('hidden');
     document.getElementById('step3').scrollIntoView({behavior:'smooth',block:'start'});
-  },2000);
+  }catch(e){
+    document.getElementById('step2').classList.remove('hidden');
+    load.classList.add('hidden');
+    alert('事实提取失败：'+e.message);
+  }
 }
 
 /* ===== STEP 3: Render Fact Cards ===== */
@@ -543,23 +577,30 @@ function deleteFact(i){
   renderFacts();
 }
 
-/* ===== STEP 3: Submit Facts → Generate Resume ===== */
-function step3Submit(){
+/* ===== STEP 3: Submit Facts → /api/seeker/generate ===== */
+async function step3Submit(){
   var confirmed=facts.filter(function(f){return f.confirmed;});
   if(confirmed.length===0){alert('请至少确认一条事实');return;}
   document.getElementById('step3').classList.add('hidden');
   var load=document.getElementById('step-loading');load.classList.remove('hidden');
   document.getElementById('loading-text').textContent='AI正在根据已确认事实生成结构化简历...';
-  setTimeout(function(){
-    generatedResume=JSON.parse(JSON.stringify(MOCK_RESUME));
-    missingInfo=MOCK_MISSING.slice();
-    interviewRisks=MOCK_RISKS.slice();
+  try{
+    var json=await api('/api/seeker/generate',{jobProfile:jobProfile,confirmedFacts:confirmed});
+    if(!json.ok){showApiError(json,'简历生成');document.getElementById('step3').classList.remove('hidden');load.classList.add('hidden');return;}
+    setModeBadge(json.mode);
+    generatedResume=json.data.resume;
+    missingInfo=json.data.missingInformation||[];
+    interviewRisks=json.data.interviewRisks||[];
     load.classList.add('hidden');
     setStep(4);
     renderResume();
     document.getElementById('step4').classList.remove('hidden');
     document.getElementById('step4').scrollIntoView({behavior:'smooth',block:'start'});
-  },2500);
+  }catch(e){
+    document.getElementById('step3').classList.remove('hidden');
+    load.classList.add('hidden');
+    alert('简历生成失败：'+e.message);
+  }
 }
 
 /* ===== STEP 4: Render Resume ===== */
@@ -610,7 +651,11 @@ function renderResume(){
   }
   if(interviewRisks&&interviewRisks.length){
     extra+='<div class="glass-card p-5"><h3 class="text-red-400 font-semibold text-sm mb-3">🔴 面试追问风险</h3><ul class="space-y-3">';
-    interviewRisks.forEach(function(r){extra+='<li class="text-sm text-gray-300"><p>'+r.risk+'</p><p class="text-xs text-gray-500 mt-1">关联事实：'+r.relatedFactId+'</p></li>';});
+    interviewRisks.forEach(function(r){
+      // Contract: interviewRisks is string[]. Guard against any legacy object shape.
+      var txt = (typeof r==='string')? r : (r&&r.risk)||JSON.stringify(r);
+      extra+='<li class="text-sm text-gray-300"><p>'+txt+'</p></li>';
+    });
     extra+='</ul></div>';
   }
   document.getElementById('extra-info-container').innerHTML=extra;
@@ -637,11 +682,12 @@ function renderBullet(b){
 /* ===== Template Preview ===== */
 var currentTpl=1, resumeTplData={};
 function buildTplData(){
-  var d=generatedResume||MOCK_RESUME;
+  var d=generatedResume||{title:'',summary:[],education:[],experiences:[],skills:[]};
   var exps=[];
   if(d.experiences)d.experiences.forEach(function(e){exps.push({company:e.name,role:'',period:'',desc:e.bullets.map(function(b){return b.text;}).join('；')});});
   var edus=[];
-  if(d.education)d.education.forEach(function(e){edus.push({school:'（教育背景）',major:e.text,degree:'',period:''});});
+  // Education: only render when there ARE education facts. No invented school.
+  if(d.education)d.education.forEach(function(e){edus.push({school:'',major:e.text,degree:'',period:''});});
   var skills=[];
   if(d.skills)d.skills.forEach(function(s){skills.push(s.text);});
   resumeTplData={name:'求职者',title:d.title||'',email:'',phone:'',city:'',age:'',education:edus,experience:exps,skills:skills.join(', '),eval:''};
