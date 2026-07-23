@@ -54,7 +54,7 @@ export async function seekerAnalyze(req: SeekerAnalyzeRequest): Promise<ServiceO
     system: ANALYZE_SYSTEM,
     userBlocks: blocks,
     maxTokens: 2000,
-    mockFn: seekerAnalyzeMock,
+    mockFn: () => seekerAnalyzeMock(req.jdText),
     label: "seeker.analyze",
     onLiveFailure: "fallback",
   });

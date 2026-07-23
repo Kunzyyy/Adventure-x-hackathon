@@ -53,6 +53,10 @@ const MVP_HTML_FILES = [
   "chat.html",
   "interview.html",
   "lab.html",
+  // 新页面(求职者端改造)
+  "student-resume.html",
+  "student-match.html",
+  "student-interview.html",
 ];
 
 for (const file of MVP_HTML_FILES) {

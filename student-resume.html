@@ -97,6 +97,8 @@ input:focus,textarea:focus,select:focus{border-color:var(--blue);}
 .diag-opt.missing.selected{background:var(--amber-soft);border-color:var(--amber);color:#B45309;}
 .diag-note{margin-top:8px;}
 .diag-note input{font-size:13px;}
+.diag-ctx{font-size:12px;color:var(--ink-2);background:var(--bg);padding:5px 9px;border-radius:4px;margin-bottom:8px;border-left:2px solid var(--blue);}
+.diag-advice{margin-top:8px;padding:8px 10px;background:var(--amber-soft);border:1px solid var(--amber-line);border-radius:4px;font-size:12px;color:#92400E;}
 
 /* ---- 事实卡片(路B) ---- */
 .fact{border:1px solid var(--line);border-radius:6px;padding:14px 16px;margin-bottom:10px;}
@@ -540,11 +542,10 @@ input:focus,textarea:focus,select:focus{border-color:var(--blue);}
       <div class="form-section">
         <h4>顶部 · 姓名 / 职位</h4>
         <label class="field">姓名</label>
-        <input type="text" id="f-name" class="mini-input" placeholder="你的名字" oninput="renderA4()">
-        <label class="field mt8">求职职位</label>
-        <input type="text" id="f-title" class="mini-input" placeholder="如：数据分析实习生" oninput="renderA4()">
+        <input type="text" id="f-name" class="mini-input" placeholder="你的名字" oninput="updateTop('name',this.value)">        <label class="field mt8">求职职位</label>
+        <input type="text" id="f-title" class="mini-input" placeholder="如：数据分析实习生" oninput="updateTop('title',this.value)">
         <label class="field mt8">联系方式（可选）</label>
-        <input type="text" id="f-contact" class="mini-input" placeholder="电话 / 邮箱 / 城市，用 / 分隔" oninput="renderA4()">
+        <input type="text" id="f-contact" class="mini-input" placeholder="电话 / 邮箱 / 城市，用 / 分隔" oninput="updateTop('contact',this.value)">
       </div>
 
       <div class="form-section">
@@ -639,7 +640,13 @@ async function api(url,body){
   var res;
   try{
     res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-  }catch(e){ throw new Error('连不上后端。页面必须从 http://localhost:3001/student-resume.html 打开,不能用别的端口。'); }
+  }catch(e){
+    // 在 GitHub 静态页或未启动后端时,fetch 直接抛错。给一个友好的引导,而不是裸报错。
+    var offlineHint='⚠️ 连不上后端服务。\n\n如果你是在 GitHub 或本地直接打开这个网页(没用后端),AI 接口是跑不起来的。\n要看完整效果,请在本地启动后端:\n  cd backend && pnpm build && LLM_MODE=mock PORT=3001 node dist/server.js\n然后从 http://localhost:3001/student-resume.html 打开。';
+    var err=new Error(offlineHint);
+    err.offline=true;
+    throw err;
+  }
   var txt=await res.text(),json;
   try{ json=JSON.parse(txt); }
   catch(e){
@@ -672,6 +679,7 @@ async function aAnalyze(){
     if(!json.ok){ showApiError(json,'岗位分析'); return; }
     setMode(json.mode);
     jobProfile=json.data.jobProfile;
+    window._aJdText=jd; // 记住 JD 原文,诊断报告里用来标 mustHave 出处
     ['responsibilities','coreCompetencies','mustHaves','niceToHaves','expectedOutcomes','constraints','keywords','uncertainties'].forEach(function(k){
       if(!Array.isArray(jobProfile[k]))jobProfile[k]=[];
     });
@@ -685,26 +693,64 @@ function renderADiag(){
   document.getElementById('a-jobtitle').textContent=jobProfile.jobTitle||'(未命名岗位)';
   document.getElementById('a-keywords').textContent=(jobProfile.keywords||[]).join('、') || '(无)';
   var mhs=jobProfile.mustHaves||[];
+  var jdText=(window._aJdText||'');
   var html='';
   if(mhs.length===0){
     html='<div class="diag-item"><p class="muted">AI 没从这份 JD 里拆出明确的"必须具备"项。你可以把 JD 写得更具体一点再试。</p></div>';
   }
   mhs.forEach(function(mh,i){
+    var ctx=jdContext(jdText,mh);
+    var advice=diagAdvice(mh);
     html+='<div class="diag-item" id="diag-'+i+'">'+
       '<div class="must-have">'+(i+1)+'. '+mh+'</div>'+
+      (ctx?'<div class="diag-ctx"><span class="hint">📌 JD 出处:</span> '+ctx+'</div>':'')+
       '<div class="diag-options">'+
         '<div class="diag-opt ok" data-i="'+i+'" data-v="ok" onclick="pickDiag(this)">✅ 我有证据</div>'+
         '<div class="diag-opt weak" data-i="'+i+'" data-v="weak" onclick="pickDiag(this)">⚠️ 证据弱</div>'+
         '<div class="diag-opt missing" data-i="'+i+'" data-v="missing" onclick="pickDiag(this)">🟡 我没有</div>'+
       '</div>'+
+      '<div class="diag-advice hidden" id="diag-advice-'+i+'"></div>'+
       '<div class="diag-note hidden"><label class="field" style="margin-bottom:4px;">补一句:这条的证据/原话是?</label>'+
         '<input type="text" id="diag-note-'+i+'" placeholder="例如:便利店一学期销售数据,用 Excel 去重清洗" oninput="updateADiagState()"></div>'+
       '</div>';
   });
   document.getElementById('a-diag-list').innerHTML=html;
-  // 初始化诊断状态
+  // 初始化诊断状态 + 记住建议文案
+  window.diagAdviceMap={};
+  mhs.forEach(function(mh,i){window.diagAdviceMap[i]=diagAdvice(mh);});
   window.diagState=mhs.map(function(){return {v:null,note:''};});
   updateADiagState();
+}
+
+/* JD 出处:找到 mh 在 JD 文本里出现的位置,截前后 10 字当上下文。 */
+function jdContext(jd,needle){
+  if(!jd||!needle)return '';
+  var lower=jd.toLowerCase(), n=needle.toLowerCase();
+  var idx=lower.indexOf(n);
+  if(idx<0){
+    // 整词没命中,试着匹配关键词里的子串(比如"视频剪辑"→"视频")
+    var core=needle.replace(/运营|能力|开发|分析$/,'');
+    if(core&&core!==needle){idx=lower.indexOf(core.toLowerCase());}
+  }
+  if(idx<0)return '';
+  var start=Math.max(0,idx-10), end=Math.min(jd.length,idx+needle.length+10);
+  var snip=jd.slice(start,end).replace(/\s+/g,' ').trim();
+  return '…'+snip+'…';
+}
+
+/* 证据弱时,给一句"面试官可能问什么"的建议。纯文案,按岗位关键词给。 */
+function diagAdvice(mh){
+  var m=mh;
+  if(/视频|剪辑/.test(m))return '面试官可能问:"你剪过哪条视频?用什么工具?承担了哪一环?" 提前准备一个能讲清职责、不夸大个人贡献的例子。';
+  if(/小红书/.test(m))return '面试官可能问:"你做过哪个账号?数据怎么样?选题怎么定的?" 准备一个有真实数据的案例。';
+  if(/React/.test(m))return '面试官可能问:"你用 React 做过什么项目?组件怎么拆的?" 准备一个能说清自己写了哪部分的例子。';
+  if(/TypeScript|TS/.test(m))return '面试官可能问:"TypeScript 熟到什么程度?interface/type 怎么用?" 别把"了解"说成"精通"。';
+  if(/SQL/.test(m))return '面试官可能问:"你写过什么 SQL 查询?JOIN/子查询用过吗?" 诚实说清是课程还是项目。';
+  if(/Excel/.test(m))return '面试官可能问:"用 Excel 处理过什么数据?透视表/函数会吗?" 准备一个真实处理过的数据集。';
+  if(/Java/.test(m))return '面试官可能问:"用 Java 做过什么?Spring 用到什么程度?" 说清自己承担的环节,别把参与说成主导。';
+  if(/接口/.test(m))return '面试官可能问:"写过什么接口?入参出参怎么设计的?" 准备一个能讲清设计思路的例子。';
+  if(/数据库/.test(m))return '面试官可能问:"用过哪些数据库?复杂查询写过吗?" 诚实说清程度。';
+  return '面试官可能追问:"你具体做过什么?承担什么角色?有可验证的结果吗?" 提前准备一个例子,把"参与"和"负责"讲清楚。';
 }
 
 function pickDiag(el){
@@ -718,6 +764,12 @@ function pickDiag(el){
   var note=item.querySelector('.diag-note');
   if(v==='ok'||v==='weak'){ note.classList.remove('hidden'); var inp=document.getElementById('diag-note-'+i); setTimeout(function(){inp.focus();},0); }
   else{ note.classList.add('hidden'); }
+  // 证据弱时显示"面试官会问什么"建议;否则隐藏
+  var adviceEl=document.getElementById('diag-advice-'+i);
+  if(adviceEl){
+    if(v==='weak'){adviceEl.classList.remove('hidden');adviceEl.innerHTML='<span class="hint">💡 '+window.diagAdviceMap[i]+'</span>';}
+    else{adviceEl.classList.add('hidden');}
+  }
   updateADiagState();
 }
 
@@ -864,9 +916,22 @@ function delBullet(group,i){
   renderResumeForm();renderA4();
 }
 function updateBullet(group,i,val){
-  if(group==='summary')formData.summary[i].text=val;
-  if(group==='skill')formData.skills[i].text=val;
-  renderA4();
+  if(group==='summary'){formData.summary[i].text=val;patchA4Summary();}
+  if(group==='skill'){formData.skills[i].text=val;patchA4SideSkills();}
+}
+
+/* 顶部姓名/职位/联系方式 —— 只更新 A4 对应单元格,不重建表单(避免输入失焦) */
+function updateTop(field,val){
+  formData[field]=val;
+  var a4=document.getElementById('a4page');
+  if(field==='name'){var n=a4.querySelector('.a4-head .name');if(n)n.textContent=val||'求职者';}
+  else if(field==='title'){var t=a4.querySelector('.a4-head .title');if(t)t.textContent=val||'';}
+  else if(field==='contact'){
+    var c=a4.querySelector('.a4-head .contact');
+    var parts=val.split('/').map(function(s){return s.trim();}).filter(Boolean).join(' · ');
+    if(c){if(parts)c.textContent=parts;else c.remove();}
+    else if(parts){var head=a4.querySelector('.a4-head');var div=document.createElement('div');div.className='contact';div.textContent=parts;head.appendChild(div);}
+  }
 }
 
 /* 教育(简单文本行) */
@@ -888,7 +953,7 @@ function renderEduList(){
 }
 function addEdu(){formData.education.push({text:'',evidenceIds:[]});renderResumeForm();renderA4();}
 function delEdu(i){formData.education.splice(i,1);renderResumeForm();renderA4();}
-function updateEdu(i,val){formData.education[i].text=val;renderA4();}
+function updateEdu(i,val){formData.education[i].text=val;patchA4SideEdu();}
 
 /* 经历(带名称 + bullets) */
 function renderExpList(){
@@ -918,8 +983,67 @@ function renderExpList(){
 function addExp(){formData.experiences.push({name:'',bullets:[{text:'',evidenceIds:[]}]});renderResumeForm();renderA4();}
 function delExp(i){formData.experiences.splice(i,1);renderResumeForm();renderA4();}
 function addExpBullet(ei){formData.experiences[ei].bullets.push({text:'',evidenceIds:[]});renderResumeForm();renderA4();}
-function updateExpName(ei,val){formData.experiences[ei].name=val;renderA4();}
-function updateExpBullet(ei,bi,val){formData.experiences[ei].bullets[bi].text=val;renderA4();}
+function updateExpName(ei,val){formData.experiences[ei].name=val;patchA4ExpHead(ei);}
+function updateExpBullet(ei,bi,val){formData.experiences[ei].bullets[bi].text=val;patchA4ExpBlock(ei);}
+
+/* ---- A4 局部刷新(只改对应格子,不重建整个 A4,避免 oninput 闪烁/失焦) ---- */
+function patchA4SideEdu(){
+  var a4=document.getElementById('a4page');
+  var side=a4.querySelector('.a4-side');if(!side)return;
+  var existing=side.querySelector('.block.edu');
+  var items=formData.education.filter(function(b){return b.text;});
+  var html=items.map(function(b){return '<p>'+esc(b.text)+'</p>';}).join('');
+  if(existing){if(items.length)existing.innerHTML=html;else existing.remove();}
+  else if(items.length){
+    var block=document.createElement('div');block.className='block edu';
+    block.innerHTML='<h3>教育</h3>'+html;
+    side.appendChild(block);
+  }
+}
+function patchA4SideSkills(){
+  var a4=document.getElementById('a4page');
+  var side=a4.querySelector('.a4-side');if(!side)return;
+  var existing=side.querySelector('.block.skills');
+  var items=formData.skills.filter(function(b){return b.text;});
+  var html='<li>'+items.map(function(b){return esc(b.text);}).join('</li><li>')+'</li>';
+  if(items.length===0)html='';
+  if(existing){if(items.length)existing.querySelector('ul').innerHTML=html;else existing.remove();}
+  else if(items.length){
+    var block=document.createElement('div');block.className='block skills';
+    block.innerHTML='<h3>技能</h3><ul>'+html+'</ul>';
+    side.insertBefore(block,side.firstChild);
+  }
+}
+function patchA4Summary(){
+  var a4=document.getElementById('a4page');
+  var main=a4.querySelector('.a4-main');if(!main)return;
+  var existing=main.querySelector('.block.summary');
+  var items=formData.summary.filter(function(b){return b.text;});
+  if(existing){if(items.length)existing.querySelector('ul').innerHTML=items.map(renderA4Bullet).join('');else existing.remove();}
+  else if(items.length){
+    var block=document.createElement('div');block.className='block summary';
+    block.innerHTML='<h3>个人概述</h3><ul>'+items.map(renderA4Bullet).join('')+'</ul>';
+    main.insertBefore(block,main.firstChild);
+  }
+}
+function patchA4ExpHead(ei){
+  var a4=document.getElementById('a4page');
+  var blocks=a4.querySelectorAll('.a4-main .block');
+  var expBlocks=Array.prototype.slice.call(blocks).filter(function(b){return !b.classList.contains('summary');});
+  var expBlock=expBlocks[ei];
+  if(expBlock){var h3=expBlock.querySelector('h3');if(h3)h3.textContent=formData.experiences[ei].name||'经历';}
+}
+function patchA4ExpBlock(ei){
+  var a4=document.getElementById('a4page');
+  var blocks=a4.querySelectorAll('.a4-main .block');
+  var expBlocks=Array.prototype.slice.call(blocks).filter(function(b){return !b.classList.contains('summary');});
+  var expBlock=expBlocks[ei];
+  if(!expBlock)return;
+  var ul=expBlock.querySelector('ul');
+  var bs=formData.experiences[ei].bullets.filter(function(b){return b.text;});
+  if(bs.length){var lis=bs.map(renderA4Bullet).join('');if(ul){ul.innerHTML=lis;}else{ul=document.createElement('ul');ul.innerHTML=lis;expBlock.appendChild(ul);}}
+  else if(ul){ul.remove();}
+}
 
 /* ============================================================
    A4 实时预览(单一干净模板,参考桌面 hack 简历图)
@@ -936,17 +1060,17 @@ function renderA4(){
   // 左栏:技能 / 教育
   html+='<div class="a4-side">';
   if(d.skills.length){
-    html+='<div class="block"><h3>技能</h3><ul>'+d.skills.filter(function(b){return b.text;}).map(function(b){return '<li>'+esc(b.text)+'</li>';}).join('')+'</ul></div>';
+    html+='<div class="block skills"><h3>技能</h3><ul>'+d.skills.filter(function(b){return b.text;}).map(function(b){return '<li>'+esc(b.text)+'</li>';}).join('')+'</ul></div>';
   }
   if(d.education.length){
-    html+='<div class="block"><h3>教育</h3>'+d.education.filter(function(b){return b.text;}).map(function(b){return '<p>'+esc(b.text)+'</p>';}).join('')+'</div>';
+    html+='<div class="block edu"><h3>教育</h3>'+d.education.filter(function(b){return b.text;}).map(function(b){return '<p>'+esc(b.text)+'</p>';}).join('')+'</div>';
   }
   html+='</div>';
 
   // 右栏:概述 / 经历
   html+='<div class="a4-main">';
   if(d.summary.filter(function(b){return b.text;}).length){
-    html+='<div class="block"><h3>个人概述</h3><ul>'+d.summary.filter(function(b){return b.text;}).map(function(b){return renderA4Bullet(b);}).join('')+'</ul></div>';
+    html+='<div class="block summary"><h3>个人概述</h3><ul>'+d.summary.filter(function(b){return b.text;}).map(function(b){return renderA4Bullet(b);}).join('')+'</ul></div>';
   }
   d.experiences.forEach(function(exp){
     var bs=exp.bullets.filter(function(b){return b.text;});

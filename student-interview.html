@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>面试追问体检 · AI Career Copilot</title>
+<!--
+  student-interview.html — 窗口3:模拟面试 → interviewRisks 静态展示。
+  这不是"AI 面试官聊天",而是一张静态"体检报告":
+  把简历里证据弱、会被追问的地方逐条列出来,每条能溯源到用户当时说的原话。
+  数据来自 /api/seeker/generate 的 interviewRisks 字段(string[])。
+  样式全在本页 <style> 里(内联),不动 css/style.css,避免和窗口4撞车。
+-->
+<style>
+  :root{
+    --bg:#FAFAFA; --surface:#FFFFFF; --border:#E5E7EB;
+    --text:#1A1A1A; --text-2:#6B7280; --text-3:#9CA3AF;
+    --accent:#2563EB; --accent-soft:#EFF4FF;
+    --weak:#DC2626; --weak-soft:#FEF2F2;
+    --miss:#F59E0B; --miss-soft:#FFFBEB;
+    --ok:#16A34A; --ok-soft:#F0FDF4;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg); color:var(--text);
+    line-height:1.6; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1080px; margin:0 auto; padding:32px 24px 80px;}
+
+  /* 顶栏 */
+  .topbar{display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;}
+  .back{font-size:13px; color:var(--text-2); text-decoration:none; display:inline-flex; align-items:center; gap:4px;}
+  .back:hover{color:var(--accent);}
+  .mode-badge{padding:4px 12px; border-radius:20px; font-size:11px; font-weight:600; display:inline-flex; align-items:center; gap:4px; border:1px solid;}
+  .mode-mock{background:var(--miss-soft); color:var(--miss); border-color:#FDE68A;}
+  .mode-live{background:var(--ok-soft); color:var(--ok); border-color:#BBF7D0;}
+  .mode-fallback{background:var(--weak-soft); color:var(--weak); border-color:#FECACA;}
+
+  /* 标题区 */
+  h1{font-size:26px; font-weight:700; letter-spacing:-0.01em;}
+  .subtitle{color:var(--text-2); font-size:14px; margin-top:6px;}
+
+  /* 飞轮提示条:点出"双端同引擎" */
+  .flywheel{
+    margin-top:18px; padding:14px 16px;
+    background:var(--accent-soft); border:1px solid #DBE7FE; border-radius:8px;
+    font-size:13px; color:#1E40AF; display:flex; gap:10px; align-items:flex-start;
+  }
+  .flywheel b{font-weight:600;}
+
+  /* 主体两栏 */
+  .layout{display:grid; grid-template-columns:360px 1fr; gap:24px; margin-top:24px; align-items:start;}
+  @media (max-width:820px){ .layout{grid-template-columns:1fr;} }
+
+  .panel{background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:20px;}
+
+  /* 左:风险清单 */
+  .panel-title{font-size:15px; font-weight:600; margin-bottom:4px;}
+  .panel-hint{font-size:12px; color:var(--text-3); margin-bottom:16px;}
+  .risk-list{display:flex; flex-direction:column; gap:10px;}
+  .risk-card{
+    border:1px solid var(--border); border-radius:6px; padding:14px;
+    cursor:pointer; transition:all .15s; background:var(--surface);
+  }
+  .risk-card:hover{border-color:#9DB8F3;}
+  .risk-card.active{border-color:var(--weak); background:var(--weak-soft); box-shadow:0 0 0 1px var(--weak) inset;}
+  .risk-head{display:flex; align-items:center; gap:8px; margin-bottom:6px;}
+  .risk-num{width:22px; height:22px; border-radius:50%; background:var(--weak); color:#fff; font-size:12px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .tag{font-size:11px; padding:2px 8px; border-radius:10px; font-weight:600;}
+  .tag-weak{background:var(--weak-soft); color:var(--weak); border:1px solid #FECACA;}
+  .risk-title{font-size:14px; font-weight:500; color:var(--text); line-height:1.45;}
+  .risk-chips{display:flex; flex-wrap:wrap; gap:4px; margin-top:8px;}
+  .chip{font-size:11px; padding:2px 8px; background:#F3F4F6; color:var(--text-2); border-radius:10px;}
+
+  /* 右:详情 */
+  .detail-empty{color:var(--text-3); font-size:14px; padding:40px 0; text-align:center;}
+  .detail h2{font-size:17px; font-weight:600; margin-bottom:14px;}
+  .risk-full{padding:12px 14px; background:var(--weak-soft); border-left:3px solid var(--weak); border-radius:0 6px 6px 0; font-size:14px; color:#7F1D1D; margin-bottom:22px;}
+
+  .section-label{font-size:12px; font-weight:600; color:var(--text-2); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:10px;}
+  .rel-list{display:flex; flex-direction:column; gap:10px; margin-bottom:22px;}
+  .rel-item{border:1px solid var(--border); border-radius:6px; padding:12px 14px; background:#FAFAFA;}
+  .rel-meta{font-size:11px; color:var(--text-3); margin-bottom:4px;}
+  .rel-text{font-size:14px; color:var(--text);}
+  .source-quote{margin-top:10px; padding:10px 12px; background:#FFFBEB; border-left:3px solid var(--miss); border-radius:0 6px 6px 0; font-size:13px; color:#78350F;}
+  .source-quote .qlabel{font-size:11px; color:var(--text-3); display:block; margin-bottom:2px;}
+
+  .followups{display:flex; flex-direction:column; gap:8px; margin-bottom:22px;}
+  .fu-item{display:flex; gap:10px; font-size:14px; color:var(--text);}
+  .fu-num{color:var(--accent); font-weight:600; flex-shrink:0;}
+  .fu-note{font-size:12px; color:var(--text-3); margin-top:2px;}
+
+  .missing-box{padding:12px 14px; background:var(--miss-soft); border:1px solid #FDE68A; border-radius:6px; font-size:13px; color:#92400E;}
+  .missing-box ul{margin:8px 0 0 18px;}
+
+  .datasrc{margin-top:20px; font-size:11px; color:var(--text-3);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- 顶栏 -->
+  <div class="topbar">
+    <a href="student.html" class="back">← 返回求职者端</a>
+    <span id="modeBadge" class="mode-badge mode-mock">🔸 MOCK 演示数据</span>
+  </div>
+
+  <!-- 标题 -->
+  <h1>面试追问体检</h1>
+  <p class="subtitle">不是通用题库,是针对你这份简历的"证据薄弱点"——面试官最可能在这些地方追问你。</p>
+
+  <!-- 双端同引擎提示 -->
+  <div class="flywheel">
+    <span>🔁</span>
+    <div><b>这些追问点,和企业端 HR 拿到的面试题,是同一个"岗位理解引擎"算出来的。</b>
+      同一个引擎,翻个面:你这边看到"我会被追问哪",HR 那边看到"我该问哪"。</div>
+  </div>
+
+  <!-- 主体 -->
+  <div class="layout">
+
+    <!-- 左:风险清单 -->
+    <div class="panel">
+      <div class="panel-title">追问风险清单</div>
+      <div class="panel-hint">点击任一条,右侧看详情、原话和追问题</div>
+      <div id="riskList" class="risk-list"></div>
+    </div>
+
+    <!-- 右:详情 -->
+    <div class="panel">
+      <div id="detail" class="detail">
+        <div class="detail-empty">← 点左边任一条风险,这里会显示:你简历里写了什么、当时的原话、以及对应的追问题。</div>
+      </div>
+      <div id="missingBox" class="missing-box" style="display:none;"></div>
+      <div class="datasrc">数据来源:/api/seeker/generate 的 interviewRisks 字段 · 当前为 <span id="datasrcTag">写死的演示数据</span></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ================================================================
+   数据加载
+   ----------------------------------------------------------------
+   这个页面是简历流程的下游:正常应由窗口1(student-resume.html)在生成简历后,
+   把 {resume, facts, interviewRisks, missingInformation, mode} 存进 localStorage,
+   key = "seeker.interviewPayload",本页读取后展示。
+   如果独立打开(没走完整流程),用下面这份写死的 mock,直接能看效果。
+   ================================================================ */
+
+// --- 写死的演示数据(形状完全对齐 API-CONTRACT.md §5.3 的响应) ---
+var MOCK_RESUME = {
+  title:"数据分析实习生方向简历",
+  summary:[{ text:"具备Excel数据清洗实践,并在课程中使用过SQL基础查询。", evidenceIds:["fact_1","fact_2"] }],
+  education:[],
+  experiences:[{ name:"校园便利店销售数据分析", bullets:[{ text:"使用Excel对一个学期的销售明细进行去重和日期格式统一。", evidenceIds:["fact_1"] }] }],
+  skills:[{ text:"Excel数据清洗;SQL基础查询(课程作业)", evidenceIds:["fact_1","fact_2"] }]
+};
+var MOCK_FACTS = [
+  { id:"fact_1", category:"project", statement:"使用Excel对便利店一个学期的销售明细进行去重和日期格式统一。", sourceQuestionId:"sq_1", sourceQuote:"我整理过便利店一个学期的销售明细,用Excel去重并统一日期格式。", confirmed:true },
+  { id:"fact_2", category:"skill",    statement:"在课程作业中使用过SQL基础查询,暂无实际项目经验。",         sourceQuestionId:"sq_2", sourceQuote:"只在课程作业里写过基础查询,没有实际项目经验。",             confirmed:true }
+];
+var MOCK_RISKS = [
+  "SQL 仅在课程作业中使用,缺少真实项目场景——面试官可能追问具体的查询任务和数据规模。",
+  "数据可视化只提到 Excel 柱状图,可能被追问是否使用过其他可视化方式。",
+  "便利店数据分析的业务影响未说明,可能被追问分析结论带来了什么改变。"
+];
+var MOCK_MISSING = ["缺少真实项目中的SQL使用证据"];
+var MOCK_MODE = "mock";
+
+// 页面状态
+var DATA = { resume:null, facts:[], interviewRisks:[], missingInformation:[], mode:"mock", source:"mock" };
+var evidenceMap = {};   // factId -> fact,用于溯源
+
+function loadData(){
+  // 1) 优先读窗口1存下来的真实数据
+  try{
+    var raw = localStorage.getItem("seeker.interviewPayload");
+    if(raw){
+      var p = JSON.parse(raw);
+      if(p && p.resume && Array.isArray(p.interviewRisks)){
+        DATA.resume = p.resume;
+        DATA.facts = p.facts || [];
+        DATA.interviewRisks = p.interviewRisks;
+        DATA.missingInformation = p.missingInformation || [];
+        DATA.mode = p.mode || "live";
+        DATA.source = "来自简历流程的真实数据";
+        return;
+      }
+    }
+  }catch(e){ /* localStorage 不可用或解析失败,退回 mock */ }
+  // 2) 退回写死的演示数据
+  DATA.resume = MOCK_RESUME;
+  DATA.facts = MOCK_FACTS;
+  DATA.interviewRisks = MOCK_RISKS;
+  DATA.missingInformation = MOCK_MISSING;
+  DATA.mode = MOCK_MODE;
+  DATA.source = "写死的演示数据";
+}
+
+/* 留给串接用的真实接口调用(当前页面是下游,不直接调;放这备查) */
+async function callSeekerGenerate(jobProfile, confirmedFacts){
+  var res = await fetch("/api/seeker/generate",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({ jobProfile:jobProfile, confirmedFacts:confirmedFacts })
+  });
+  return res.json();
+}
+
+/* ================================================================
+   关键词匹配:把风险定位到具体简历条目
+   ----------------------------------------------------------------
+   interviewRisks 只是字符串,没有结构化指向。这里用一份领域关键词表,
+   从风险文本里抽出出现的词,再去简历 bullet / fact 里找包含这些词的条目。
+   匹配不上就老实标"未定位到具体条目"——不假装能精确定位。
+   ================================================================ */
+var TOPIC_TERMS = ["SQL","Excel","可视化","柱状图","便利店","数据清洗","课程作业","数据规模","业务影响","分析结论"];
+
+function extractKeywords(text){
+  return TOPIC_TERMS.filter(function(t){ return text.indexOf(t) >= 0; });
+}
+
+// 把简历所有 bullet 摊平成 {section, text, evidenceIds} 列表
+function flattenBullets(resume){
+  var out = [];
+  if(!resume) return out;
+  (resume.summary||[]).forEach(function(b){ out.push({section:"个人概述", text:b.text, evidenceIds:b.evidenceIds||[]}); });
+  (resume.education||[]).forEach(function(b){ out.push({section:"教育背景", text:b.text, evidenceIds:b.evidenceIds||[]}); });
+  (resume.experiences||[]).forEach(function(exp){
+    (exp.bullets||[]).forEach(function(b){ out.push({section:"经历·"+exp.name, text:b.text, evidenceIds:b.evidenceIds||[]}); });
+  });
+  (resume.skills||[]).forEach(function(b){ out.push({section:"技能", text:b.text, evidenceIds:b.evidenceIds||[]}); });
+  return out;
+}
+
+// 找跟某条风险相关的简历条目(任一关键词命中)
+function findRelated(keywords){
+  var all = flattenBullets(DATA.resume);
+  if(!keywords.length) return [];
+  return all.filter(function(b){
+    return keywords.some(function(k){ return b.text.indexOf(k) >= 0; });
+  });
+}
+
+// 取一条 bullet 关联的 fact 原话(取第一条有 sourceQuote 的)
+function quoteForBullet(b){
+  var ids = b.evidenceIds || [];
+  for(var i=0;i<ids.length;i++){
+    var f = evidenceMap[ids[i]];
+    if(f && f.sourceQuote) return f;
+  }
+  return null;
+}
+
+/* ================================================================
+   追问题生成
+   ----------------------------------------------------------------
+   诚实标"基于你的简历风险生成的追问",不是实时 AI。
+   根据关键词模板拼几道,匹配不上关键词就给通用追问。
+   ================================================================ */
+function buildFollowUps(risk, keywords){
+  var qs = [];
+  if(keywords.length){
+    qs.push("请详细讲讲你在 " + keywords[0] + " 上具体做了什么、遇到了什么。");
+    qs.push("这段里,你能给出一个具体的数字或例子吗?");
+  }else{
+    qs.push("请举一个具体例子说明这段经历。");
+  }
+  qs.push("如果面试官在这里追问细节,你觉得哪里最可能问住你?");
+  return qs.slice(0,3);
+}
+
+/* ================================================================
+   渲染
+   ================================================================ */
+function setModeBadge(mode){
+  var b = document.getElementById("modeBadge");
+  b.className = "mode-badge mode-" + (mode||"mock");
+  b.textContent = mode==="live" ? "🟢 LIVE 真实AI"
+    : mode==="fallback" ? "⚠️ FALLBACK 降级数据"
+    : "🔸 MOCK 演示数据";
+}
+
+function shortTitle(riskText){
+  // 取破折号前的主句,或前 24 字
+  var main = riskText.split(/——|--|—/)[0];
+  return main.length > 24 ? main.slice(0,24) + "…" : main;
+}
+
+function renderRiskList(){
+  var html = "";
+  DATA.interviewRisks.forEach(function(r, i){
+    var kws = extractKeywords(r);
+    var chips = kws.map(function(k){ return '<span class="chip">'+k+'</span>'; }).join("");
+    html += '<div class="risk-card" data-i="'+i+'" onclick="selectRisk('+i+')">'
+      + '<div class="risk-head"><span class="risk-num">'+(i+1)+'</span><span class="tag tag-weak">证据弱</span></div>'
+      + '<div class="risk-title">'+shortTitle(r)+'</div>'
+      + (chips ? '<div class="risk-chips">'+chips+'</div>' : '')
+      + '</div>';
+  });
+  document.getElementById("riskList").innerHTML = html;
+  if(DATA.interviewRisks.length){
+    selectRisk(0);
+  }
+}
+
+function selectRisk(i){
+  // 高亮左栏
+  var cards = document.querySelectorAll(".risk-card");
+  cards.forEach(function(c, idx){ c.classList.toggle("active", idx===i); });
+
+  var risk = DATA.interviewRisks[i];
+  var kws = extractKeywords(risk);
+  var related = findRelated(kws);
+  var fus = buildFollowUps(risk, kws);
+
+  var html = "";
+  html += '<h2>风险 '+(i+1)+' · 详情</h2>';
+  html += '<div class="risk-full">'+risk+'</div>';
+
+  // 关联的简历条目 + 原话溯源
+  html += '<div class="section-label">你简历里写了什么(可溯源)</div>';
+  if(related.length){
+    html += '<div class="rel-list">';
+    related.forEach(function(b){
+      var q = quoteForBullet(b);
+      html += '<div class="rel-item">'
+        + '<div class="rel-meta">'+b.section+'</div>'
+        + '<div class="rel-text">'+b.text+'</div>';
+      if(q){
+        html += '<div class="source-quote"><span class="qlabel">📌 你当时说的原话</span>'+q.sourceQuote+'</div>';
+      }else{
+        html += '<div class="source-quote"><span class="qlabel">📌 原话</span>(这条简历要点未关联到具体事实)</div>';
+      }
+      html += '</div>';
+    });
+    html += '</div>';
+  }else{
+    html += '<div class="rel-item"><div class="rel-text" style="color:var(--text-2);">本条风险未定位到具体简历条目(通用追问)。</div></div>';
+  }
+
+  // 追问题
+  html += '<div class="section-label">面试官可能这样追问你</div>';
+  html += '<div class="followups">';
+  fus.forEach(function(q, idx){
+    html += '<div class="fu-item"><span class="fu-num">Q'+(idx+1)+'</span><div>'+q+'</div></div>';
+  });
+  html += '</div>';
+  html += '<div class="fu-note">↑ 基于你的简历风险生成的追问,非实时 AI 对话。</div>';
+
+  document.getElementById("detail").innerHTML = html;
+
+  // 缺失信息(顺带展示,因为常和追问风险相关)
+  var mb = document.getElementById("missingBox");
+  if(DATA.missingInformation && DATA.missingInformation.length){
+    mb.style.display = "block";
+    mb.innerHTML = '<b>⚠️ 顺带提醒:岗位要的、你还没有的</b><ul>'
+      + DATA.missingInformation.map(function(m){ return "<li>"+m+"</li>"; }).join("")
+      + '</ul>';
+  }else{
+    mb.style.display = "none";
+  }
+}
+
+/* ================================================================
+   启动
+   ================================================================ */
+(function init(){
+  loadData();
+  // 建 evidenceMap
+  evidenceMap = {};
+  DATA.facts.forEach(function(f){ evidenceMap[f.id] = f; });
+  setModeBadge(DATA.mode);
+  document.getElementById("datasrcTag").textContent = DATA.source;
+  renderRiskList();
+})();
+</script>
+</body>
+</html>
