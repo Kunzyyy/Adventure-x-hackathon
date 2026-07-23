@@ -1,865 +1,188 @@
-# Codex 交接文件：Jin Ziyao · AI与后端
+# handoff.md · Jin Ziyao 交接文件(前端冲刺后更新版)
 
-> 更新日期：2026-07-23
->
-> 目标仓库：`C:\Users\Lenovo\Adventure-x-hackathon`
->
-> 远程仓库：`https://github.com/Kunzyyy/Adventure-x-hackathon.git`
->
-> 唯一允许工作的分支：`Jin-Ziyao`
+> 更新日期:2026-07-24。
+> 仓库:`C:\Users\Lenovo\Adventure-x-hackathon`,远程 `https://github.com/Kunzyyy/Adventure-x-hackathon.git`
+> 唯一允许工作分支:`Jin-Ziyao`(main 现已交付干净版,但协作仍在各自分支进行)
+> 本文件是给"下一个接手的 Claude 窗口"看的作战图。**用户是初学者,所有解释用大白话,不甩专业词,每完成一小步停下确认。**
 
-## 0. 给下一个 Codex 的最短说明
+---
 
-用户正在参加一个三人、三天的 AI 求职助手黑客松。用户是第三名成员，负责“AI与后端”，但目前是初学者，不熟悉 TypeScript、API、MOCK、Zod 等术语。解释和实施时必须先用通俗中文说明“它解决什么问题”，再给技术方案，不能假设用户已经理解专业词汇。
+## 0. 一句话现状
 
-当前已经完成产品范围、五个后端流程、分支规则，以及 Task 1 的“文档契约部分”；团队统一要求已经推送到 `Jin-Ziyao` 的 `team-contract/` 文件夹。只读检查已在 `Zheng-Xinyao` 找到 Vite + React + Express 候选骨架，但尚未确认最终页面和同步方式。**公共骨架尚未进入 `Jin-Ziyao`，尚未写业务代码，也尚未创建可运行的 TypeScript/Zod 和五个 MOCK 接口。**
+后端做完了(5 个契约接口 + 107 测试 + 反编造校验),前端从"一堆摇号机假页面"改成了"双端同引擎 + 可溯源"的三个新页面。main 已交付干净版(带一键部署按钮)。**当前任务是部署上线 + 给队友交接 + 准备路 A/B 收尾。**
 
-开始任何工作前：
+---
 
-1. 完整阅读本文件、根目录 `AGENTS.md`、`team-contract/README.md`、`team-contract/API-CONTRACT.md`、`team-contract/TEAM-RULES.md` 和 `docs/MVP-WORKFLOW.md`。
-2. 运行 `git branch --show-current`，结果必须严格为 `Jin-Ziyao`。
-3. 运行 `git status --short --branch`，先保护用户已有改动。
-4. 不得检出、修改、合并或推送 `main`、`Zheng-Xinyao`、`Chen-Pengyu` 或其他成员分支。
-5. 当前 `Jin-Ziyao` 还没有可运行工程。`Zheng-Xinyao` 已有 Vite + React + Express 候选骨架，但最终页面和同步方式未确认。编码前必须等待这两个答案，不能默默创建另一套冲突工程。
+## 1. 截至现在(2026-07-24)完成了什么
 
-公共骨架同步完成后，Jin Ziyao 只在现有 Express + TypeScript `backend/` 中实现“共享类型 + 五个 MOCK 接口”，不再创建 Next.js。
+### 后端(全部完成,稳定)
+- 5 个契约接口:`seeker/{analyze,facts,generate}` + `employer/{analyze,generate}`
+- mock 模式无需 AI key,且 `mocks/seeker.ts` 已改成**会从 JD 文本派生岗位画像**(贴新媒体 JD 不再返回 SQL/Excel)
+- 反编造:`sourceQuote` 逐字校验、`evidenceIds` 孤儿检查、歧视词黑名单、自动决策词黑名单
+- 107 个测试,分布在 6 个文件
+- LLM 开关板:mock/live/fallback 三态
 
-### 0.1 文档的权威顺序
+### 前端(改造完成,核心交付)
+三个新页面(都在根目录,后端同源服务):
+- `student-resume.html`:路 A(诊断报告)+ 路 B(带模板从零),左右联动,**每句话可溯源**
+- `student-match.html`:岗位对齐图(红黄绿证据状态,替代摇号机打分)
+- `student-interview.html`:面试体检(基于 interviewRisks 静态展示,不背题库)
+- `index.html`:双端同引擎飞轮首页(删了 3D/粒子/假统计数)
+- `css/style.css`:全站浅色克制基线(静蓝单色)
 
-后续 Codex 必须按下面顺序理解仓库，不能只读其中一份：
+### 部署 & 协作
+- `render.yaml`:Render 一键部署配置(免费版,mock,autoDeploy)
+- `README.md`:Deploy to Render 按钮 + 项目说明
+- `DEPLOY.md`:给队友的部署 + 本地跑 + 协作规矩
 
-1. `AGENTS.md`：分支和协作安全规则，优先级最高。
-2. `handoff.md`：当前完成状态、任务编号、依赖和下一步。
-3. `team-contract/README.md`：三个人共同理解的产品流程和大白话说明。
-4. `team-contract/API-CONTRACT.md`：API 路径、字段名、层级、必填规则、错误格式和示例的唯一来源。
-5. `team-contract/TEAM-RULES.md`：前端和后端不能擅自改变的内容。
-6. `task-prompts/TASK-N-*.md`：用户开启新窗口时，对应 Task 的完整可执行提示词。
-7. `docs/MVP-WORKFLOW.md`：完整产品背景、AI逻辑和三天范围。
+### 已推到 GitHub 的分支
+- `main`:干净交付版(commit `af8735d`),孤儿提交,只含 55 个交付文件,无实验残渣
+- `Jin-Ziyao`:完整工作历史,含所有交接文档(SPRINT-HANDOFF / PROJECT-HANDOFF / handoff.md 等)
 
-如果数据字段出现冲突，以 `team-contract/API-CONTRACT.md` 为准，但必须同步修正文档，不能让冲突继续存在。如果任何实现会违反 `AGENTS.md`，立即停止。
+---
 
-### 0.2 当前准确进度
+## 2. 当前未做完 / 待办(按优先级)
 
-> 2026-07-23 更新：Task 0—9 已在 `Jin-Ziyao` 全部落地并本地提交（ahead 11）。公共骨架已从 `origin/Zheng-Xinyao` 合并进来，含 backend（Express+TS）、frontend（Vite+React）、根目录静态 MVP 页面与 pnpm workspace。`Jin-Ziyao` 保留了 AGENTS/handoff/docs/team-contract/task-prompts。后端五个契约接口全部经 Zod 校验，默认 `LLM_MODE=mock`（无 Key 时自动 mock，不询问用户）；未配置真实 Key，故真实外部模型 live 测试标记为"未执行"。student.html / enterprise.html 已接入五个新接口并通过 HTTP。111/111 单元+接口测试通过。详见下方完成状态。
+### 🔴 待办 1:实际部署 Render 拿到线上网址
+- 配置和按钮都备好了,**但还没人真正点过 Deploy**
+- 需要有人用 GitHub 账号登录 [render.com](https://render.com),点 README 的 Deploy 按钮
+- 部署后拿到网址(如 `https://ai-career-copilot.onrender.com`),才能让队友/评委不装东西就看
+- **冷启动注意**:Render 免费版 15 分钟无访问会休眠,演示前先点一下预热
 
-| Task | 名称 | 当前状态 | 下一步判断 |
-| --- | --- | --- | --- |
-| Task 0 | 确认或建立公共工程骨架 | ✅ 完成 | 已合并 `origin/Zheng-Xinyao` 骨架；`pnpm install` + backend build + frontend build 全部通过 |
-| Task 1 | 共享类型、校验规则和统一响应 | ✅ 完成 | `backend/src/contracts/` 类型从 Zod 推导；41 条契约测试通过 |
-| Task 2 | 五个稳定 MOCK 接口 | ✅ 完成 | 五个 POST 接口 + 11 条 HTTP 烟雾测试；MOCK 真实不夸大 |
-| Task 3 | LLM 统一调用基础设施 | ✅ 完成 | `backend/src/llm/` 提供商无关 Client；13 条基础设施测试覆盖 mock/live/retry/timeout/fallback/注入/隐私 |
-| Task 4 | 求职者 JD 解析与动态提问 | ✅ 完成（mock 路径） | 5—8 道动态问题；live 路径已接线，缺 Key 时 fallback |
-| Task 5 | 求职者回答转事实卡片 | ✅ 完成（mock 路径） | sourceQuote 逐字校验；confirmed:false；反夸大测试通过 |
-| Task 6 | 已确认事实生成一页简历 | ✅ 完成（mock 路径） | evidenceIds 交叉校验；无教育事实 education=[] |
-| Task 7 | 企业招聘需求解析与追问 | ✅ 完成（mock 路径） | 3—5 道问题；uncertainties 保留 |
-| Task 8 | 企业招聘材料生成 | ✅ 完成（mock 路径） | 权重 100、5 道题；反歧视 + 反自动录用检查通过 |
-| Task 9 | 稳定性、反编造和端到端测试 | ✅ 完成（mock+fake provider） | 29 条矩阵测试 + 3×求职者 + 3×企业 e2e；真实外部模型 live 测试因无 Key 未执行 |
+### 🟡 待办 2:路 A / 路 B 收尾验证
+用户开两个并行窗口改了 mock + 路A联动 + 路B模板,改动已 commit(`7a7bec3`)。但**用户还没逐个验证通不通**。接手后建议:
+- 本地 `cd backend && pnpm build && LLM_MODE=mock PORT=3001 node dist/server.js`
+- 浏览器 `http://localhost:3001/student-resume.html`
+- 试路 A(有简历改):贴 JD+旧简历 → 诊断报告 → 左边改字右边变
+- 试路 B(从零):贴 JD → 答题 → 事实卡片 → 选模板 → 出简历 → AI 助手侧栏
+- 哪个不通就修哪个
 
-Task 1 文档成果已在提交 `caa7fe4 docs: add shared team API contract` 推送到远程 `Jin-Ziyao`。不要重新设计另一套字段。
+### 🟢 待办 3:接真 AI(可选)
+- 现在是 mock 模式,演示够用且诚实标 🔸mock
+- 要真 AI:在 Render 控制台或本地 .env 加 `AI_API_KEY`,把 `LLM_MODE` 改 `live`
+- 注意:live 模式可能不稳,建议保留 fallback 兜底
 
-### 0.3 用户说“开始 Task N”时的固定执行协议
+### ⚪ 待办 4:给队友写说明文档(用户之前提到"说明文档后面记得写")
+- 各文件夹的 README 还没写(backend/frontend/css/js/docs 都没有)
+- 用户授权后可写,讲清楚每个文件夹干啥的
 
-后续 Codex 收到“开始 Task 3”“开始 Task 4”等指令时，必须：
+---
 
-1. 完整阅读 0.1 列出的全部文档。
-2. 运行 `git branch --show-current`，必须严格为 `Jin-Ziyao`。
-3. 运行 `git status --short --branch`，保护已有改动。
-4. 按 0.2 检查前置 Task 是否真正完成，不能只根据任务名称猜测。
-5. 先用通俗中文告诉用户：这个 Task 解决什么问题、会影响哪个页面。
-6. 严格使用 `team-contract/API-CONTRACT.md` 的字段，不自行重命名或改变层级。
-7. 只实现当前 Task 和必要的内部支撑，不顺便扩展登录、数据库、投递、排名等范围外功能。
-8. 对照本文件对应 Task 的“完成标准”运行测试。
-9. 最后明确报告：完成了什么、测试结果、还缺什么、是否产生未提交改动。
-10. 提交和推送只能发生在 `Jin-Ziyao`；未得到当前对话授权时，不创建 PR 或操作其他分支。
+## 3. 关键技术约束(改代码前必读)
 
-如果前置条件缺失且会改变全队工程结构，例如没有公共骨架，不能偷偷创建替代工程；应向用户说明唯一阻塞点并等待决定。
+### 分支安全(最高优先级)
+- 唯一工作分支:`Jin-Ziyao`。开工前 `git branch --show-current` 必须输出它
+- 绝不碰 `main`、`Zheng-Xinyao`、`Chen-Pengyu`
+- 不用 `git reset --hard`、`git checkout --`、`git clean`
+- commit 只 `git add <你改的文件>`,**绝不 `git add .`**(并行会抢别人改动)
+- 未经用户明确授权,不 push、不建 PR、不部署
 
-用户以后可以直接说：
+### 协作铁律(写进 AGENTS.md)
+**本地改好看了,再推 GitHub。** main 是对外成果,本地是草稿台。用户没点头,Claude 不得 push。
 
-```text
-开始执行 handoff.md 中的 Task N。先检查这个 Task 的前置依赖，再严格按照该 Task 的基本逻辑、交付和完成标准实施；不要修改 team-contract 中已经冻结的接口，也不要扩展当前 Task 范围。
+### 契约红线(team-contract/TEAM-RULES.md)
+- 不改 5 个 API 路径/字段名/层级
+- 不跳过求职者事实确认步骤
+- 不丢 `sourceQuote`/`evidenceIds`/`missingInformation`/`interviewRisks`
+- 不编造(参与≠负责,了解≠精通,不编数字/公司/奖项)
+- 不歧视(企业端不生成性别/年龄/婚育/籍贯/外貌条件)
+- 不做候选人评分排名/登录/数据库/投递收件箱
+
+---
+
+## 4. 环境 & 启动命令
+
+### 启动后端(本地)
+```bash
+cd /c/Users/Lenovo/Adventure-x-hackathon/backend
+MSYS_NO_PATHCONV=1 pnpm build
+MSYS_NO_PATHCONV=1 LLM_MODE=mock PORT=3001 node dist/server.js
+```
+看到 `🚀 AI Career Copilot API running on http://localhost:3001` 就起来了。
+
+### 测试接口(避开代理坑)
+本机有代理 `HTTP_PROXY=127.0.0.1:1080`(Privoxy),**会截胡 `127.0.0.1` 的请求**。
+- 测接口用 `node fetch` 直连,或 `curl --noproxy localhost`
+- 浏览器**务必用 `localhost`,不要用 `127.0.0.1`**
+
+### 端口被占
+```bash
+powershell.exe -NoProfile -Command "Get-NetTCPConnection -LocalPort 3001 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object { Stop-Process -Id \$_ -Force -ErrorAction SilentlyContinue }"
 ```
 
-即使用户只说“开始 Task N”，也要把这段话视为默认要求。
-
-### 0.4 Task 0—9 可执行操作手册
-
-#### Task 0：确认或建立公共工程骨架
-
-解决的问题：确定三个人最终使用哪一套页面，以及现有 Vite + React + Express 工程怎样成为共同开发基础，避免出现两份 `package.json`、两套后端和不同依赖。
-
-2026-07-23 最新只读检查发现：`Zheng-Xinyao` 分支已经包含 Vite + React 前端、根目录静态 `student.html`/`enterprise.html`，以及 Express + TypeScript 的 `backend/`。因此后续不再创建 Next.js。当前仍等待队友明确回答：
-
-1. 最终演示使用根目录静态页面，还是 `frontend/` React 页面。
-2. 公共前端和 `backend/` 骨架怎样同步到共同开发基础或 `Jin-Ziyao`。
-
-在这两个问题没有答复、且公共 `backend/` 没有真实进入 `Jin-Ziyao` 前，Task 0 不能标记完成，Task 1—9 不能开始写代码。
-
-基本逻辑：
-
-1. 询问公共前端成员最终使用哪套页面，以及怎样同步已经创建的骨架。
-2. 如果已创建，把它同步到当前协作流程，检查目录、版本、启动命令和依赖。
-3. 如果团队确认把现有骨架同步给 Jin Ziyao，只接收并验证这一套 Vite + React + Express 工程，不另建 Next.js 或第二套后端。
-4. 启动开发服务器，确认最小项目可以运行。
-
-完成标准：`Jin-Ziyao` 或团队明确的共同开发基础中只有一套被认可的 Vite + React + Express 工程；能明确说出最终页面、API和共享代码放在哪里；前后端开发服务器可以启动。
-
-禁止事项：未经确认不能新建另一套工程；不能修改队友分支；不能顺便设计页面视觉。
-
-#### Task 1：共享类型、Zod 校验和统一响应
-
-解决的问题：让前端和后端使用同一张“数据表格”，防止字段对不上。
-
-当前已经完成：
-
-- `team-contract/API-CONTRACT.md` 已冻结七类共享数据、五个接口和示例。
-- 成功、失败和 `mock/live/fallback` 已统一。
-- 11 段 JSON 示例已验证可以解析。
-- 企业筛选权重示例合计 100，面试题示例正好 5 道。
-
-骨架明确后仍要完成：
-
-1. 按契约建立共享 TypeScript 类型，不能重新发明字段。
-2. 建立对应 Zod Schema。
-3. 实现问题数量、选项、回答引用、事实确认、`evidenceIds`、权重和面试题数量等交叉校验。
-4. 编译并为 Schema 写测试。
-
-完成标准：类型可以编译；合法示例全部通过；缺字段、错误问题数量、无效事实ID、权重不为100和面试题不为5道都会被拒绝。
-
-禁止事项：不能因为实现方便而改契约；如确需修改，先更新 `team-contract` 并通知受影响队友。
-
-#### Task 2：五个稳定 MOCK 接口
-
-解决的问题：真实 AI 未完成时，前端也能拿固定假数据开发完整页面。
-
-依赖：Task 0 完成；Task 1 的 TypeScript/Zod 已可运行。
-
-基本逻辑：
-
-1. 创建契约规定的五个 `POST` 路由。
-2. 每个路由先校验输入，再返回契约中的稳定示例数据。
-3. 成功响应使用 `ok: true`、`data` 和 `mode: 'mock'`。
-4. 非法输入返回统一 `error`，不能让页面崩溃。
-5. 本地启动项目，逐个真实请求五个路由。
-
-完成标准：五个路由均能请求；响应通过 Zod；错误格式统一；两名前端成员可以完全依赖 MOCK 开发。
-
-禁止事项：Task 2 不连接真实 AI，不花时间优化 Prompt，不静默调整字段。
-
-#### Task 3：LLM 统一调用基础设施
-
-解决的问题：五个真实 AI 接口不能各写一套模型调用；需要一个公共工具统一处理超时、错误结构、重试和降级。
-
-依赖：Task 0—2 完成。开始前检查团队最终选择 DeepSeek、OpenAI 还是其他提供商；若尚未选择，可以先设计提供商无关的适配层，但不能擅自锁定全队模型和环境变量。
-
-基本逻辑：
-
-1. 建立统一 LLM Client，业务接口只传系统规则、用户数据和目标 Schema。
-2. 支持显式 `LLM_MODE=mock` 或 `LLM_MODE=live`。
-3. 真实调用使用 `temperature: 0`，并为不同接口设置合理最大输出长度。
-4. 使用 15—30 秒超时；超时后停止等待。
-5. 模型结果先解析 JSON，再通过对应 Zod Schema。
-6. 网络失败、错误 JSON 或结构校验失败时最多重试一次。
-7. 真实模型最终失败时返回清晰错误；演示需要降级时返回稳定数据并标记 `mode: 'fallback'`。
-8. 把 JD、简历和回答包在清晰的数据边界中，防止其中的文字覆盖系统规则。
-9. 日志不能输出完整简历、完整回答和个人敏感信息。
-
-交付：统一 Client、模式配置、错误映射、超时与重试、结构解析、fallback 机制和对应单元测试。
-
-完成标准：测试能证明 mock 不调用模型；live 会校验结构；超时会终止；错误结构只重试一次；最终失败不会让路由崩溃；fallback 会明确标记。
-
-禁止事项：Task 3 不实现五套完整业务 Prompt，不改变 API 契约，不把 API Key 写入仓库。
-
-#### Task 4：求职者 JD 解析与动态提问
-
-接口：`POST /api/seeker/analyze`
-
-解决的问题：把一段目标 JD 变成页面可以理解的岗位结构，并找到用户最需要补充的真实证据。
-
-依赖：Task 3 完成；Task 2 的同名 MOCK 路由和响应格式保持不变。
-
-基本逻辑：
-
-1. 使用 Zod 校验 `jdText` 和可选 `oldResume`。
-2. 从 JD 提取岗位名称、职责、核心能力、必须条件、加分条件、预期结果、限制、关键词和不确定项。
-3. 如果有旧简历，对照岗位寻找缺少的关键证据，但不能把旧简历没有的能力补进去。
-4. 按岗位相关性生成 5—8 道动态问题，优先寻找真实项目、行动、工具和结果证据。
-5. 不诱导用户编造数字、奖项、公司、技能或经历。
-6. 使用 Task 3 的统一 Client 调用模型，并用 `SeekerAnalyzeData` Schema 校验输出。
-7. 保持 `mock/live/fallback` 和错误格式不变。
-
-交付：求职者 analyze 的 Prompt、服务逻辑、路由接线和测试。
-
-完成标准：至少用三种不同 JD 测试，岗位结构和问题会随 JD 改变；每次问题为 5—8 道；问题 ID 唯一；只问岗位相关信息；空输入和模型错误有清晰响应。
-
-禁止事项：不能返回固定问题冒充动态 AI；不能修改字段；不能在这个 Task 顺便实现 facts 或 generate。
-
-#### Task 5：求职者回答转真实事实卡片
-
-接口：`POST /api/seeker/facts`
-
-解决的问题：AI 不能直接根据聊天内容写简历；必须先把用户明确说过的话整理成可确认、可删除、可追溯的事实。
-
-依赖：Task 3 完成；联调输入沿用 Task 4 的 `jobProfile` 和 `questions`。
-
-基本逻辑：
-
-1. 校验 `jobProfile`、5—8 道 `questions`、`answers` 和可选 `oldResume`。
-2. 检查每个回答引用有效问题 ID，必答问题有答案，不能重复回答同一问题。
-3. 只提取用户回答或旧简历明确包含的信息。
-4. 每条事实生成唯一 ID、分类、谨慎表述、原文 `sourceQuote` 和适用的 `sourceQuestionId`。
-5. 所有新事实必须为 `confirmed: false`，交给用户在页面确认、编辑或删除。
-6. “参与”不能升级成“负责”，“了解”不能升级成“熟练/精通”；不能补写数字、公司、奖项、技能和结果。
-7. 与岗位相比仍缺少的证据进入 `missingInformation`。
-8. 使用 Task 3 的统一 Client，并用 `SeekerFactsData` Schema 和额外来源检查校验结果。
-
-交付：facts Prompt、事实提取服务、来源校验、路由接线和反夸大测试。
-
-完成标准：每条事实有唯一 ID 和原始来源；初始全部未确认；模糊回答不会被夸大；AI 未说过的信息不会出现；删除或未确认事实不会被后续流程接受。
-
-禁止事项：不能替用户自动确认事实；不能改写 `sourceQuote` 冒充原话；不能在本 Task 直接生成最终简历。
-
-#### Task 6：已确认事实生成一页简历
-
-接口：`POST /api/seeker/generate`
-
-解决的问题：在不编造的前提下，把用户确认过的真实事实重新排序和表达为岗位定制简历。
-
-依赖：Task 5 的事实结构和确认流程可用。
-
-基本逻辑：只接受 `confirmed: true` 的事实；每个核心简历要点至少绑定一个有效 `evidenceId`；只优化顺序和表达；缺失能力进入 `missingInformation`；证据薄弱处进入 `interviewRisks`。
-
-完成标准：所有核心内容都能追溯到本次输入事实；不存在无效、已删除或未确认的事实引用；返回结构化一页简历，不负责 PDF。
-
-#### Task 7：企业招聘需求解析与追问
-
-接口：`POST /api/employer/analyze`
-
-解决的问题：把企业一句模糊需求变成初步岗位结构，并追问真正影响招聘的缺失条件。
-
-基本逻辑：提取已明确内容；未确认内容放入 `uncertainties`；生成 3—5 道关于岗位性质、到岗天数、能力、经验和工作结果的问题；不自行补写薪资、福利、地点或硬性条件。
-
-完成标准：很短的需求也能生成有效追问；不凭空补全企业信息；保持契约格式。
-
-#### Task 8：企业招聘材料生成
-
-接口：`POST /api/employer/generate`
-
-解决的问题：把原始需求和补充回答变成可以编辑复制的标准 JD、人工筛选参考和面试题。
-
-基本逻辑：合并已确认信息；区分必须条件和加分条件；筛选权重总和为 100；固定生成 5 道面试题；每题包含能力、目的和优秀回答信号；拒绝歧视性标准和自动录用结论。
-
-完成标准：完整 `RecruitmentKit` 通过 Schema；权重严格为 100；题目严格为 5；没有性别、年龄、婚育、籍贯、外貌等标准。
-
-#### Task 9：稳定性、反编造和端到端测试
-
-解决的问题：保证演示时空输入、超时或模型乱返回不会让网站崩溃，也保证 AI 不突破真实事实边界。
-
-基本逻辑：测试空输入、缺字段、错误 JSON、结构错误、超时、重试、mock/live/fallback、事实夸大、无效 `evidenceIds`、错误权重、错误题量和歧视性条件；至少运行三次真实模型端到端案例；准备求职者和企业固定演示数据及备用 MOCK。
-
-完成标准：两个入口都能走通；模型错误有明确处理；三次真实测试通过；演示时可以安全切回 MOCK/fallback。
-
-## 1. 整体交互过程和产品决策
-
-### 1.1 最早的产品方向
-
-早期设想是一个双端 AI 求职产品：
-
-- 求职者端优化简历、评分并投递。
-- HR端粘贴JD，对候选人评分和排序。
-
-旧原型位于：
-
-```text
-D:\ai-job-assistant
+### 测试 & 构建
+```bash
+cd backend
+MSYS_NO_PATHCONV=1 pnpm test       # 107 个测试
+MSYS_NO_PATHCONV=1 pnpm typecheck  # 类型检查
+MSYS_NO_PATHCONV=1 pnpm build      # 编译到 dist/
 ```
 
-其中有 Next.js 页面、简历优化接口、简历收件箱和 HR 排名接口。但这套代码属于上一版方向，不是当前MVP的产品真相，而且存在 MOCK 分流、多人排名、LLM稳定性等已知问题。
+---
 
-### 1.2 当前最终确定的方向
+## 5. 后端接口速查(前端调用用这个)
 
-由于只有三个人、三天，已经明确不能做两个完整产品。当前方案是：
+所有接口 `POST` + `JSON`,返回 `{ok, data, mode}` 或 `{ok:false, error, mode}`。
+`mode` ∈ `mock`/`live`/`fallback`,**前端必须看 mode 并老实标出来**(诚信卖点)。
 
-> 一个网站，两个入口；求职者端做完整产品闭环，企业端只做一个演示型功能。
-
-首页两个入口：
-
-- 我是求职者：针对目标岗位，生成真实、可投递的岗位定制简历。
-- 我是招聘方：把模糊招聘需求变成清晰的JD、筛选标准和面试问题。
-
-核心文案：
-
-> 让求职者更会展示自己，让企业更准确地找到人才。
-
-两端共用的唯一核心是：
-
-> 岗位JD的理解与匹配。
-
-区别是：
-
-- 求职者端：理解JD以后，询问用户真实经历并生成定制简历。
-- 企业端：理解模糊需求以后，生成标准JD、筛选标准和面试题。
-
-### 1.3 已明确不做的事情
-
-第一版坚决不做：
-
-- 企业上传多份简历
-- AI候选人评分、排序或淘汰
-- 求职者投递和企业收件箱
-- 企业账号和权限
-- 双方聊天
-- 面试安排
-- 招聘状态管理
-- 真实岗位发布平台
-- 数据库和云端个人简历存储
-
-原因是这些内容三天内做不稳，还会引出隐私、公平性、权限和AI误判问题。第一版不能宣称“AI替企业决定录用谁”。
-
-## 2. 三个人的分工
-
-### 成员一：求职者端
-
-负责：
-
-- JD输入页面
-- AI问题展示和用户回答
-- 事实确认、修改和删除
-- 简历展示和编辑
-- 复制与导出
-
-### 成员二：企业端和公共前端
-
-负责：
-
-- 双入口首页
-- 企业招聘需求输入
-- 企业补充问题页面
-- 标准JD、筛选维度和面试题展示
-- 公共页面切换和适配
-- 已在个人分支建立 Vite + React + Express 候选骨架；最终页面和同步方式尚未确认
-
-### 用户 Jin Ziyao：AI与后端
-
-负责：
-
-- 前后端共享数据格式
-- 五个API接口
-- JD结构化解析
-- 动态问题生成
-- 用户回答整理为真实事实
-- 事实来源追踪
-- 一页岗位定制简历生成
-- 缺失信息和面试追问风险
-- 企业标准JD、筛选维度和面试问题生成
-- LLM调用、超时、重试、结构校验、MOCK和测试
-- 测试AI是否乱编
-
-用户默认不负责页面视觉、简历编辑器交互和PDF样式。
-
-## 3. 当前MVP的完整业务流程
-
-```text
-首页
-├── 求职者端（主产品，投入70%—80%精力）
-│   ├── 1. 用户输入目标JD和可选旧简历
-│   ├── 2. AI理解岗位并提出5—8个动态问题
-│   ├── 3. 用户回答，AI整理为真实事实卡片
-│   ├── 4. 用户确认、修改或删除事实
-│   ├── 5. AI只使用已确认事实生成一页岗位定制简历
-│   └── 6. 展示事实来源、缺失信息和面试追问风险
-│
-└── 企业端（轻量演示功能）
-    ├── 1. 企业输入岗位名称和模糊招聘需求
-    ├── 2. AI理解需求并提出3—5个补充问题
-    ├── 3. 企业回答补充问题
-    ├── 4. AI生成标准化JD、必须条件和加分条件
-    └── 5. AI生成筛选维度和固定5道面试题
+```
+POST /api/seeker/analyze   入 {jdText, oldResume?}    出 {jobProfile, questions[5~8]}
+POST /api/seeker/facts     入 {jobProfile, questions, answers, oldResume?}  出 {facts[{sourceQuote}], missingInformation[]}
+POST /api/seeker/generate   入 {jobProfile, confirmedFacts[confirmed:true]}  出 {resume{bullets带evidenceIds}, missingInformation[], interviewRisks[]}
+POST /api/employer/analyze  入 {jobTitle, roughRequirement}  出 {jobProfile, questions[3~5]}
+POST /api/employer/generate 入 {jobTitle, roughRequirement, jobProfile, questions, answers}  出 {standardizedJD, screeningDimensions[权重和=100], interviewQuestions[正好5道]}
 ```
 
-最重要的产品差异不是“AI文案更好”，而是求职者端增加了真实事实确认层：
+**核心卖点数据**:求职者端的 `interviewRisks` 和企业端的面试题,背后是同一个引擎——演示时点出"双端同引擎"。
 
-```text
-用户原话
-  ↓
-AI整理成事实卡片，但不直接写简历
-  ↓
-用户确认、编辑或删除
-  ↓
-AI只使用已确认事实生成简历
-  ↓
-每条简历内容绑定事实来源ID
+---
+
+## 6. 文件地图(改代码用)
+
+```
+backend/
+  src/contracts/  schemas.ts(契约单一来源) types.ts http.ts
+  src/llm/        index.ts(三态开关板) log.ts(脱敏)
+  src/mocks/      seeker.ts(从JD派生) employer.ts
+  src/routes/     seeker.ts employer.ts(★新接口) + resume/job/interview/chat/config/auth(旧,保留)
+  src/services/   seeker.ts(反编造校验) employer.ts(反歧视) errors.ts
+  src/server.ts   Express入口,静态页面白名单
+  test/           6个文件107测试
+student-resume.html   路A/B简历流程(★核心)
+student-match.html    岗位对齐图
+student-interview.html 面试体检
+index.html            飞轮首页
+css/style.css         全站浅色样式
+team-contract/        API-CONTRACT.md TEAM-RULES.md(红线)
+DEPLOY.md             部署+协作说明
+render.yaml           一键部署配置
+README.md             项目入口+Deploy按钮
 ```
 
-这套逻辑用来降低AI编造、夸大和“AI腔”。
+实验残渣(不在 main,只在 Jin-Ziyao):`SPRINT-HANDOFF.md`、`PROJECT-HANDOFF.md`、`HANDOFF-NEW-SESSION.md`、`task-prompts/`、`interview.html`/`chat.html`/`resume.html`/`lab.html`/`resume-builder.html`/`resume-editor/`/`frontend/`/`start-*.sh`。
 
-## 4. 已确定的五个后端接口
+---
 
-### 4.1 求职者：解析JD并提问
+## 7. 接手后第一件事该做什么
 
-```text
-POST /api/seeker/analyze
-```
+1. `git branch --show-current` 确认在 `Jin-Ziyao`
+2. 读 `AGENTS.md`、`team-contract/TEAM-RULES.md`、`DEPLOY.md`、本文件
+3. **不要急着改代码**。先问用户当前最急的是哪个:部署 / 路A路B验证 / 接真AI / 写文件夹说明
+4. 等用户指示再动
 
-输入：
+---
 
-- `jdText`：目标岗位JD，必填
-- `oldResume`：旧简历，可选
+## 8. 已知坑位(省得踩)
 
-输出：
+1. **本机代理截胡 127.0.0.1**:浏览器和 fetch 都用 `localhost`,别用 `127.0.0.1`
+2. **改了后端要重新 build**:改 `backend/src/*.ts` 后必须 `pnpm build` 再启动,否则跑的是旧 dist
+3. **mock 会从 JD 派生**:贴不同 JD 返回不同岗位画像(不是写死 SQL/Excel 了),但仍是规则派生不是真 AI
+4. **Render 免费版冷启动**:15 分钟休眠,演示前预热
+5. **main 是孤儿提交**:队友本地若有旧 main,pull 会报 non-fast-forward,让他们 `git fetch && git checkout main && git reset --hard origin/main`
+6. **并行改同一文件会撞**:多窗口改 `student-resume.html` 时,严格只改自己的区段,只 add 自己的文件
 
-- `jobProfile`：结构化岗位信息
-- `questions`：5—8个动态问题
+---
 
-### 4.2 求职者：回答整理为事实
+## 9. 给用户的交接话术(参考)
 
-```text
-POST /api/seeker/facts
-```
-
-输入：
-
-- `jobProfile`
-- AI问题和用户回答
-- 可选旧简历
-
-输出：
-
-- `facts`：待用户确认的事实卡片
-- `missingInformation`：仍缺少的重要信息
-
-每条事实必须保留用户原话 `sourceQuote`，初始状态必须是 `confirmed: false`。
-
-### 4.3 求职者：生成岗位定制简历
-
-```text
-POST /api/seeker/generate
-```
-
-输入：
-
-- `jobProfile`
-- `confirmedFacts`：用户确认后的事实
-
-输出：
-
-- `resume`：结构化一页简历
-- `missingInformation`
-- `interviewRisks`
-
-每条重要简历内容必须携带 `evidenceIds`，指向真实事实。没有事实ID支撑的内容不能进入最终简历。
-
-### 4.4 企业：解析模糊招聘需求
-
-```text
-POST /api/employer/analyze
-```
-
-输入：
-
-- `jobTitle`
-- `roughRequirement`
-
-输出：
-
-- 初步 `jobProfile`
-- 3—5个补充问题
-
-### 4.5 企业：生成招聘材料
-
-```text
-POST /api/employer/generate
-```
-
-输入：
-
-- 原始招聘需求
-- 初步 `jobProfile`
-- 企业补充回答
-
-输出：
-
-- 标准化JD
-- 岗位职责
-- 必须条件
-- 加分条件
-- 筛选维度，权重总和100
-- 固定5道面试题
-- 每道题的考察能力和优秀回答信号
-
-筛选标准只能与岗位工作相关，不能生成性别、年龄、婚育、籍贯、外貌等歧视性条件。
-
-更详细的数据结构草案见 `docs/MVP-WORKFLOW.md`。
-
-## 5. 用户现在的实际工作流
-
-用户已经把开发工作固定编号为 Task 0—9，详细操作手册见 0.4。执行顺序是：
-
-```text
-Task 0 公共骨架
-    ↓
-Task 1 可运行类型和Zod
-    ↓
-Task 2 五个稳定MOCK
-    ↓
-Task 3 LLM统一基础设施
-    ↓
-Task 4 → Task 5 → Task 6 求职者主闭环
-    ↓
-Task 7 → Task 8 企业端
-    ↓
-Task 9 稳定性和端到端测试
-```
-
-当前只完成了 Task 1 的文档契约，不能把它误认为 TypeScript/Zod 代码已经完成。
-
-但从协作角度，这七步应理解为：
-
-```text
-先和队友约定传什么数据
-        ↓
-做固定假接口，让前端队友立刻开工
-        ↓
-在不改变数据格式的情况下把假AI换成真AI
-        ↓
-完成一个接口就和对应队友联调
-        ↓
-三个人共同检查完整网站
-```
-
-## 6. 用户自己能做什么，什么会影响队友
-
-### 可以独立实现，不需要队友批准
-
-只要不改变已经约定的数据格式，以下内部工作可以直接在 `Jin-Ziyao` 完成：
-
-- Prompt内容和优化
-- 调用DeepSeek/GPT的内部代码
-- 超时时间
-- 结构解析和Zod校验
-- AI失败后重试一次
-- MOCK/live/fallback切换
-- 输入校验
-- 错误处理
-- 测试AI是否乱编
-- 后端单元测试和接口测试
-
-### 可以先写，但确定后必须告诉队友
-
-- TypeScript共享类型
-- 五个API地址
-- 每个API需要前端发送的字段
-- 每个API返回给前端的字段
-- 哪些字段必填
-- 问题数量
-- 错误响应格式
-- MOCK示例数据
-
-### 改动前必须先通知队友
-
-以下内容会直接让前端页面失效，不能静默修改：
-
-- API路径
-- 字段名称
-- 返回数据层级
-- 页面步骤数量
-- 事实确认机制
-- `evidenceIds`的使用方式
-- MOCK/live状态字段
-- 删除或替换某个接口
-- 公共项目目录结构和依赖
-
-最简单判断规则：
-
-> 只改变“AI内部怎么工作”，通常可以自己改；改变“前端发什么、后端返回什么”，必须告诉队友。
-
-## 7. 专业术语的人话解释
-
-用户明确表示看不懂专业术语。后续Codex必须继续使用这些通俗解释。
-
-### TypeScript
-
-一种更严格的JavaScript。这里最重要的作用是规定数据必须长什么样，避免后端叫 `text`、前端却读取 `questionName`。
-
-可以理解为：**全队统一使用的表格格式**。
-
-### 类型 / Type
-
-规定一份数据包含哪些栏目、每个栏目放什么。例如一道AI问题必须包含编号、问题文字、为什么问、是否必填。
-
-### API
-
-前端和后端交换数据的窗口。前端把JD交给某个API，后端通过这个API把问题返回给前端。
-
-可以理解为：**餐厅里传递订单和菜品的服务窗口**。
-
-### 请求和响应
-
-- 请求：前端交给后端的内容。
-- 响应：后端处理后返回给前端的内容。
-
-### MOCK
-
-真正AI还没完成时使用的固定假答案。格式必须和未来真AI完全相同，让前端队友不用等待后端。
-
-可以理解为：**先用模型菜练习上菜，后面再换成真正做出来的菜**。
-
-### LLM
-
-大语言模型，例如DeepSeek、GPT、通义千问。LLM调用层就是后端统一联系AI的工具。
-
-### Zod
-
-一个数据格式检查工具。AI返回结果后，Zod检查它有没有缺字段、字段类型是否正确、面试题是不是正好5道。
-
-可以理解为：**出菜前的质量检查员**。
-
-### 超时
-
-AI超过规定时间没有回答，后端停止等待并返回错误，防止页面永远转圈。
-
-### 重试
-
-AI第一次返回错误格式时，后端自动再请求一次。
-
-### mock / live / fallback
-
-- `mock`：使用固定假数据，不调用真实AI。
-- `live`：调用真实DeepSeek或GPT。
-- `fallback`：真实AI失败后临时返回演示假数据，并明确告诉页面当前是降级模式。
-
-### 联调
-
-前端页面和后端接口接到一起，共同检查按钮、数据和错误提示能不能正常工作。
-
-## 8. 新窗口接手后马上要做什么
-
-### 第一步：确认公共项目骨架归属
-
-当前目标仓库只有：
-
-- `README.md`
-- `AGENTS.md`
-- `docs/MVP-WORKFLOW.md`
-- `team-contract/README.md`
-- `team-contract/API-CONTRACT.md`
-- `team-contract/TEAM-RULES.md`
-- `task-prompts/README.md` 及 Task 1—9 完整提示词
-- 本交接文件
-
-还没有 `package.json`、`app/`、`lib/` 和可运行项目。
-
-因此，新窗口不能直接假设工程已经存在。先问用户一句：
-
-> 队友最终使用根目录静态页面还是 `frontend/` React 页面？现有 Vite + React + Express 骨架准备怎样同步给 Jin Ziyao 开发和最终集成？
-
-这是一个会影响队友的决定。不要未经确认就建立一套可能与队友冲突的项目。
-
-### 第二步：骨架明确以后，完成 Task 1 剩余代码和 Task 2
-
-第一批代码目标：
-
-1. 把 `team-contract/API-CONTRACT.md` 原样实现成共享 TypeScript 类型。
-2. 实现 Zod Schema 和交叉校验。
-3. 创建五个 API 路由。
-4. 所有路由先返回稳定 MOCK。
-5. 本地运行并逐个请求五个接口。
-6. 让两名前端队友按 `team-contract/` 开发，不再重新设计字段。
-
-这一批不要连接真实AI，不要先花大量时间调Prompt。目标是先让三个人能够并行。
-
-### 第三步：MOCK稳定后按 Task 3—9 连接真实AI
-
-推荐实现顺序：
-
-1. Task 3：LLM统一调用工具。
-2. Task 4：`/api/seeker/analyze`。
-3. Task 5：`/api/seeker/facts`。
-4. Task 6：`/api/seeker/generate`。
-5. Task 7：`/api/employer/analyze`。
-6. Task 8：`/api/employer/generate`。
-7. Task 9：稳定性和端到端测试。
-
-完成一个接口就和对应前端队友联调，不要等五个全部完成。
-
-## 9. 建议发给队友的信息模板
-
-### 发给求职者端队友
-
-```text
-我负责的求职者后端分三步：
-1. /api/seeker/analyze：JD → 岗位结构和5—8个问题
-2. /api/seeker/facts：用户回答 → 待确认事实卡片
-3. /api/seeker/generate：已确认事实 → 一页简历、来源和风险
-
-请先按MOCK数据开发页面。事实页面必须支持确认、修改和删除；生成简历时只能发送确认后的事实。接口字段如需调整我会先通知，不会静默修改。
-```
-
-### 发给企业端队友
-
-```text
-我负责的企业后端分两步：
-1. /api/employer/analyze：模糊招聘需求 → 初步岗位结构和3—5个问题
-2. /api/employer/generate：补充回答 → 标准JD、筛选维度和5道面试题
-
-企业端只做编辑和复制，不做候选人上传、评分和录用。请先按MOCK数据开发页面，接口字段变化我会提前通知。
-```
-
-## 10. AI与后端必须遵守的质量规则
-
-- AI不能虚构公司、项目、数字、奖项、技能和工作结果。
-- “参与”不能自动升级成“负责”。
-- “了解”不能自动升级成“熟练”或“精通”。
-- 用户没有确认的事实不能进入简历。
-- 每条重要简历内容必须能追溯到事实ID。
-- 缺少的能力要列为缺失信息，不能偷偷补进简历。
-- 企业筛选维度权重总和为100。
-- 企业面试题必须正好5道。
-- 不生成性别、年龄、婚育、籍贯、外貌等歧视性条件。
-- 不把AI筛选维度描述成自动录用决定。
-- 不在日志中打印用户完整简历和个人敏感信息。
-- 真AI失败不能让页面崩溃；应返回清晰错误或明确标记的fallback。
-
-## 11. 三天时间安排
-
-### Day 1：解除团队阻塞
-
-- 确认公共工程骨架归属。
-- 共享类型和五个 API 的文档契约已冻结并推送；骨架确定后落地 TypeScript/Zod。
-- 五个接口提供稳定MOCK。
-- 把接口示例发给队友。
-- 如有余力，开始LLM调用工具和求职者JD解析。
-
-验收：两名前端队友可以完全依靠MOCK开发，不需要等待AI完成。
-
-### Day 2：求职者主闭环
-
-- 完成JD解析和动态提问。
-- 完成回答转事实卡片。
-- 完成事实来源追踪。
-- 完成已确认事实生成简历。
-- 生成缺失信息和面试风险。
-
-验收：能走完“JD → 问题 → 事实确认 → 一页简历”。
-
-### Day 3：企业端和稳定性
-
-- 完成企业端两个接口。
-- 完成标准JD、筛选维度和5道面试题。
-- 测试空输入、AI编造、超时和错误JSON。
-- 测试mock/live切换。
-- 准备固定演示案例和备用演示方案。
-
-验收：两个入口都能走通，但求职者端明显更完整。
-
-## 12. 当前仓库和Git状态
-
-目标本地仓库：
-
-```text
-C:\Users\Lenovo\Adventure-x-hackathon
-```
-
-远程：
-
-```text
-https://github.com/Kunzyyy/Adventure-x-hackathon.git
-```
-
-现有远程分支名称区分大小写：
-
-- `main`
-- `Jin-Ziyao`
-- `Zheng-Xinyao`
-- `Chen-Pengyu`
-
-当前最新已推送提交：
-
-```text
-caa7fe4 docs: add shared team API contract
-```
-
-更新本交接文件前本地记录的远程指针核验结果：
-
-- `Jin-Ziyao`：`caa7fe41c042b0ceb97642ca1c2026fd6c80295b`
-- `main`：`39e823cf4eacc8ba13c3b7d7c0912c053972efc0`
-
-本次交接文件如果后续提交，以新的 `Jin-Ziyao` 提交为准。`main` 不应发生变化。
-
-安全推送方式：
-
-```powershell
-git branch --show-current
-# 必须严格输出 Jin-Ziyao
-
-git status --short --branch
-git add <本次明确修改的文件>
-git commit -m "..."
-git push origin HEAD:Jin-Ziyao
-```
-
-没有用户当前明确授权时：
-
-- 不运行 `git checkout main`
-- 不向 `main` 推送
-- 不创建合并到 `main` 的PR
-- 不修改或合并其他成员分支
-- 不使用破坏性Git命令
-
-## 13. 旧目录与当前仓库的区别
-
-### 当前正式目标
-
-```text
-C:\Users\Lenovo\Adventure-x-hackathon
-```
-
-所有新代码和提交只进入这里的 `Jin-Ziyao` 分支。
-
-### 旧原型，仅供参考
-
-```text
-D:\ai-job-assistant
-```
-
-旧原型的流程是：
-
-```text
-简历优化 → 投递到收件箱 → HR按JD排名
-```
-
-当前流程已经改成：
-
-```text
-求职者：JD → 动态提问 → 事实确认 → 定制简历
-企业：模糊需求 → 补充提问 → 标准JD和面试标准
-```
-
-不要把旧原型整体复制进当前仓库，不要继续开发旧的HR排名、投递和收件箱。可以参考其Next.js配置或LLM封装思路，但必须重新检查，不能假设旧代码正确。
-
-## 14. 尚未确定、不能擅自决定的事项
-
-- 最终演示使用根目录静态页面还是 `frontend/` React 页面。
-- `Zheng-Xinyao` 中已有的 Vite + React + Express 骨架怎样同步到共同开发基础或 `Jin-Ziyao`。
-- 最终使用DeepSeek、OpenAI还是其他模型。
-- 部署到Vercel还是其他平台。
-- PDF导出的最终技术方案。
-- 前端队友是否已经基于本工作流开始写页面。
-- 团队最终如何把个人分支内容集成到公共分支或 `main`。
-
-这些事项会影响团队协作。新Codex可以解释推荐方案，但在执行可能导致冲突的工程改动前，要先问用户或等待队友约定。
-
-## 15. 接管完成的判断标准
-
-新的Codex如果能够准确回答下面六个问题，就算完成接管：
-
-1. 当前为什么不做HR简历筛选？
-2. 求职者为什么必须经过事实确认层？
-3. 五个API分别负责什么？
-4. 哪些改动可以独立做，哪些必须通知队友？
-5. 为什么只能在 `Jin-Ziyao` 工作，下一步为什么要先确认公共工程骨架？
-6. Task 3、4、5 各自的依赖、基本逻辑和完成标准是什么？
-
-在没有新需求覆盖本文件前，下一项实际任务是：
-
-> 等待队友回答最终页面和骨架同步方式，完成 Task 0；然后按 `task-prompts/` 依次执行 Task 1—9。公共 `backend/` 未进入 `Jin-Ziyao` 前，不得开始 Task 1 写操作。
+> 我把后端做完了,前端也改成了能体现"双端同引擎 + 可溯源"的样子。main 上是干净交付版,带一键部署按钮。现在三件事等你定:① 要不要现在部署 Render 拿线上网址 ② 路A/路B 你本地验证一下通不通 ③ 要不要接真 AI。你说哪个,我就帮你弄哪个。
