@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Career AI Lab — 你的AI职业训练基地</title>
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.module.js" } }
+</script>
+<style>
+/* ============================================================
+   Career AI Lab — Apple Vision Pro Style Design System
+   ============================================================ */
+:root {
+  --bg: #F5F5F7;
+  --panel-bg: rgba(255,255,255,0.72);
+  --panel-border: rgba(255,255,255,0.6);
+  --text: #1D1D1F;
+  --text-secondary: #6E6E73;
+  --text-tertiary: #AEAEB2;
+  --accent: #5E5CE6;
+  --accent-light: rgba(94,92,230,0.12);
+  --accent-glow: rgba(94,92,230,0.18);
+  --blue: #007AFF;
+  --green: #34C759;
+  --orange: #FF9500;
+  --pink: #FF375F;
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 24px;
+  --shadow-glass: 0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06);
+  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 100%; height: 100%;
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+/* Ambient background glow */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: -1;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 40%, rgba(94,92,230,0.04) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 30% at 80% 20%, rgba(0,122,255,0.03) 0%, transparent 50%);
+}
+
+/* ===== APP SHELL ===== */
+.app {
+  display: grid;
+  grid-template-columns: 220px 1fr 240px;
+  height: 100vh;
+  width: 100vw;
+  gap: 0;
+}
+
+/* ===== LEFT SIDEBAR ===== */
+.sidebar {
+  background: var(--panel-bg);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  border-right: 1px solid rgba(0,0,0,0.06);
+  display: flex;
+  flex-direction: column;
+  padding: 28px 20px;
+  z-index: 10;
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 36px;
+  padding: 0 8px;
+}
+
+.sidebar-logo .logo-mark {
+  width: 32px; height: 32px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #5E5CE6, #8B8BFF);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 800; font-size: 14px;
+  box-shadow: 0 2px 8px rgba(94,92,230,0.3);
+}
+
+.sidebar-logo span { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
+
+.nav-group { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 13.5px; font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.22,1,0.36,1);
+  border: none; background: none;
+  font-family: var(--font);
+  text-align: left;
+  width: 100%;
+}
+
+.nav-item:hover { background: rgba(0,0,0,0.04); color: var(--text); }
+.nav-item.active { background: var(--accent-light); color: var(--accent); font-weight: 600; }
+
+.nav-icon {
+  width: 18px; height: 18px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 14px 12px;
+  background: rgba(94,92,230,0.06);
+  border-radius: 14px;
+}
+
+.sidebar-footer .label {
+  font-size: 10px; font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase; letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.sidebar-footer .name {
+  font-size: 14px; font-weight: 600;
+  background: linear-gradient(135deg, #5E5CE6, #8B8BFF);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.sidebar-footer .sub {
+  font-size: 11px; color: var(--text-tertiary);
+}
+
+/* ===== CENTER CANVAS ===== */
+.center-stage {
+  position: relative;
+  cursor: grab;
+  overflow: hidden;
+}
+
+.center-stage:active { cursor: grabbing; }
+
+#three-canvas { display: block; width: 100%; height: 100%; }
+
+/* Room label tooltips */
+.room-tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: rgba(255,255,255,0.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 12px;
+  padding: 8px 14px;
+  font-size: 13px; font-weight: 600;
+  color: var(--text);
+  box-shadow: var(--shadow-glass);
+  transform: translate(-50%, -120%);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  white-space: nowrap;
+  z-index: 20;
+}
+.room-tooltip.visible { opacity: 1; }
+
+/* ===== RIGHT PANEL ===== */
+.right-panel {
+  background: var(--panel-bg);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  border-left: 1px solid rgba(0,0,0,0.06);
+  display: flex;
+  flex-direction: column;
+  padding: 28px 20px;
+  gap: 16px;
+  z-index: 10;
+}
+
+.panel-header {
+  font-size: 12px; font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
+.metric-card {
+  background: rgba(255,255,255,0.55);
+  border: 1px solid rgba(0,0,0,0.05);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  transition: all 0.25s cubic-bezier(0.22,1,0.36,1);
+}
+.metric-card:hover {
+  background: rgba(255,255,255,0.82);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+.metric-label { font-size: 11px; color: var(--text-tertiary); margin-bottom: 6px; font-weight: 500; }
+.metric-value { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; color: var(--text); }
+
+.metric-value.confidence { color: var(--accent); }
+.metric-value.interviews { color: var(--blue); }
+.metric-value.resume-score { color: var(--green); }
+.metric-value.progress { color: var(--orange); }
+
+.metric-bar {
+  margin-top: 8px; height: 4px;
+  background: rgba(0,0,0,0.06); border-radius: 10px;
+  overflow: hidden;
+}
+.metric-bar-fill {
+  height: 100%; border-radius: 10px;
+  transition: width 1.2s cubic-bezier(0.22,1,0.36,1);
+}
+
+.bar-purple { background: var(--accent); }
+.bar-blue { background: var(--blue); }
+.bar-green { background: var(--green); }
+.bar-orange { background: var(--orange); }
+
+.agent-status {
+  margin-top: auto;
+  background: rgba(94,92,230,0.06);
+  border: 1px solid rgba(94,92,230,0.12);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex; align-items: center; gap: 12px;
+}
+
+.agent-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px rgba(52,199,89,0.5);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.4); }
+}
+
+.agent-status-text { font-size: 12px; color: var(--text-secondary); }
+.agent-status-text strong { color: var(--accent); }
+
+/* ===== BOTTOM HINT ===== */
+.stage-hint {
+  position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+  font-size: 11px; color: var(--text-tertiary);
+  display: flex; align-items: center; gap: 6px;
+  pointer-events: none;
+  z-index: 10;
+}
+.stage-hint svg { opacity: 0.4; }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1100px) {
+  .app { grid-template-columns: 200px 1fr 200px; }
+}
+@media (max-width: 860px) {
+  .app { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; }
+  .sidebar { flex-direction: row; flex-wrap: wrap; padding: 12px; }
+  .right-panel { flex-direction: row; flex-wrap: wrap; padding: 12px; }
+  .center-stage { min-height: 50vh; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ===== LEFT SIDEBAR ===== -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">C</div>
+      <span>Career AI</span>
+    </div>
+
+    <nav class="nav-group">
+      <button class="nav-item active" data-room="interview" onclick="focusRoom('interview')">
+        <span class="nav-icon">🎙️</span> AI面试训练
+      </button>
+      <button class="nav-item" data-room="resume" onclick="focusRoom('resume')">
+        <span class="nav-icon">📄</span> 简历优化
+      </button>
+      <button class="nav-item" data-room="job" onclick="focusRoom('job')">
+        <span class="nav-icon">🎯</span> 职位匹配
+      </button>
+      <button class="nav-item" data-room="career" onclick="focusRoom('career')">
+        <span class="nav-icon">🗺️</span> 职业规划
+      </button>
+      <button class="nav-item" data-room="mind" onclick="focusRoom('mind')">
+        <span class="nav-icon">🧘</span> 压力训练
+      </button>
+      <button class="nav-item" data-room="growth" onclick="focusRoom('growth')">
+        <span class="nav-icon">📈</span> 我的成长
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="label">AI COACH</div>
+      <div class="name">Career AI</div>
+      <div class="sub">你的专属求职教练</div>
+    </div>
+  </aside>
+
+  <!-- ===== CENTER 3D STAGE ===== -->
+  <div class="center-stage" id="centerStage">
+    <div id="three-canvas"></div>
+    <div class="room-tooltip" id="roomTooltip"></div>
+    <div class="stage-hint">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+      拖拽鼠标旋转视角
+    </div>
+  </div>
+
+  <!-- ===== RIGHT PANEL ===== -->
+  <aside class="right-panel">
+    <div class="panel-header">今日数据</div>
+
+    <div class="metric-card">
+      <div class="metric-label">自信指数</div>
+      <div class="metric-value confidence">78%</div>
+      <div class="metric-bar"><div class="metric-bar-fill bar-purple" style="width:78%"></div></div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-label">模拟面试</div>
+      <div class="metric-value interviews">12次</div>
+      <div class="metric-bar"><div class="metric-bar-fill bar-blue" style="width:60%"></div></div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-label">简历完成度</div>
+      <div class="metric-value resume-score">92%</div>
+      <div class="metric-bar"><div class="metric-bar-fill bar-green" style="width:92%"></div></div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-label">求职进度</div>
+      <div class="metric-value progress">45%</div>
+      <div class="metric-bar"><div class="metric-bar-fill bar-orange" style="width:45%"></div></div>
+    </div>
+
+    <div class="agent-status">
+      <div class="agent-dot"></div>
+      <div class="agent-status-text">
+        <strong>4个AI Agent</strong> 正在为你工作
+      </div>
+    </div>
+  </aside>
+
+</div>
+
+<!-- ===== SCRIPTS ===== -->
+<script type="module">
+import * as THREE from 'three';
+
+// ========== DOM Elements ==========
+const container = document.getElementById('three-canvas');
+const stage = document.getElementById('centerStage');
+const tooltip = document.getElementById('roomTooltip');
+
+// ========== Scene Setup ==========
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#F5F5F7');
+scene.fog = new THREE.Fog('#F5F5F7', 8, 30);
+
+// Isometric-ish camera
+const camera = new THREE.PerspectiveCamera(38, 2, 0.5, 40);
+camera.position.set(6, 5.5, 8);
+camera.lookAt(0, 0.3, 0);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
+container.appendChild(renderer.domElement);
+
+// ========== Lighting ==========
+scene.add(new THREE.AmbientLight('#ffffff', 1.8));
+
+const sun = new THREE.DirectionalLight('#ffffff', 2.5);
+sun.position.set(10, 14, 6);
+sun.castShadow = true;
+sun.shadow.mapSize.set(1024, 1024);
+sun.shadow.camera.near = 0.5; sun.shadow.camera.far = 50;
+sun.shadow.camera.left = -10; sun.shadow.camera.right = 10;
+sun.shadow.camera.top = 10; sun.shadow.camera.bottom = -10;
+sun.shadow.bias = -0.0003;
+scene.add(sun);
+
+const fill = new THREE.DirectionalLight('#aaccff', 0.6);
+fill.position.set(-4, 2, -2);
+scene.add(fill);
+
+// ========== Ground Platform ==========
+const platformGeo = new THREE.CylinderGeometry(4.5, 4.8, 0.2, 64);
+const platformMat = new THREE.MeshStandardMaterial({ color: '#f0f0f0', roughness: 0.35, metalness: 0.02 });
+const platform = new THREE.Mesh(platformGeo, platformMat);
+platform.position.y = -2; platform.receiveShadow = true; platform.castShadow = true;
+scene.add(platform);
+
+const platformTop = new THREE.Mesh(
+  new THREE.CylinderGeometry(4.5, 4.5, 0.05, 64),
+  new THREE.MeshStandardMaterial({ color: '#fafafa', roughness: 0.15, metalness: 0.05 })
+);
+platformTop.position.y = -1.875; platformTop.receiveShadow = true;
+scene.add(platformTop);
+
+// Grid lines on platform
+const gridHelper = new THREE.PolarGridHelper(4.4, 32, 20, 64, '#e0e0e0', '#e0e0e0');
+gridHelper.position.y = -1.86;
+scene.add(gridHelper);
+
+// ========== ROOM DEFINITIONS ==========
+// 4 rooms in a 2x2 grid at isometric positions
+const rooms = [
+  { id: 'interview', color: '#5E5CE6', x: -1.6, z: -1.6, label: '模拟面试 Agent', emoji: '🎙️' },
+  { id: 'resume',   color: '#007AFF', x:  1.6, z: -1.6, label: 'Resume Agent',      emoji: '📄' },
+  { id: 'mind',     color: '#FF9500', x: -1.6, z:  1.6, label: 'Mind Coach Agent',  emoji: '🧘' },
+  { id: 'career',   color: '#34C759', x:  1.6, z:  1.6, label: 'Career Agent',       emoji: '🗺️' },
+];
+
+const roomMeshes = [];
+const roomGroups = [];
+
+rooms.forEach((room) => {
+  const group = new THREE.Group();
+  group.position.set(room.x, -1.65, room.z);
+  group.userData = { id: room.id, label: room.label, color: room.color };
+
+  // Glass floor
+  const floor = new THREE.Mesh(
+    new THREE.BoxGeometry(2.6, 0.06, 2.6),
+    new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.2, metalness: 0.05, transparent: true, opacity: 0.85 })
+  );
+  floor.position.y = 0.03; floor.receiveShadow = true; floor.castShadow = true;
+  floor.name = 'floor';
+  group.add(floor);
+
+  // Glass walls (4 sides + top rim)
+  const wallGeo = new THREE.BoxGeometry(2.55, 0.9, 0.06);
+  const wallMat = new THREE.MeshStandardMaterial({
+    color: room.color, roughness: 0.05, metalness: 0.03,
+    transparent: true, opacity: 0.3, emissive: room.color, emissiveIntensity: 0.1
+  });
+
+  const walls = [
+    { pos: [0, 0.48, -1.27] },
+    { pos: [0, 0.48, 1.27] },
+    { pos: [-1.27, 0.48, 0], rot: Math.PI / 2 },
+    { pos: [1.27, 0.48, 0], rot: Math.PI / 2 },
+  ];
+
+  walls.forEach(w => {
+    const wall = new THREE.Mesh(wallGeo, wallMat);
+    wall.position.set(...w.pos);
+    if (w.rot) wall.rotation.y = w.rot;
+    wall.castShadow = true; wall.receiveShadow = true;
+    wall.name = 'wall';
+    group.add(wall);
+  });
+
+  // Top rim
+  const rimGeo = new THREE.TorusGeometry(1.2, 1.275, 0.03, 4, 4);
+  // Actually, let's use 4 thin box edges for the top rim
+  const rimH = 0.04;
+  const rimW = 0.05;
+  const edgeLen = 2.55;
+
+  const rimMat = new THREE.MeshStandardMaterial({
+    color: room.color, roughness: 0.1, metalness: 0.2,
+    emissive: room.color, emissiveIntensity: 0.25,
+  });
+
+  const topY = 0.93;
+  const rimPieces = [
+    { pos: [0, topY, -1.275], size: [edgeLen, rimH, rimW] },
+    { pos: [0, topY, 1.275], size: [edgeLen, rimH, rimW] },
+    { pos: [-1.275, topY, 0], size: [rimW, rimH, edgeLen] },
+    { pos: [1.275, topY, 0], size: [rimW, rimH, edgeLen] },
+  ];
+
+  rimPieces.forEach(r => {
+    const piece = new THREE.Mesh(new THREE.BoxGeometry(...r.size), rimMat);
+    piece.position.set(...r.pos);
+    piece.name = 'rim';
+    group.add(piece);
+  });
+
+  // Room label floating above
+  const labelGroup = new THREE.Group();
+  labelGroup.position.y = 1.3;
+  group.add(labelGroup);
+
+  roomMeshes.push(group);
+  roomGroups.push({ group, data: room });
+  scene.add(group);
+});
+
+// ========== FURNITURE & CHARACTERS PER ROOM ==========
+
+// --- Helper: Create cute character ---
+function createCharacter(bodyColor, headColor, height = 0.45) {
+  const char = new THREE.Group();
+
+  // Body (rounded capsule-like)
+  const body = new THREE.Mesh(
+    new THREE.CapsuleGeometry(0.1, 0.22, 8, 16),
+    new THREE.MeshStandardMaterial({ color: bodyColor, roughness: 0.5, metalness: 0.02 })
+  );
+  body.position.y = 0.18;
+  body.castShadow = true;
+  char.add(body);
+
+  // Head (big round - Pixar style)
+  const head = new THREE.Mesh(
+    new THREE.SphereGeometry(0.13, 32, 32),
+    new THREE.MeshStandardMaterial({ color: headColor, roughness: 0.6, metalness: 0.02 })
+  );
+  head.position.y = 0.38;
+  head.castShadow = true;
+  char.add(head);
+
+  // Eyes
+  const eyeGeo = new THREE.SphereGeometry(0.025, 16, 16);
+  const eyeMat = new THREE.MeshStandardMaterial({ color: '#111111', roughness: 0.1 });
+
+  const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
+  leftEye.position.set(-0.05, 0.42, 0.1);
+  char.add(leftEye);
+
+  const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
+  rightEye.position.set(0.05, 0.42, 0.1);
+  char.add(rightEye);
+
+  // Smile
+  const smileGeo = new THREE.TorusGeometry(0.03, 0.006, 8, 8, Math.PI);
+  const smile = new THREE.Mesh(smileGeo, new THREE.MeshStandardMaterial({ color: '#333333', roughness: 0.3 }));
+  smile.position.set(0, 0.38, 0.1);
+  smile.rotation.z = Math.PI;
+  char.add(smile);
+
+  // Little feet
+  const footGeo = new THREE.SphereGeometry(0.04, 12, 12);
+  const footMat = new THREE.MeshStandardMaterial({ color: '#333333', roughness: 0.4 });
+  const lFoot = new THREE.Mesh(footGeo, footMat);
+  lFoot.position.set(-0.05, 0.04, 0.02);
+  char.add(lFoot);
+  const rFoot = new THREE.Mesh(footGeo, footMat);
+  rFoot.position.set(0.05, 0.04, 0.02);
+  char.add(rFoot);
+
+  return char;
+}
+
+// --- Room 0: AI Interview Room ---
+{
+  const room = roomGroups[0].group;
+
+  // Desk
+  const desk = new THREE.Mesh(
+    new THREE.BoxGeometry(0.8, 0.06, 0.5),
+    new THREE.MeshStandardMaterial({ color: '#e8e8e8', roughness: 0.3, metalness: 0.05 })
+  );
+  desk.position.set(0, 0.3, -0.3);
+  desk.castShadow = true; desk.receiveShadow = true;
+  room.add(desk);
+
+  // Desk legs
+  ['fl','fr','bl','br'].forEach(c => {
+    const sx = c[0] === 'f' ? -1 : 1;
+    const sz = c[1] === 'l' ? 1 : -1;
+    const leg = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.03, 0.03, 0.3, 8),
+      new THREE.MeshStandardMaterial({ color: '#d0d0d0', roughness: 0.3, metalness: 0.1 })
+    );
+    leg.position.set(-0.35 * sx, 0.15, -0.3 + 0.2 * sz);
+    leg.castShadow = true;
+    room.add(leg);
+  });
+
+  // AI Interviewer character (purple-ish body)
+  const aiInterviewer = createCharacter('#5E5CE6', '#C4B5FD', 0.45);
+  aiInterviewer.position.set(-0.15, 0.36, -0.55);
+  aiInterviewer.rotation.y = Math.PI * 0.75;
+  room.add(aiInterviewer);
+
+  // Student character
+  const student = createCharacter('#FF9500', '#FED7AA', 0.42);
+  student.position.set(0.2, 0.36, -0.15);
+  student.rotation.y = -Math.PI * 0.25;
+  room.add(student);
+
+  // Camera prop
+  const cameraBody = new THREE.Mesh(
+    new THREE.BoxGeometry(0.08, 0.06, 0.04),
+    new THREE.MeshStandardMaterial({ color: '#333333', roughness: 0.2, metalness: 0.4 })
+  );
+  cameraBody.position.set(0, 0.5, -0.5);
+  room.add(cameraBody);
+  const camLens = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.02, 0.025, 0.05, 12),
+    new THREE.MeshStandardMaterial({ color: '#111111', roughness: 0.1, metalness: 0.6 })
+  );
+  camLens.position.set(0, 0.5, -0.54);
+  camLens.rotation.x = Math.PI / 2;
+  room.add(camLens);
+
+  // Mic on desk
+  const micStem = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.01, 0.01, 0.08, 8),
+    new THREE.MeshStandardMaterial({ color: '#666', roughness: 0.3, metalness: 0.5 })
+  );
+  micStem.position.set(0.25, 0.38, -0.35);
+  room.add(micStem);
+  const micHead = new THREE.Mesh(
+    new THREE.SphereGeometry(0.025, 16, 16),
+    new THREE.MeshStandardMaterial({ color: '#333', roughness: 0.2, metalness: 0.5 })
+  );
+  micHead.position.set(0.25, 0.43, -0.35);
+  room.add(micHead);
+}
+
+// --- Room 1: Resume Lab ---
+{
+  const room = roomGroups[1].group;
+
+  // Screen/desk
+  const desk = new THREE.Mesh(
+    new THREE.BoxGeometry(0.7, 0.05, 0.45),
+    new THREE.MeshStandardMaterial({ color: '#e8e8e8', roughness: 0.3, metalness: 0.05 })
+  );
+  desk.position.set(0, 0.2, -0.2);
+  desk.castShadow = true; desk.receiveShadow = true;
+  room.add(desk);
+
+  // Screen
+  const screen = new THREE.Mesh(
+    new THREE.BoxGeometry(0.5, 0.3, 0.03),
+    new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.1, emissive: '#007AFF', emissiveIntensity: 0.15 })
+  );
+  screen.position.set(0, 0.42, -0.3);
+  room.add(screen);
+
+  // Screen stand
+  const stand = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.02, 0.04, 0.15, 8),
+    new THREE.MeshStandardMaterial({ color: '#d0d0d0', roughness: 0.3, metalness: 0.3 })
+  );
+  stand.position.set(0, 0.18, -0.3);
+  room.add(stand);
+
+  // Floating resume papers
+  for (let i = 0; i < 3; i++) {
+    const paper = new THREE.Mesh(
+      new THREE.BoxGeometry(0.2, 0.003, 0.14),
+      new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.3, emissive: '#eef', emissiveIntensity: 0.1 })
+    );
+    paper.position.set(-0.5 + i * 0.45, 0.5 + i * 0.15, 0.1);
+    paper.rotation.set(Math.random() * 0.3, Math.random() * 0.4, Math.random() * 0.2);
+    paper.userData = {
+      floatOffset: Math.random() * Math.PI * 2,
+      floatSpeed: 0.3 + Math.random() * 0.4,
+      baseY: 0.5 + i * 0.15,
+    };
+    paper.name = 'floating';
+    room.add(paper);
+  }
+
+  // AI character at desk
+  const aiChar = createCharacter('#007AFF', '#BFDBFE', 0.42);
+  aiChar.position.set(0.1, 0.28, -0.1);
+  aiChar.rotation.y = -0.3;
+  room.add(aiChar);
+}
+
+// --- Room 2: Mind Coach Area ---
+{
+  const room = roomGroups[2].group;
+
+  // Sofa
+  const sofaBase = new THREE.Mesh(
+    new THREE.BoxGeometry(0.7, 0.1, 0.35),
+    new THREE.MeshStandardMaterial({ color: '#FFF5E6', roughness: 0.6, metalness: 0.02 })
+  );
+  sofaBase.position.set(0, 0.15, 0.1);
+  sofaBase.castShadow = true; sofaBase.receiveShadow = true;
+  room.add(sofaBase);
+
+  // Sofa back
+  const sofaBack = new THREE.Mesh(
+    new THREE.BoxGeometry(0.7, 0.25, 0.08),
+    new THREE.MeshStandardMaterial({ color: '#FFE4CC', roughness: 0.6, metalness: 0.02 })
+  );
+  sofaBack.position.set(0, 0.3, 0.25);
+  sofaBack.castShadow = true;
+  room.add(sofaBack);
+
+  // Plant
+  const pot = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.06, 0.05, 0.1, 12),
+    new THREE.MeshStandardMaterial({ color: '#D4A574', roughness: 0.5 })
+  );
+  pot.position.set(0.5, 0.15, 0.4);
+  pot.castShadow = true;
+  room.add(pot);
+
+  const leaves = new THREE.Mesh(
+    new THREE.SphereGeometry(0.1, 12, 8),
+    new THREE.MeshStandardMaterial({ color: '#34C759', roughness: 0.5 })
+  );
+  leaves.position.set(0.5, 0.25, 0.4);
+  leaves.castShadow = true;
+  room.add(leaves);
+
+  // Warm light (small emissive sphere)
+  const warmLight = new THREE.Mesh(
+    new THREE.SphereGeometry(0.04, 16, 16),
+    new THREE.MeshStandardMaterial({ color: '#FFEDD5', roughness: 0.05, emissive: '#FF9500', emissiveIntensity: 0.6 })
+  );
+  warmLight.position.set(0.4, 0.6, -0.5);
+  room.add(warmLight);
+
+  // Coach character
+  const coach = createCharacter('#34C759', '#BBF7D0', 0.44);
+  coach.position.set(-0.2, 0.22, -0.1);
+  coach.rotation.y = 0.5;
+  room.add(coach);
+
+  // Student on sofa
+  const studentSofa = createCharacter('#FF9500', '#FED7AA', 0.4);
+  studentSofa.position.set(0.1, 0.22, 0.2);
+  studentSofa.rotation.y = -1.2;
+  room.add(studentSofa);
+}
+
+// --- Room 3: Career Center ---
+{
+  const room = roomGroups[3].group;
+
+  // Console desk
+  const consoleDesk = new THREE.Mesh(
+    new THREE.BoxGeometry(0.9, 0.05, 0.5),
+    new THREE.MeshStandardMaterial({ color: '#f0f0f0', roughness: 0.25, metalness: 0.08 })
+  );
+  consoleDesk.position.set(0, 0.25, -0.15);
+  consoleDesk.castShadow = true; consoleDesk.receiveShadow = true;
+  room.add(consoleDesk);
+
+  // Screens (3 small panels)
+  for (let i = 0; i < 3; i++) {
+    const panel = new THREE.Mesh(
+      new THREE.BoxGeometry(0.2, 0.15, 0.02),
+      new THREE.MeshStandardMaterial({
+        color: '#ffffff', roughness: 0.1,
+        emissive: i === 0 ? '#34C759' : i === 1 ? '#007AFF' : '#FF9500',
+        emissiveIntensity: 0.12,
+      })
+    );
+    panel.position.set(-0.25 + i * 0.25, 0.4, -0.3);
+    panel.name = 'screen';
+    room.add(panel);
+  }
+
+  // Chart bars on central screen area
+  for (let j = 0; j < 4; j++) {
+    const bar = new THREE.Mesh(
+      new THREE.BoxGeometry(0.03, 0.05 + Math.random() * 0.08, 0.015),
+      new THREE.MeshStandardMaterial({ color: '#34C759', roughness: 0.2, emissive: '#34C759', emissiveIntensity: 0.2 })
+    );
+    bar.position.set(-0.05 + j * 0.05, 0.38, -0.29);
+    room.add(bar);
+  }
+
+  // Career character (HR / analyst)
+  const analyst = createCharacter('#34C759', '#BBF7D0', 0.43);
+  analyst.position.set(0.15, 0.3, -0.05);
+  analyst.rotation.y = -0.6;
+  room.add(analyst);
+
+  // Student observing
+  const studentCareer = createCharacter('#5E5CE6', '#C4B5FD', 0.4);
+  studentCareer.position.set(-0.3, 0.3, 0.1);
+  studentCareer.rotation.y = 0.8;
+  room.add(studentCareer);
+}
+
+// ========== Floating particles around the whole scene ==========
+const particlesGroup = new THREE.Group();
+scene.add(particlesGroup);
+
+for (let i = 0; i < 40; i++) {
+  const dot = new THREE.Mesh(
+    new THREE.SphereGeometry(0.015, 8, 8),
+    new THREE.MeshStandardMaterial({ color: '#5E5CE6', roughness: 0.1, emissive: '#5E5CE6', emissiveIntensity: 0.3 })
+  );
+  const angle = Math.random() * Math.PI * 2;
+  const r = 3.5 + Math.random() * 2;
+  dot.position.set(
+    Math.cos(angle) * r,
+    -0.5 + Math.random() * 3,
+    Math.sin(angle) * r
+  );
+  dot.userData = {
+    baseY: dot.position.y,
+    speed: 0.2 + Math.random() * 0.5,
+    amp: 0.1 + Math.random() * 0.3,
+    offset: Math.random() * Math.PI * 2,
+  };
+  particlesGroup.add(dot);
+}
+
+// ========== Room Hover Detection via Raycaster ==========
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+const roomHitTargets = [];
+roomGroups.forEach(r => {
+  r.group.traverse(c => {
+    if (c.isMesh && (c.name === 'floor' || c.name === 'wall' || c.name === 'rim')) {
+      roomHitTargets.push({ mesh: c, group: r.group, data: r.data });
+    }
+  });
+});
+
+stage.addEventListener('mousemove', (e) => {
+  const rect = stage.getBoundingClientRect();
+  mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+  // Raycast for room hovering
+  raycaster.setFromCamera(mouse, camera);
+  const intersects = raycaster.intersectObjects(roomHitTargets.map(t => t.mesh));
+
+  // Reset all rooms
+  roomGroups.forEach(r => {
+    r.group.traverse(c => {
+      if (c.isMesh && c.material.opacity !== undefined) {
+        if (c.material.emissiveIntensity !== undefined) {
+          c.material.emissiveIntensity *= 0.98;
+        }
+      }
+    });
+  });
+
+  if (intersects.length > 0) {
+    const hit = roomHitTargets.find(t => t.mesh === intersects[0].object);
+    if (hit) {
+      // Highlight room
+      hit.group.traverse(c => {
+        if (c.isMesh && c.material.emissiveIntensity !== undefined && c.name !== 'floating') {
+          c.material.emissiveIntensity = Math.min(0.35, c.material.emissiveIntensity + 0.02);
+        }
+      });
+
+      // Show tooltip
+      tooltip.textContent = hit.data.emoji + ' ' + hit.data.label;
+      tooltip.classList.add('visible');
+      tooltip.style.left = e.clientX - stage.getBoundingClientRect().left + 'px';
+      tooltip.style.top = e.clientY - stage.getBoundingClientRect().top + 'px';
+    }
+  } else {
+    tooltip.classList.remove('visible');
+  }
+});
+
+// ========== Mouse Drag Camera Orbit ==========
+let isDragging = false;
+let prevMouse = { x: 0, y: 0 };
+let orbitAngle = 0;
+let orbitElevation = 0.55;
+let targetAngle = 0;
+let targetElevation = 0.55;
+
+stage.addEventListener('mousedown', (e) => {
+  isDragging = true;
+  prevMouse.x = e.clientX;
+  prevMouse.y = e.clientY;
+});
+
+window.addEventListener('mouseup', () => { isDragging = false; });
+
+window.addEventListener('mousemove', (e) => {
+  if (!isDragging) return;
+  const dx = e.clientX - prevMouse.x;
+  const dy = e.clientY - prevMouse.y;
+  targetAngle -= dx * 0.005;
+  targetElevation += dy * 0.003;
+  targetElevation = Math.max(0.2, Math.min(0.9, targetElevation));
+  prevMouse.x = e.clientX;
+  prevMouse.y = e.clientY;
+});
+
+// Touch support
+stage.addEventListener('touchstart', (e) => {
+  if (e.touches.length === 1) {
+    isDragging = true;
+    prevMouse.x = e.touches[0].clientX;
+    prevMouse.y = e.touches[0].clientY;
+  }
+});
+
+window.addEventListener('touchend', () => { isDragging = false; });
+
+window.addEventListener('touchmove', (e) => {
+  if (!isDragging || e.touches.length !== 1) return;
+  const dx = e.touches[0].clientX - prevMouse.x;
+  const dy = e.touches[0].clientY - prevMouse.y;
+  targetAngle -= dx * 0.005;
+  targetElevation += dy * 0.003;
+  targetElevation = Math.max(0.2, Math.min(0.9, targetElevation));
+  prevMouse.x = e.touches[0].clientX;
+  prevMouse.y = e.touches[0].clientY;
+});
+
+// ========== Nav Click: Focus Room ==========
+window.focusRoom = function(roomId) {
+  const navItems = document.querySelectorAll('.nav-item');
+  navItems.forEach(n => n.classList.remove('active'));
+  const clicked = document.querySelector(`[data-room="${roomId}"]`);
+  if (clicked) clicked.classList.add('active');
+
+  const room = roomGroups.find(r => r.data.id === roomId);
+  if (room) {
+    targetAngle = Math.atan2(room.group.position.x, room.group.position.z);
+    targetElevation = 0.35;
+  }
+};
+
+// ========== Resize ==========
+function resize() {
+  const w = stage.clientWidth;
+  const h = stage.clientHeight;
+  renderer.setSize(w, h);
+  camera.aspect = w / Math.max(h, 1);
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ========== Animation Loop ==========
+const clock = new THREE.Clock();
+
+function animate() {
+  requestAnimationFrame(animate);
+
+  const dt = Math.min(clock.getDelta(), 0.1);
+  const t = performance.now() * 0.001;
+
+  // Smooth orbit
+  orbitAngle += (targetAngle - orbitAngle) * 3 * dt;
+  orbitElevation += (targetElevation - orbitElevation) * 3 * dt;
+
+  const dist = 9;
+  const cx = Math.sin(orbitAngle) * Math.cos(orbitElevation) * dist;
+  const cy = Math.sin(orbitElevation) * dist;
+  const cz = Math.cos(orbitAngle) * Math.cos(orbitElevation) * dist;
+
+  camera.position.x += (cx - camera.position.x) * 3 * dt;
+  camera.position.y += (cy - camera.position.y) * 3 * dt;
+  camera.position.z += (cz - camera.position.z) * 3 * dt;
+  camera.lookAt(0, -0.3, 0);
+
+  // Animate floating papers
+  roomGroups.forEach(r => {
+    r.group.traverse(c => {
+      if (c.name === 'floating' && c.userData.floatOffset !== undefined) {
+        const u = c.userData;
+        c.position.y = u.baseY + Math.sin(t * u.floatSpeed + u.floatOffset) * 0.08;
+      }
+    });
+  });
+
+  // Animate particles
+  particlesGroup.children.forEach(p => {
+    const u = p.userData;
+    p.position.y = u.baseY + Math.sin(t * u.speed + u.offset) * u.amp;
+  });
+  particlesGroup.rotation.y += 0.05 * dt;
+
+  renderer.render(scene, camera);
+}
+
+animate();
+
+console.log('🚀 Career AI Lab — 3D Career Training Space ready');
+</script>
+</body>
+</html>

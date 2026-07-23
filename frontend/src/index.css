@@ -1,0 +1,246 @@
+@import "tailwindcss";
+
+/* ─── Apple-Style Design System ───────────────────────────── */
+
+:root {
+  --apple-bg: #000000;
+  --apple-surface: #1c1c1e;
+  --apple-card: #2c2c2e;
+  --apple-text: #f5f5f7;
+  --apple-text-secondary: #a1a1a6;
+  --apple-accent: #0071e3;
+  --apple-accent-glow: #2997ff;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
+    "SF Pro Text", "Helvetica Neue", sans-serif;
+  background: var(--apple-bg);
+  color: var(--apple-text);
+  line-height: 1.5;
+}
+
+/* ─── Typography ─────────────────────────────────────────── */
+
+h1 {
+  font-size: clamp(3rem, 8vw, 6rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  margin: 0 0 0.25em;
+}
+
+h2 {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  margin: 0 0 0.25em;
+}
+
+h3 {
+  font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  margin: 0 0 0.25em;
+}
+
+p {
+  margin: 0 0 0.5em;
+}
+
+/* ─── Scroll Animations ──────────────────────────────────── */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.reveal-stagger > * {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal-stagger.visible > *:nth-child(1) { transition-delay: 0ms; opacity: 1; transform: translateY(0); }
+.reveal-stagger.visible > *:nth-child(2) { transition-delay: 100ms; opacity: 1; transform: translateY(0); }
+.reveal-stagger.visible > *:nth-child(3) { transition-delay: 200ms; opacity: 1; transform: translateY(0); }
+
+/* ─── Card Hover Effects ─────────────────────────────────── */
+
+.card-apple {
+  background: var(--apple-card);
+  border-radius: 20px;
+  padding: 2rem;
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(20px);
+  position: relative;
+  z-index: 1;
+}
+
+.card-apple:hover {
+  transform: scale(1.02);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  z-index: 2;
+}
+
+/* ─── Button Styles ──────────────────────────────────────── */
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 32px;
+  border-radius: 980px;
+  background: var(--apple-accent);
+  color: white;
+  font-size: 17px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn-primary:hover {
+  background: var(--apple-accent-glow);
+  transform: scale(1.04);
+  box-shadow: 0 8px 30px rgba(0, 113, 227, 0.4);
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 32px;
+  border-radius: 980px;
+  background: transparent;
+  color: var(--apple-accent);
+  font-size: 17px;
+  font-weight: 500;
+  border: 1.5px solid var(--apple-accent);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn-secondary:hover {
+  background: rgba(0, 113, 227, 0.1);
+  transform: scale(1.04);
+}
+
+/* ─── Typing Animation ───────────────────────────────────── */
+
+.typing-cursor::after {
+  content: "|";
+  animation: blink 1s step-end infinite;
+  color: var(--apple-accent-glow);
+  font-weight: 300;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* ─── Gradient Backgrounds ───────────────────────────────── */
+
+.bg-hero {
+  background: radial-gradient(
+    ellipse 80% 60% at 50% 30%,
+    #1a1a3e 0%,
+    #0a0a0a 60%,
+    #000000 100%
+  );
+}
+
+.bg-glow {
+  background: radial-gradient(
+    circle at center,
+    rgba(0, 113, 227, 0.15) 0%,
+    transparent 70%
+  );
+}
+
+/* ─── Glass Effect ───────────────────────────────────────── */
+
+.glass {
+  background: rgba(28, 28, 30, 0.7);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ─── Scrollbar ──────────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* ─── Selection ──────────────────────────────────────────── */
+
+::selection {
+  background: rgba(0, 113, 227, 0.4);
+  color: white;
+}
+
+/* ─── Gradient Text Fix ──────────────────────────────────── */
+
+.bg-clip-text {
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+/* ─── Courier 3D Page ──────────────────────────────────── */
+
+.courier-3d-root {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+/* Glass panel scrollbar */
+.glass::-webkit-scrollbar {
+  width: 3px;
+}
+.glass::-webkit-scrollbar-track {
+  background: transparent;
+}
+.glass::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
