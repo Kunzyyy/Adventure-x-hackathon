@@ -1,7 +1,8 @@
-// test/fixtures.ts
+// test-fixtures.ts
 // Canonical examples lifted from team-contract/API-CONTRACT.md, used both as
 // the seed data for MOCK responses (Task 2) and as the "legal examples must
-// pass" suite for the contract tests (Task 1).
+// pass" suite for the contract tests (Task 1). Lives under src/ so both
+// runtime mocks and tests can import it without crossing rootDir.
 
 import type {
   CandidateFact,

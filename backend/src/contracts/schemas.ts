@@ -229,6 +229,17 @@ export const SeekerFactsRequestSchema = z
   .superRefine((val, ctx) => {
     refineQuestionList(val.questions, ctx, "questions", 5, 8);
     refineAnswers(val.questions, val.answers, ctx, "answers");
+  })
+  .superRefine((val, ctx) => {
+    // Defensive: if the *request itself* somehow reaches an illegal state even
+    // after request validation, surface INVALID_INPUT for empty answers.
+    if (val.answers.length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "answers 不能为空",
+        path: ["answers"],
+      });
+    }
   });
 
 export const SeekerGenerateRequestSchema = z

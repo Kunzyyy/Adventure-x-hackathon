@@ -9,6 +9,9 @@ import { interviewRouter } from "./routes/interview.js";
 import { authRouter } from "./routes/auth.js";
 import { configRouter } from "./routes/config.js";
 import { chatRouter } from "./routes/chat.js";
+import { seekerRouter } from "./routes/seeker.js";
+import { employerRouter } from "./routes/employer.js";
+import { initLlm } from "./llm/index.js";
 
 dotenv.config();
 
@@ -30,6 +33,9 @@ app.use("/api/interview", interviewRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/config", configRouter);
 app.use("/api/chat", chatRouter);
+// New contract-driven MVP routes (Tasks 2-8)
+app.use("/api/seeker", seekerRouter);
+app.use("/api/employer", employerRouter);
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
@@ -91,3 +97,6 @@ app.listen(PORT, () => {
   // eslint-disable-next-line no-console
   console.log("   MVP pages: http://localhost:" + PORT + "/  /student.html  /enterprise.html");
 });
+
+// Initialize the LLM client config (logs safe mode/provider info only).
+initLlm();

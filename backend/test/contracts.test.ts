@@ -29,7 +29,7 @@ import {
   EMPLOYER_JOB_PROFILE,
   EMPLOYER_QUESTIONS,
   EMPLOYER_ANSWERS,
-} from "./fixtures.js";
+} from "../src/test-fixtures.js";
 
 const seekerAnalyzeReq = { jdText: "招聘数据分析实习生..." };
 const seekerFactsReq = {
