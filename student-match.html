@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>岗位对齐图 · Keal 学生端</title>
+<!--
+  窗口2 产物:岗位对齐图(student-match.html)
+  只做"对齐",不做"打分"。把岗位要的 vs 你有的,左右摆开,红黄绿标证据状态。
+  内联样式起步,不动 css/style.css(那是窗口4的活)。
+  视觉基线见 SPRINT-HANDOFF.md 0.5 节:浅色、克制、信息密度高。
+
+  数据来源(诚实):
+  - mustHaves:优先调真接口 /api/seeker/analyze;连不上后端时用写死的演示样例。
+  - facts:本页独立访问时没有真实 facts(那要走窗口1的完整流程),先用演示样例。
+    串接窗口1后,这里会换成你真实的经历。页面会老实标出来。
+-->
+<style>
+  /* ===== 基线变量(浅色克制风) ===== */
+  :root{
+    --bg:#FAFAFA;
+    --bg-card:#FFFFFF;
+    --border:#E5E7EB;
+    --border-strong:#D1D5DB;
+    --text:#1A1A1A;
+    --text-sub:#6B7280;
+    --text-faint:#9CA3AF;
+    --accent:#2563EB;        /* 全站唯一强调色:静蓝 */
+    --accent-soft:#EFF4FF;
+    --ok:#16A34A;            /* 已确认:绿 */
+    --weak:#DC2626;          /* 证据弱:红 */
+    --missing:#F59E0B;       /* 缺失:黄 */
+    --ok-soft:#F0FDF4;
+    --weak-soft:#FEF2F2;
+    --missing-soft:#FFFBEB;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{background:var(--bg);}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    color:var(--text);
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    padding:32px 20px 80px;
+  }
+  .wrap{max-width:920px;margin:0 auto;}
+
+  /* ===== 顶部标题区 ===== */
+  .topbar{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:8px;flex-wrap:wrap;}
+  .topbar h1{font-size:22px;font-weight:700;letter-spacing:-.2px;}
+  .topbar .sub{color:var(--text-sub);font-size:13px;margin-top:2px;}
+  .mode-badge{
+    font-size:12px;font-weight:600;padding:4px 12px;border-radius:999px;
+    display:inline-flex;align-items:center;gap:6px;white-space:nowrap;
+  }
+  .mode-mock{background:var(--missing-soft);color:var(--missing);border:1px solid #FCD34D;}
+  .mode-live{background:var(--ok-soft);color:var(--ok);border:1px solid #86EFAC;}
+  .mode-fallback{background:var(--weak-soft);color:var(--weak);border:1px solid #FCA5A5;}
+
+  /* ===== 诚实说明条 ===== */
+  .honest-note{
+    background:var(--accent-soft);border:1px solid #DBE7FE;border-radius:8px;
+    padding:12px 16px;font-size:13px;color:#1E40AF;margin:20px 0 24px;
+  }
+  .honest-note b{font-weight:600;}
+
+  /* ===== 卡片 ===== */
+  .card{
+    background:var(--bg-card);border:1px solid var(--border);border-radius:8px;
+    padding:24px;margin-bottom:20px;
+  }
+  .card h2{font-size:16px;font-weight:600;margin-bottom:4px;}
+  .card .hint{font-size:13px;color:var(--text-sub);margin-bottom:16px;}
+
+  /* ===== 输入 ===== */
+  label.field{display:block;font-size:13px;font-weight:600;margin-bottom:6px;}
+  textarea{
+    width:100%;border:1px solid var(--border-strong);border-radius:6px;
+    padding:12px 14px;font-size:14px;font-family:inherit;color:var(--text);
+    background:#fff;outline:none;resize:vertical;transition:border-color .15s;
+  }
+  textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.12);}
+  textarea{min-height:120px;}
+  .field-block{margin-bottom:16px;}
+
+  /* ===== 按钮 ===== */
+  .btn{
+    background:var(--accent);color:#fff;border:none;border-radius:6px;
+    padding:11px 24px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;
+    transition:background .15s,opacity .15s;
+  }
+  .btn:hover{background:#1D4ED8;}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+  .btn-ghost{
+    background:transparent;color:var(--accent);border:1px solid var(--accent);
+    padding:10px 18px;
+  }
+  .btn-ghost:hover{background:var(--accent-soft);}
+  .btn-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .demo-link{font-size:13px;color:var(--text-sub);}
+  .demo-link a{color:var(--accent);cursor:pointer;text-decoration:underline;}
+
+  /* ===== 加载态 ===== */
+  .loading{display:none;text-align:center;padding:40px 0;color:var(--text-sub);font-size:14px;}
+  .loading.show{display:block;}
+  .spinner{
+    width:22px;height:22px;border:2.5px solid var(--border);border-top-color:var(--accent);
+    border-radius:50%;margin:0 auto 12px;animation:spin .8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* ===== 错误态 ===== */
+  .error-box{
+    display:none;background:var(--weak-soft);border:1px solid #FCA5A5;border-radius:6px;
+    padding:12px 16px;font-size:13px;color:var(--weak);margin-bottom:20px;
+  }
+  .error-box.show{display:block;}
+
+  /* ===== 对齐结果区 ===== */
+  .result-section{display:none;}
+  .result-section.show{display:block;}
+
+  .data-note{
+    font-size:12px;color:var(--text-faint);margin-bottom:14px;
+  }
+
+  /* 对齐表头 */
+  .align-table{border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+  .align-head{
+    display:grid;grid-template-columns:1.1fr 150px 1.4fr;
+    background:#F9FAFB;font-size:12px;font-weight:600;color:var(--text-sub);
+    padding:10px 16px;border-bottom:1px solid var(--border);
+  }
+  .align-row{
+    display:grid;grid-template-columns:1.1fr 150px 1.4fr;
+    padding:16px;border-bottom:1px solid var(--border);align-items:flex-start;gap:12px;
+  }
+  .align-row:last-child{border-bottom:none;}
+  .col-req{font-size:14px;font-weight:500;}
+  .col-status{display:flex;align-items:center;}
+  .col-sit{font-size:13px;color:var(--text-sub);}
+
+  /* 状态色块 */
+  .chip{
+    display:inline-flex;align-items:center;gap:6px;
+    font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;
+  }
+  .chip-ok{background:var(--ok-soft);color:var(--ok);border:1px solid #86EFAC;}
+  .chip-weak{background:var(--weak-soft);color:var(--weak);border:1px solid #FCA5A5;}
+  .chip-missing{background:var(--missing-soft);color:var(--missing);border:1px solid #FCD34D;}
+  .chip-dot{width:7px;height:7px;border-radius:50%;background:currentColor;}
+
+  /* 你的情况:缺/弱/OK 文案 + 原话 */
+  .sit-missing{color:var(--missing);font-weight:500;}
+  .sit-statement{color:var(--text);font-weight:500;margin-bottom:4px;}
+  .quote-toggle{font-size:12px;color:var(--accent);cursor:pointer;text-decoration:underline;background:none;border:none;padding:0;font-family:inherit;}
+  .quote-box{
+    display:none;margin-top:6px;padding:8px 12px;background:#FFFbeb;border-left:3px solid var(--missing);
+    border-radius:0 6px 6px 0;font-size:12px;color:#92400E;
+  }
+  .quote-box.show{display:block;}
+  .quote-box .label{font-weight:600;margin-right:4px;}
+
+  /* ===== 闭环区 ===== */
+  .loop-card{
+    background:var(--accent-soft);border:1px solid #DBE7FE;border-radius:8px;
+    padding:20px 24px;margin-top:8px;
+  }
+  .loop-card .loop-text{font-size:15px;color:#1E3A8A;margin-bottom:14px;}
+  .loop-card .loop-text b{font-weight:700;}
+  .count-red{color:var(--weak);font-weight:700;}
+  .count-yellow{color:var(--missing);font-weight:700;}
+  .count-green{color:var(--ok);font-weight:700;}
+  .legend{font-size:12px;color:var(--text-sub);margin-top:12px;display:flex;gap:16px;flex-wrap:wrap;}
+  .legend span{display:inline-flex;align-items:center;gap:5px;}
+  .legend i{width:9px;height:9px;border-radius:50%;display:inline-block;}
+  .lg-ok{background:var(--ok);} .lg-weak{background:var(--weak);} .lg-missing{background:var(--missing);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- 顶部 -->
+  <div class="topbar">
+    <div>
+      <h1>岗位对齐图</h1>
+      <div class="sub">把"岗位要什么"和"你有什么"左右摆开,看哪里对得上、哪里缺、哪里证据弱。</div>
+    </div>
+    <span class="mode-badge mode-mock" id="mode-badge">🔸 演示数据</span>
+  </div>
+
+  <!-- 诚实说明 -->
+  <div class="honest-note">
+    <b>这个页面不打分。</b>只看你的证据够不够——绿=有证据、红=证据弱、黄=缺失。红黄绿是"证据状态",不是"录不录用你"的判断。
+  </div>
+
+  <!-- 错误提示 -->
+  <div class="error-box" id="error-box"></div>
+
+  <!-- 入口:贴 JD -->
+  <div class="card" id="input-card">
+    <h2>第一步:贴上目标岗位的 JD</h2>
+    <div class="hint">把招聘描述粘进来。我会读出"岗位必须有什么",然后跟你的情况对齐,标红黄绿。</div>
+
+    <div class="field-block">
+      <label class="field" for="jd-text">岗位 JD(招聘描述)</label>
+      <textarea id="jd-text" placeholder="例如:招聘数据分析实习生,负责业务数据整理、指标分析和可视化,要求熟悉 SQL 和 Excel,每周到岗 4 天……"></textarea>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" id="analyze-btn" onclick="analyze()">分析岗位要求</button>
+      <span class="demo-link">没贴 JD 也想先看效果?<a onclick="loadDemo()">直接看演示 →</a></span>
+    </div>
+  </div>
+
+  <!-- 加载态 -->
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    AI 正在读岗位要求……
+  </div>
+
+  <!-- 对齐结果 -->
+  <div class="result-section" id="result-section">
+    <div class="card">
+      <h2>对齐图:岗位要的 vs 你有的</h2>
+      <div class="data-note" id="data-note"></div>
+
+      <div class="align-table">
+        <div class="align-head">
+          <div>岗位要的</div>
+          <div>证据状态</div>
+          <div>你的情况</div>
+        </div>
+        <div id="align-rows"></div>
+      </div>
+
+      <div class="legend">
+        <span><i class="lg-ok"></i>OK:有证据</span>
+        <span><i class="lg-weak"></i>证据弱:做过但不够实</span>
+        <span><i class="lg-missing"></i>缺失:没提到</span>
+      </div>
+    </div>
+
+    <!-- 闭环 -->
+    <div class="loop-card">
+      <div class="loop-text" id="loop-text"></div>
+      <button class="btn" onclick="goFill()">去补 →</button>
+      <div class="legend" style="margin-top:10px;">跳到「简历生成」的路 A(贴 JD + 旧简历 → 诊断报告)。</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ================================================================
+   student-match.html — 窗口2
+   只做"对齐",不做"打分"。
+   接口:POST /api/seeker/analyze → 拿 jobProfile.mustHaves
+   ================================================================ */
+
+// API 基址:空串 = 相对路径(配合后端 serve,和 student.html 一致)。
+// 想直接双击打开本文件测,改成 'http://127.0.0.1:3001'。
+var API_BASE = '';
+
+var currentMode = 'mock';
+var jobProfile = null;     // analyze 返回的岗位画像(或演示样例)
+var facts = [];            // 当前用的 facts(演示样例 / 未来串接窗口1的真实数据)
+var factsSource = 'mock';  // 'mock' | 'real' —— 诚实标出 facts 来源
+
+/* ---- 演示样例(抄自 API-CONTRACT.md 5.1/5.2 节,方便独立看效果) ----
+   mustHaves 里第 3 条「每周到岗4天」是演示用的:为了把"缺失(黄)"也展示出来。
+   facts 抄合同里的 fact_1(Excel,实)/ fact_2(SQL,课程→弱)。 */
+var MOCK_JOB_PROFILE = {
+  jobTitle: '数据分析实习生',
+  mustHaves: ['SQL', 'Excel', '每周到岗4天'],
+  niceToHaves: [],
+  keywords: ['SQL', 'Excel', '数据分析', '可视化'],
+  uncertainties: ['每周到岗天数未说明']
+};
+var MOCK_FACTS = [
+  {
+    id: 'fact_1',
+    category: 'project',
+    statement: '使用Excel对便利店一个学期的销售明细进行去重和日期格式统一。',
+    sourceQuestionId: 'sq_1',
+    sourceQuote: '我整理过便利店一个学期的销售明细,用Excel去重并统一日期格式。',
+    confirmed: true
+  },
+  {
+    id: 'fact_2',
+    category: 'skill',
+    statement: '在课程作业中使用过SQL基础查询,暂无实际项目经验。',
+    sourceQuestionId: 'sq_2',
+    sourceQuote: '只在课程作业里写过基础查询,没有实际项目经验。',
+    confirmed: true
+  }
+];
+
+/* 弱证据词:命中这些词说明"做过但不够实"——课程/作业/了解/参与/只是/仅/学过/接触/基础。
+   这套判断是前端启发式(够演示用),不假装是精确的能力评估。 */
+var WEAK_WORDS = ['课程','作业','了解','参与','只是','仅','学过','接触','看过','听说过','基础','暂无','没有'];
+
+/* ---- mode 徽标(诚实标 mock/live/fallback) ---- */
+function setModeBadge(mode){
+  currentMode = mode || 'mock';
+  var b = document.getElementById('mode-badge');
+  b.className = 'mode-badge mode-' + currentMode;
+  b.textContent = currentMode === 'live' ? '🟢 真实AI'
+               : currentMode === 'fallback' ? '⚠️ 降级数据'
+               : '🔸 演示数据';
+}
+
+/* ---- 统一 API 调用 ---- */
+async function api(url, body){
+  var res;
+  try{
+    res = await fetch(API_BASE + url, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+  }catch(e){
+    throw new Error('⚠️ 连不上后端服务。\n\n如果你是在 GitHub 或本地直接打开这个网页,后端没启动,接口跑不起来。\n请本地启动后端:\n  cd backend && pnpm build && LLM_MODE=mock PORT=3001 node dist/server.js\n然后从 http://localhost:3001/student-match.html 打开。\n(本页有演示数据兜底,可在顶部切换查看样例。)');
+  }
+  var text = await res.text();
+  var json;
+  try{ json = JSON.parse(text); }catch(e){
+    throw new Error('服务器返回不是合法 JSON (HTTP ' + res.status + ')。可能连错了服务器,请从 localhost:3001 打开本页。');
+  }
+  return json;
+}
+
+/* ---- 错误展示 ---- */
+function showError(msg){
+  var box = document.getElementById('error-box');
+  box.textContent = msg;
+  box.classList.add('show');
+}
+function clearError(){ document.getElementById('error-box').classList.remove('show'); }
+
+/* ---- 第一步:分析岗位(真接口,失败回退演示) ---- */
+async function analyze(){
+  clearError();
+  var jdText = document.getElementById('jd-text').value.trim();
+  if(!jdText){ showError('请先贴上岗位 JD,或点"直接看演示"。'); return; }
+
+  var btn = document.getElementById('analyze-btn');
+  btn.disabled = true;
+  document.getElementById('loading').classList.add('show');
+  document.getElementById('result-section').classList.remove('show');
+
+  try{
+    var json = await api('/api/seeker/analyze', { jdText: jdText });
+    if(json && json.ok === false){
+      var msg = (json && json.error && json.error.message) ? json.error.message : '分析失败';
+      showError(msg);
+      if(json && json.mode) setModeBadge(json.mode);
+      return;
+    }
+    // 成功:岗位要的是真的,facts 暂用演示(串接后会换真实)
+    setModeBadge(json.mode);
+    jobProfile = json.data.jobProfile;
+    facts = MOCK_FACTS;
+    factsSource = 'mock';
+    renderAlign();
+  }catch(e){
+    // 连不上后端:回退演示样例,老实标 mode
+    setModeBadge('mock');
+    jobProfile = MOCK_JOB_PROFILE;
+    facts = MOCK_FACTS;
+    factsSource = 'mock';
+    renderAlign(/*offline=*/true);
+  }finally{
+    btn.disabled = false;
+    document.getElementById('loading').classList.remove('show');
+  }
+}
+
+/* ---- 直接看演示(不调接口) ---- */
+function loadDemo(){
+  clearError();
+  setModeBadge('mock');
+  jobProfile = MOCK_JOB_PROFILE;
+  facts = MOCK_FACTS;
+  factsSource = 'mock';
+  renderAlign();
+}
+
+/* ---- 对齐核心:每条 mustHave 跟 facts 对照,判红黄绿 ---- */
+function matchFact(mustHave){
+  var key = String(mustHave).toLowerCase();
+  for(var i=0;i<facts.length;i++){
+    var f = facts[i];
+    var hay = (f.statement + ' ' + f.sourceQuote).toLowerCase();
+    if(hay.indexOf(key) !== -1) return f;
+  }
+  return null;
+}
+function classify(mustHave){
+  var f = matchFact(mustHave);
+  if(!f) return { status:'missing', fact:null };
+  var text = f.statement + ' ' + f.sourceQuote;
+  var weak = WEAK_WORDS.some(function(w){ return text.indexOf(w) !== -1; });
+  return weak ? { status:'weak', fact:f } : { status:'ok', fact:f };
+}
+
+/* ---- 渲染对齐表 + 闭环 ---- */
+function renderAlign(offline){
+  var musts = (jobProfile && jobProfile.mustHaves) ? jobProfile.mustHaves : [];
+
+  // 数据来源说明(诚实)
+  var note = document.getElementById('data-note');
+  var parts = [];
+  if(offline) parts.push('⚠️ 没连上后端,岗位要求和你的情况都用演示数据。');
+  else parts.push('岗位要求来自 AI 实时分析。');
+  if(factsSource === 'mock') parts.push('你的情况用的是演示素材——串接后这里会换成你真实的经历。');
+  note.textContent = parts.join(' ');
+
+  // 行
+  var rows = document.getElementById('align-rows');
+  rows.innerHTML = '';
+  var counts = { ok:0, weak:0, missing:0 };
+
+  if(musts.length === 0){
+    rows.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-faint);grid-column:1/-1;">这个 JD 里没读出明确的"必须具备"项。</div>';
+  }else{
+    musts.forEach(function(m, i){
+      var c = classify(m);
+      counts[c.status]++;
+      var row = document.createElement('div');
+      row.className = 'align-row';
+
+      // 左:岗位要的
+      var req = document.createElement('div');
+      req.className = 'col-req';
+      req.textContent = m;
+
+      // 中:状态色块
+      var st = document.createElement('div');
+      st.className = 'col-status';
+      var label = c.status==='ok' ? 'OK' : c.status==='weak' ? '证据弱' : '缺失';
+      st.innerHTML = '<span class="chip chip-'+c.status+'"><span class="chip-dot"></span>'+label+'</span>';
+
+      // 右:你的情况
+      var sit = document.createElement('div');
+      sit.className = 'col-sit';
+      if(c.status === 'missing'){
+        sit.innerHTML = '<span class="sit-missing">你的素材里没提到这一项。</span>';
+      }else{
+        var f = c.fact;
+        sit.innerHTML =
+          '<div class="sit-statement"></div>' +
+          '<button class="quote-toggle" onclick="toggleQuote(this)">看你当时说的原话 ▾</button>' +
+          '<div class="quote-box"><span class="label">原话:</span><span class="q"></span></div>';
+        sit.querySelector('.sit-statement').textContent = c.status==='weak'
+          ? '有,但证据弱:' + f.statement
+          : f.statement;
+        sit.querySelector('.q').textContent = f.sourceQuote;
+      }
+
+      row.appendChild(req);
+      row.appendChild(st);
+      row.appendChild(sit);
+      rows.appendChild(row);
+    });
+  }
+
+  renderLoop(counts);
+  document.getElementById('result-section').classList.add('show');
+}
+
+/* ---- 闭环话术 ---- */
+function renderLoop(c){
+  var el = document.getElementById('loop-text');
+  if(c.weak===0 && c.missing===0){
+    el.innerHTML = '岗位要的你都有证据,<b class="count-green">可以去做简历了</b>。';
+  }else{
+    el.innerHTML =
+      '标红的 <b class="count-red">'+c.weak+'</b> 条(证据弱)、标黄的 <b class="count-yellow">'+c.missing+'</b> 条(缺失),'+
+      '补上后简历就齐了。';
+  }
+}
+
+/* ---- 原话展开/收起 ---- */
+function toggleQuote(btn){
+  var box = btn.nextElementSibling;
+  var open = box.classList.toggle('show');
+  btn.textContent = open ? '收起原话 ▴' : '看你当时说的原话 ▾';
+}
+
+/* ---- 跳到简历页(窗口1的路A)。窗口1还没产出时此链接会 404,串接后修复。 ---- */
+function goFill(){
+  window.location.href = 'student-resume.html';
+}
+
+// 初始化
+setModeBadge('mock');
+</script>
+</body>
+</html>

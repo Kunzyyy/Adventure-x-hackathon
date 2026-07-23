@@ -1,0 +1,1743 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI简历 · 双端 AI 求职助手</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+/* ================= 视觉基线(浅色克制) =================
+   参考桌面 hack 简历图:浅灰背景 / 深字 / 单一静蓝强调色 / 红黄绿证据色。
+   禁用:粒子、毛玻璃、3D、紫蓝渐变、发光阴影、太空黑。
+   全内联样式,不碰 css/style.css(那是窗口4的活)。 */
+:root{
+  --bg:#FAFAFA; --surface:#FFFFFF;
+  --ink:#1A1A1A; --ink-2:#6B7280; --ink-3:#9CA3AF; --line:#E5E7EB;
+  --blue:#2563EB; --blue-soft:#EFF6FF;
+  --red:#DC2626; --red-soft:#FEF2F2; --red-line:#FECACA;
+  --amber:#F59E0B; --amber-soft:#FFFBEB; --amber-line:#FDE68A;
+  --green:#16A34A; --green-soft:#F0FDF4; --green-line:#BBF7D0;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.6;}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px;}
+a{color:var(--blue);text-decoration:none;}
+
+/* ---- 顶部导航 ---- */
+.nav{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.92);border-bottom:1px solid var(--line);}
+.nav-inner{max-width:1080px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;}
+.brand{font-weight:700;font-size:16px;}
+.brand small{font-weight:400;color:var(--ink-2);margin-left:8px;font-size:13px;}
+.mode-row{display:flex;align-items:center;gap:10px;}
+.mode-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;border:1px solid;}
+.mode-mock{background:var(--amber-soft);color:#B45309;border-color:var(--amber-line);}
+.mode-live{background:var(--green-soft);color:#15803D;border-color:var(--green-line);}
+.mode-fallback{background:var(--red-soft);color:#B91C1C;border-color:var(--red-line);}
+
+/* ---- 通用 ---- */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:24px;}
+.muted{color:var(--ink-2);}
+.hint{color:var(--ink-3);font-size:13px;}
+label.field{display:block;font-size:13px;color:var(--ink-2);margin-bottom:6px;font-weight:500;}
+input[type=text],input[type=tel],input[type=email],textarea,select{
+  width:100%;background:var(--surface);border:1px solid var(--line);border-radius:6px;
+  padding:10px 12px;font-size:14px;color:var(--ink);font-family:inherit;outline:none;transition:border-color .2s;
+}
+textarea{resize:vertical;line-height:1.6;}
+input:focus,textarea:focus,select:focus{border-color:var(--blue);}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  background:var(--blue);color:#fff;border:none;border-radius:6px;padding:11px 20px;
+  font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .2s;}
+.btn:hover{background:#1D4ED8;}
+.btn:disabled{background:var(--ink-3);cursor:not-allowed;}
+.btn-outline{background:transparent;color:var(--blue);border:1px solid var(--blue);}
+.btn-outline:hover{background:var(--blue-soft);}
+.btn-outline:disabled{color:var(--ink-3);border-color:var(--line);cursor:not-allowed;background:transparent;}
+.btn-ghost{background:transparent;color:var(--ink-2);border:1px solid var(--line);}
+.btn-ghost:hover{background:var(--bg);}
+.btn-sm{padding:6px 12px;font-size:13px;border-radius:5px;}
+.row{display:flex;gap:10px;flex-wrap:wrap;}
+.row.between{justify-content:space-between;}
+.mt8{margin-top:8px;}.mt12{margin-top:12px;}.mt16{margin-top:16px;}.mt20{margin-top:20px;}.mt24{margin-top:24px;}.mt32{margin-top:32px;}
+.mb8{margin-bottom:8px;}.mb12{margin-bottom:12px;}.mb16{margin-bottom:16px;}.mb20{margin-bottom:20px;}.mb24{margin-bottom:24px;}
+.hidden{display:none !important;}
+.section-title{font-size:15px;font-weight:600;margin-bottom:4px;}
+.step-hint{font-size:13px;color:var(--ink-2);margin-bottom:16px;}
+.h1{font-size:24px;font-weight:700;}
+.h2{font-size:18px;font-weight:600;}
+.h3{font-size:16px;font-weight:600;}
+
+/* ---- 加载 ---- */
+.loading{display:flex;align-items:center;gap:10px;color:var(--ink-2);font-size:14px;}
+.loading .dots{display:inline-flex;gap:4px;}
+.loading .dots span{width:7px;height:7px;border-radius:50%;background:var(--blue);animation:bounce 1.2s infinite;}
+.loading .dots span:nth-child(2){animation-delay:.2s;}
+.loading .dots span:nth-child(3){animation-delay:.4s;}
+@keyframes bounce{0%,80%,100%{transform:translateY(0);opacity:.4;}40%{transform:translateY(-6px);opacity:1;}}
+
+/* ---- 面包屑(步骤) ---- */
+.crumb{display:flex;align-items:center;gap:0;margin-bottom:24px;}
+.crumb-step{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-3);}
+.crumb-dot{width:22px;height:22px;border-radius:50%;background:var(--line);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;}
+.crumb-step.done .crumb-dot{background:var(--green);}
+.crumb-step.active .crumb-dot{background:var(--blue);}
+.crumb-step.done{color:var(--green);}
+.crumb-step.active{color:var(--blue);font-weight:600;}
+.crumb-line{width:28px;height:1px;background:var(--line);margin:0 8px;}
+
+/* ---- 路A诊断行 ---- */
+.diag-item{border:1px solid var(--line);border-radius:6px;padding:14px 16px;margin-bottom:10px;transition:border-color .2s;}
+.diag-item .must-have{font-weight:600;font-size:14px;margin-bottom:8px;}
+.diag-options{display:flex;gap:8px;flex-wrap:wrap;}
+.diag-opt{flex:1;min-width:120px;border:1px solid var(--line);background:#fff;border-radius:6px;padding:8px 12px;font-size:13px;cursor:pointer;text-align:center;transition:all .15s;color:var(--ink-2);}
+.diag-opt:hover{border-color:var(--blue);color:var(--blue);}
+.diag-opt.selected{border-width:2px;font-weight:600;}
+.diag-opt.ok.selected{background:var(--green-soft);border-color:var(--green);color:#15803D;}
+.diag-opt.weak.selected{background:var(--red-soft);border-color:var(--red);color:#B91C1C;}
+.diag-opt.missing.selected{background:var(--amber-soft);border-color:var(--amber);color:#B45309;}
+.diag-note{margin-top:8px;}
+.diag-note input{font-size:13px;}
+.diag-ctx{font-size:12px;color:var(--ink-2);background:var(--bg);padding:5px 9px;border-radius:4px;margin-bottom:8px;border-left:2px solid var(--blue);}
+.diag-advice{margin-top:8px;padding:8px 10px;background:var(--amber-soft);border:1px solid var(--amber-line);border-radius:4px;font-size:12px;color:#92400E;}
+
+/* ---- 事实卡片(路B) ---- */
+.fact{border:1px solid var(--line);border-radius:6px;padding:14px 16px;margin-bottom:10px;}
+.fact.confirmed{border-color:var(--green-line);background:var(--green-soft);}
+.fact.deleted{opacity:.4;}
+.fact-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.fact-cat{font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;background:var(--blue-soft);color:var(--blue);}
+.fact-stmt{font-size:14px;margin-bottom:8px;}
+.fact-quote{font-size:12px;color:var(--ink-2);background:var(--bg);border-left:3px solid var(--amber);padding:6px 10px;border-radius:0 4px 4px 0;}
+.fact-actions{display:flex;gap:6px;margin-top:10px;}
+.fact-actions .btn{flex:1;}
+
+/* ---- 简历区:左表单 / 右预览 ---- */
+.resume-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;}
+@media(max-width:880px){.resume-grid{grid-template-columns:1fr;}}
+.form-section{border:1px solid var(--line);border-radius:6px;padding:16px;margin-bottom:14px;}
+.form-section h4{font-size:13px;font-weight:600;margin-bottom:10px;color:var(--ink-2);text-transform:uppercase;letter-spacing:.5px;}
+.bullet-edit{margin-bottom:10px;}
+.bullet-edit textarea{font-size:13px;}
+.ev-chip{display:inline-block;font-size:11px;background:var(--blue-soft);color:var(--blue);padding:1px 7px;border-radius:10px;margin:2px 2px 0 0;}
+.mini-input{padding:7px 10px;font-size:13px;}
+.bullet-add{width:100%;border:1px dashed var(--line);background:transparent;color:var(--ink-3);border-radius:6px;padding:8px;cursor:pointer;font-size:13px;}
+.bullet-add:hover{border-color:var(--blue);color:var(--blue);}
+
+/* ---- A4 预览(干净单模板) ---- */
+.a4-wrap{background:var(--bg);padding:18px;border-radius:6px;border:1px solid var(--line);overflow-x:auto;}
+.a4{width:794px;min-height:1123px;background:#fff;color:#1A1A1A;margin:0 auto;box-shadow:0 2px 12px rgba(0,0,0,.06);padding:56px 56px;font-size:12px;line-height:1.7;}
+.a4-head{text-align:center;border-bottom:2px solid #1A1A1A;padding-bottom:14px;margin-bottom:22px;}
+.a4-head .name{font-size:26px;font-weight:700;letter-spacing:3px;}
+.a4-head .title{font-size:13px;color:var(--ink-2);margin-top:4px;}
+.a4-head .contact{font-size:11px;color:var(--ink-3);margin-top:6px;}
+.a4-body{display:grid;grid-template-columns:210px 1fr;gap:26px;}
+.a4-side h3{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #1A1A1A;padding-bottom:3px;margin:0 0 8px;color:#1A1A1A;}
+.a4-side .block{margin-bottom:18px;}
+.a4-side .block p,.a4-side .block li{font-size:11px;line-height:1.8;color:#444;list-style:none;}
+.a4-main h3{font-size:13px;font-weight:700;text-transform:uppercase;border-bottom:2px solid #1A1A1A;padding-bottom:3px;margin:0 0 10px;}
+.a4-main .block{margin-bottom:20px;}
+.a4-main .exp-head{display:flex;justify-content:space-between;font-weight:700;font-size:12px;margin-bottom:3px;}
+.a4-main .exp-role{font-size:11px;color:#666;font-style:italic;margin-bottom:4px;}
+.a4-main ul{list-style:none;}
+.a4-main li{font-size:11.5px;color:#444;margin-bottom:4px;padding-left:12px;position:relative;}
+.a4-main li::before{content:'•';position:absolute;left:0;color:var(--blue);}
+.a4-main li.has-ev{cursor:pointer;}
+.a4-main li .ev-mark{color:var(--blue);font-size:10px;margin-left:3px;}
+.a4-main li .ev-pop{display:none;margin-top:4px;margin-left:12px;background:var(--amber-soft);border-left:2px solid var(--amber);padding:5px 9px;font-size:10.5px;color:#92400E;border-radius:0 3px 3px 0;}
+.a4-main li.ev-open .ev-pop{display:block;}
+
+/* ---- 缺失/风险(底部) ---- */
+.warn-box{border-radius:6px;padding:14px 16px;margin-bottom:12px;}
+.warn-box h4{font-size:13px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.warn-amber{background:var(--amber-soft);border:1px solid var(--amber-line);}
+.warn-amber h4{color:#B45309;}
+.warn-red{background:var(--red-soft);border:1px solid var(--red-line);}
+.warn-red h4{color:#B91C1C;}
+.warn-box ul{padding-left:18px;margin:0;}
+.warn-box li{font-size:13px;color:#444;margin-bottom:4px;}
+.warn-box li .ev-link{color:var(--blue);cursor:pointer;text-decoration:underline;}
+
+/* ---- 溯源弹窗 ---- */
+.ev-modal{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:60;display:none;align-items:center;justify-content:center;padding:20px;}
+.ev-modal.show{display:flex;}
+.ev-modal .box{background:#fff;border-radius:8px;max-width:460px;width:100%;padding:24px;}
+.ev-modal .box .label{font-size:12px;color:var(--ink-3);margin-bottom:6px;}
+.ev-modal .box .stmt{font-size:15px;margin-bottom:14px;}
+.ev-modal .box .quote{background:var(--amber-soft);border-left:3px solid var(--amber);padding:10px 12px;border-radius:0 4px 4px 0;font-size:13px;color:#92400E;}
+
+/* ---- 路径选择入口 ---- */
+.path-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:8px;}
+@media(max-width:720px){.path-grid{grid-template-columns:1fr;}}
+.path-card{border:1px solid var(--line);border-radius:10px;padding:28px 24px;cursor:pointer;background:#fff;transition:all .2s;position:relative;}
+.path-card:hover{border-color:var(--blue);box-shadow:0 4px 16px rgba(37,99,235,.08);transform:translateY(-1px);}
+.path-card .ico{font-size:30px;margin-bottom:12px;}
+.path-card h3{font-size:18px;font-weight:600;margin-bottom:6px;}
+.path-card p{font-size:13px;color:var(--ink-2);}
+.path-card .arrow{position:absolute;right:24px;bottom:24px;color:var(--blue);font-size:13px;font-weight:600;}
+.path-card.disabled{opacity:.6;cursor:not-allowed;}
+.path-card.disabled:hover{border-color:var(--line);box-shadow:none;transform:none;}
+.path-card .tag{position:absolute;top:16px;right:16px;font-size:11px;background:var(--amber-soft);color:#B45309;padding:2px 8px;border-radius:10px;}
+</style>
+</head>
+<body>
+
+<!-- ================= 顶部导航 ================= -->
+<div class="nav">
+  <div class="nav-inner">
+    <div class="brand">AI简历 <small>· 双端 AI 求职助手</small></div>
+    <div class="mode-row">
+      <span id="global-mode" class="mode-badge mode-mock">🔸 演示数据 (mock)</span>
+      <a href="index.html" class="btn btn-ghost btn-sm">← 返回首页</a>
+    </div>
+  </div>
+</div>
+
+<div class="wrap" style="padding-top:24px;padding-bottom:60px;">
+
+<!-- ============================================================
+     视图:入口(选两条路)
+============================================================ -->
+<div id="view-entry">
+  <h1 class="h1 mb8">做一份能证明自己不编造的简历</h1>
+  <p class="hint mb24">每条简历内容都连着你当时说的原话。下面选一条路开始——</p>
+  <div class="path-grid">
+    <div class="path-card" onclick="startPath('A')">
+      <div class="ico">📝</div>
+      <h3>我有简历，想改</h3>
+      <p>贴上目标岗位 + 你的旧简历。AI帮你逐条对照岗位要求，看哪里缺、哪里证据弱、哪里 OK。</p>
+      <span class="arrow">路 A →</span>
+    </div>
+    <div class="path-card" onclick="startPath('B')">
+      <div class="ico">🌱</div>
+      <h3>我从零开始</h3>
+      <p>贴上目标岗位。AI问你几个问题，把脑子里的真实素材挖出来，再生成简历。</p>
+      <span class="arrow">路 B →</span>
+    </div>
+  </div>
+  <div class="card mt24" style="background:var(--blue-soft);border-color:#BFDBFE;">
+    <p class="hint" style="color:#1E40AF;">💡 <strong>这页面和别的不一样在哪？</strong> 别的 AI 简历会偷偷编造经历和数字。这页每句话后面都挂着你当时说的原话，点开就能看——骗不了自己，也骗不了面试官。</p>
+  </div>
+</div>
+
+<!-- ============================================================
+     视图:路A - 输入JD + 旧简历
+============================================================ -->
+<div id="view-a-input" class="hidden">
+  <div class="crumb">
+    <div class="crumb-step active"><div class="crumb-dot">1</div>贴 JD + 旧简历</div>
+    <div class="crumb-line"></div>
+    <div class="crumb-step"><div class="crumb-dot">2</div>诊断报告</div>
+    <div class="crumb-line"></div>
+    <div class="crumb-step"><div class="crumb-dot">3</div>生成简历</div>
+  </div>
+
+  <h2 class="h2 mb8">路 A · 我有简历，想改</h2>
+  <p class="step-hint">贴上目标岗位和你现在的简历。AI帮你对照岗位要求，逐条看证据。</p>
+
+  <div class="card">
+    <label class="field">目标岗位描述 (JD) <span class="hint">— 把招聘帖整段粘进来</span></label>
+    <textarea id="a-jd" rows="6" placeholder="例如：招聘数据分析实习生，负责业务数据整理、指标分析和可视化，要求熟悉 SQL 和 Excel。每周到岗 4 天，可连续实习 6 个月。"></textarea>
+
+    <label class="field mt16">你的旧简历 <span class="hint">— 纯文本就行，不用排版</span></label>
+    <textarea id="a-old" rows="8" placeholder="把你现在的简历内容粘进来——做过什么项目、实习、学过什么、会什么工具……越具体越好。&#10;&#10;例如：&#10;参与校园便利店销售数据分析，用 Excel 完成数据清洗和图表展示。&#10;在校学过 SQL 基础查询。"></textarea>
+
+    <div class="row between mt20">
+      <button class="btn btn-ghost" onclick="show('entry')">← 返回</button>
+      <button class="btn" id="a-analyze-btn" onclick="aAnalyze()">AI 对照诊断 →</button>
+    </div>
+  </div>
+  <div id="a-loading" class="loading hidden mt24"><span class="dots"><span></span><span></span><span></span></span><span id="a-loading-text">AI 正在分析岗位要求……</span></div>
+</div>
+
+<!-- ============================================================
+     视图:路A - 诊断报告
+============================================================ -->
+<div id="view-a-diag" class="hidden">
+  <div class="crumb">
+    <div class="crumb-step done"><div class="crumb-dot">✓</div>贴 JD + 旧简历</div>
+    <div class="crumb-line"></div>
+    <div class="crumb-step active"><div class="crumb-dot">2</div>诊断报告</div>
+    <div class="crumb-line"></div>
+    <div class="crumb-step"><div class="crumb-dot">3</div>生成简历</div>
+  </div>
+
+  <h2 class="h2 mb8">诊断报告 · 岗位要什么，你有没有</h2>
+  <p class="step-hint">AI 把岗位要求拆成下面这几条。每条点一下，告诉 AI 你的情况——有证据、证据弱、还是没有。</p>
+
+  <div class="card mb16" style="background:var(--blue-soft);border-color:#BFDBFE;">
+    <p class="muted" style="font-size:13px;color:#1E40AF;">
+      <strong>岗位：</strong><span id="a-jobtitle"></span><br>
+      <strong>AI 还从 JD 里看到这些要点：</strong><span id="a-keywords" style="color:#1E40AF;"></span>
+    </p>
+  </div>
+
+  <div id="a-diag-list"></div>
+
+  <div class="card mt16" style="background:var(--bg);border-style:dashed;">
+    <p class="hint">📋 说明：你选「有证据」的会进简历；「证据弱」的会标成面试追问风险；「没有」的会标成缺失信息。简历里<strong>不会出现你旧简历没有的内容</strong>。</p>
+  </div>
+
+  <div class="row between mt20">
+    <button class="btn btn-ghost" onclick="show('a-input')">← 改 JD / 旧简历</button>
+    <button class="btn" id="a-generate-btn" onclick="aGenerate()" disabled>用这些事实生成简历 →</button>
+  </div>
+</div>
+
+<!-- ============================================================
+     路 B 专用样式(独立 style 块,不动上面路A 的样式)
+     全 b- 前缀,避免和路A / 窗口A 撞选择器。
+============================================================ -->
+<style>
+/* 答题页 */
+.b-quiz-q{border:1px solid var(--line);border-radius:6px;padding:14px 16px;margin-bottom:12px;background:#fff;}
+.b-quiz-q .q-num{font-size:12px;color:var(--blue);font-weight:600;margin-bottom:4px;}
+.b-quiz-q .q-text{font-size:14px;font-weight:500;margin-bottom:4px;}
+.b-quiz-q .q-reason{font-size:12px;color:var(--ink-3);margin-bottom:4px;}
+
+/* 事实页 + 简历页的 AI 侧栏布局 */
+.b-facts-grid{display:grid;grid-template-columns:1fr 260px;gap:20px;align-items:start;}
+@media(max-width:880px){.b-facts-grid{grid-template-columns:1fr;}}
+.b-ai-card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;position:sticky;top:80px;}
+.b-ai-card .b-ai-h{font-size:14px;font-weight:600;margin-bottom:6px;}
+.b-ai-card .b-ai-honest{font-size:11px;color:var(--ink-3);background:var(--bg);border:1px dashed var(--line);border-radius:4px;padding:5px 8px;margin-bottom:12px;line-height:1.5;}
+.b-ai-item{font-size:12px;padding:9px 10px;border-radius:5px;margin-bottom:8px;border-left:3px solid;line-height:1.5;}
+.b-ai-item.weak{background:var(--red-soft);border-color:var(--red);color:#7F1D1D;}
+.b-ai-item.missing{background:var(--amber-soft);border-color:var(--amber);color:#78350F;}
+.b-ai-item.noev{background:var(--blue-soft);border-color:var(--blue);color:#1E3A8A;}
+.b-ai-item.ok{background:var(--green-soft);border-color:var(--green);color:#14532D;}
+.b-ai-empty{font-size:12px;color:var(--ink-3);padding:8px 0;}
+
+/* 模板选择 */
+.tpl-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+@media(max-width:720px){.tpl-grid{grid-template-columns:1fr;}}
+.tpl-card{border:2px solid var(--line);border-radius:8px;padding:14px;cursor:pointer;background:#fff;transition:all .15s;}
+.tpl-card:hover{border-color:var(--blue);}
+.tpl-card.selected{border-color:var(--blue);background:var(--blue-soft);}
+.tpl-card .tpl-name{font-size:14px;font-weight:600;margin-bottom:8px;}
+.tpl-card .tpl-thumb{height:118px;border:1px solid var(--line);border-radius:4px;padding:8px;overflow:hidden;background:#fff;}
+.thumb-classic{font-size:7px;line-height:1.4;color:#444;}
+.thumb-classic .t-name{font-size:10px;font-weight:700;text-align:center;border-bottom:1px solid #1A1A1A;padding-bottom:2px;margin-bottom:4px;}
+.thumb-modern{display:grid;grid-template-columns:38% 1fr;gap:4px;font-size:6px;line-height:1.3;color:#444;}
+.thumb-modern .t-side{border-right:1px solid #1A1A1A;padding-right:3px;}
+.thumb-compact{font-size:6px;line-height:1.3;color:#444;}
+.thumb-compact .t-name{font-size:9px;font-weight:700;margin-bottom:3px;}
+.thumb-compact .tag{background:#1A1A1A;color:#fff;display:inline-block;padding:0 4px;font-size:7px;margin-right:3px;}
+.thumb-academic{font-family:Georgia,serif;font-size:6px;line-height:1.3;color:#333;text-align:center;}
+.thumb-academic .t-name{font-size:9px;font-weight:700;border-bottom:1px solid #333;margin-bottom:4px;padding-bottom:3px;}
+
+/* 路 B 简历区:左表单 + 中预览 + 右 AI 侧栏 */
+.b-resume-grid{display:grid;grid-template-columns:1fr 1fr 240px;gap:20px;align-items:start;}
+@media(max-width:1180px){.b-resume-grid{grid-template-columns:1fr 1fr;}.b-ai-col{grid-column:1/-1;}.b-ai-card{position:static;}}
+@media(max-width:880px){.b-resume-grid{grid-template-columns:1fr;}}
+.b-preview-wrap{background:var(--bg);padding:14px;border-radius:6px;border:1px solid var(--line);overflow-x:auto;}
+.b-a4{width:794px;min-height:600px;background:#fff;color:#1A1A1A;margin:0 auto;box-shadow:0 2px 12px rgba(0,0,0,.06);padding:48px;font-size:12px;line-height:1.7;}
+
+/* 模板:经典单栏 */
+.tpl-classic .b-head{text-align:center;border-bottom:2px solid #1A1A1A;padding-bottom:12px;margin-bottom:18px;}
+.tpl-classic .b-head .name{font-size:24px;font-weight:700;letter-spacing:2px;}
+.tpl-classic .b-head .title{font-size:13px;color:var(--ink-2);margin-top:3px;}
+.tpl-classic .b-head .contact{font-size:11px;color:var(--ink-3);margin-top:5px;}
+.tpl-classic h3{font-size:13px;font-weight:700;text-transform:uppercase;border-bottom:1px solid #1A1A1A;padding-bottom:2px;margin:16px 0 8px;}
+.tpl-classic ul{list-style:none;padding:0;margin:0 0 8px;}
+.tpl-classic li{font-size:12px;color:#333;margin-bottom:4px;padding-left:12px;position:relative;}
+.tpl-classic li::before{content:'•';position:absolute;left:0;color:var(--blue);}
+.tpl-classic li.has-ev{cursor:pointer;}
+.tpl-classic .ev-pop{display:none;margin-top:3px;margin-left:12px;background:var(--amber-soft);border-left:2px solid var(--amber);padding:4px 8px;font-size:11px;color:#92400E;border-radius:0 3px 3px 0;}
+.tpl-classic li.ev-open .ev-pop{display:block;}
+
+/* 模板:现代双栏 */
+.tpl-modern .b-head{margin-bottom:16px;border-bottom:2px solid var(--blue);padding-bottom:10px;}
+.tpl-modern .b-head .name{font-size:26px;font-weight:800;color:var(--blue);}
+.tpl-modern .b-head .title{font-size:14px;color:var(--ink-2);}
+.tpl-modern .b-head .contact{font-size:11px;color:var(--ink-3);margin-top:4px;}
+.tpl-modern .b-body{display:grid;grid-template-columns:200px 1fr;gap:20px;}
+.tpl-modern .b-side h3{font-size:11px;font-weight:700;text-transform:uppercase;color:var(--blue);border-bottom:2px solid var(--blue);padding-bottom:3px;margin:0 0 8px;}
+.tpl-modern .b-side .block{margin-bottom:14px;}
+.tpl-modern .b-side li{font-size:11px;color:#444;list-style:none;margin-bottom:3px;}
+.tpl-modern .b-main h3{font-size:13px;font-weight:700;border-bottom:1px solid #1A1A1A;padding-bottom:2px;margin:0 0 8px;}
+.tpl-modern .b-main ul{list-style:none;padding:0;margin:0 0 12px;}
+.tpl-modern .b-main li{font-size:11.5px;color:#444;margin-bottom:4px;padding-left:12px;position:relative;}
+.tpl-modern .b-main li::before{content:'▸';position:absolute;left:0;color:var(--blue);}
+.tpl-modern li.has-ev{cursor:pointer;}
+.tpl-modern .ev-pop{display:none;margin-top:3px;margin-left:12px;background:var(--amber-soft);border-left:2px solid var(--amber);padding:4px 8px;font-size:11px;color:#92400E;border-radius:0 3px 3px 0;}
+.tpl-modern li.ev-open .ev-pop{display:block;}
+
+/* 模板:紧凑信息型 */
+.tpl-compact{font-size:11px;line-height:1.5;}
+.tpl-compact .b-head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #1A1A1A;padding-bottom:6px;margin-bottom:8px;}
+.tpl-compact .b-head .name{font-size:20px;font-weight:700;}
+.tpl-compact .b-head .contact{font-size:10px;color:var(--ink-3);text-align:right;}
+.tpl-compact .b-head .title{font-size:12px;color:var(--ink-2);}
+.tpl-compact h3{font-size:11px;font-weight:700;color:#fff;background:#1A1A1A;display:inline-block;padding:1px 8px;margin:10px 0 5px;}
+.tpl-compact ul{list-style:none;padding:0;margin:0 0 6px;}
+.tpl-compact li{font-size:11px;color:#333;margin-bottom:2px;padding-left:10px;position:relative;}
+.tpl-compact li::before{content:'-';position:absolute;left:0;color:var(--ink-3);}
+.tpl-compact li.has-ev{cursor:pointer;}
+.tpl-compact .ev-pop{display:none;margin-top:2px;margin-left:10px;background:var(--amber-soft);border-left:2px solid var(--amber);padding:3px 7px;font-size:10px;color:#92400E;border-radius:0 3px 3px 0;}
+.tpl-compact li.ev-open .ev-pop{display:block;}
+
+/* 模板:学术型 */
+.tpl-academic{font-family:Georgia,"Times New Roman",serif;}
+.tpl-academic .b-head{text-align:center;border-bottom:1px solid #333;padding-bottom:10px;margin-bottom:14px;}
+.tpl-academic .b-head .name{font-size:22px;font-weight:700;letter-spacing:1px;}
+.tpl-academic .b-head .title{font-size:12px;color:var(--ink-2);margin-top:2px;}
+.tpl-academic .b-head .contact{font-size:10px;color:var(--ink-3);margin-top:4px;}
+.tpl-academic .b-body{text-align:left;}
+.tpl-academic h3{font-size:12px;font-weight:700;border-bottom:1px solid #333;padding-bottom:2px;margin:14px 0 6px;font-family:Georgia,serif;}
+.tpl-academic ul{list-style:none;padding:0;margin:0 0 8px;}
+.tpl-academic li{font-size:11.5px;color:#333;margin-bottom:4px;padding-left:14px;position:relative;text-align:left;}
+.tpl-academic li::before{content:'§';position:absolute;left:0;color:var(--blue);font-style:italic;}
+.tpl-academic li.has-ev{cursor:pointer;}
+.tpl-academic .ev-pop{display:none;margin-top:3px;margin-left:14px;background:var(--amber-soft);border-left:2px solid var(--amber);padding:4px 8px;font-size:11px;color:#92400E;border-radius:0 3px 3px 0;font-family:-apple-system,sans-serif;}
+.tpl-academic li.ev-open .ev-pop{display:block;}
+</style>
+
+<!-- ============================================================
+     视图:路B - 贴 JD(第1步)
+============================================================ -->
+<div id="view-b-input" class="hidden">
+  <div class="b-crumb" data-n="1"></div>
+  <h2 class="h2 mb8">路 B · 我从零开始</h2>
+  <div class="card mb16" style="background:var(--blue-soft);border-color:#BFDBFE;">
+    <p style="font-size:14px;color:#1E40AF;"><strong>我不会直接编简历。</strong>先问你几个问题,把脑子里的真实素材挖出来——待会儿生成简历就靠这些。你说的每句话都会留着当证据,不会偷偷改写成"精通"。</p>
+  </div>
+  <div class="card">
+    <label class="field">目标岗位描述 (JD) <span class="hint">— 把招聘帖整段粘进来</span></label>
+    <textarea id="b-jd" rows="6" placeholder="例如:招聘数据分析实习生,负责业务数据整理、指标分析和可视化,要求熟悉 SQL 和 Excel。每周到岗 4 天。"></textarea>
+    <div class="row between mt20">
+      <button class="btn btn-ghost" onclick="show('entry')">← 返回</button>
+      <button class="btn" id="b-analyze-btn" onclick="bAnalyze()">开始挖素材 →</button>
+    </div>
+  </div>
+  <div id="b-loading" class="loading hidden mt24"><span class="dots"><span></span><span></span><span></span></span><span id="b-loading-text">AI 正在分析岗位、准备问题……</span></div>
+</div>
+
+<!-- ============================================================
+     视图:路B - 答题(第2步)
+============================================================ -->
+<div id="view-b-quiz" class="hidden">
+  <div class="b-crumb" data-n="2"></div>
+  <h2 class="h2 mb8">回答这几个问题,把你的真实素材挖出来</h2>
+  <p class="step-hint">AI 根据岗位问了下面这些问题。如实回答就行——不用漂亮,要真实。你的原话会留作证据。</p>
+  <div class="card mb16" style="background:var(--blue-soft);border-color:#BFDBFE;">
+    <p style="font-size:13px;color:#1E40AF;"><strong>为什么要问你这些?</strong>因为我不会凭空编你的经历。你说的每句话,后面都会变成简历里某句话的证据——点开就能看到原话。所以答得越具体,简历越扎实。</p>
+  </div>
+  <div class="card">
+    <div id="b-quiz-list"></div>
+    <div class="row between mt20">
+      <button class="btn btn-ghost" onclick="show('b-input')">← 改 JD</button>
+      <button class="btn" id="b-facts-btn" onclick="bSubmitAnswers()">整理成事实卡片 →</button>
+    </div>
+  </div>
+  <div id="b-loading2" class="loading hidden mt24"><span class="dots"><span></span><span></span><span></span></span><span>AI 正在把你的回答整理成事实……</span></div>
+</div>
+
+<!-- ============================================================
+     视图:路B - 事实卡片确认(第3步)+ AI 侧栏
+============================================================ -->
+<div id="view-b-facts" class="hidden">
+  <div class="b-crumb" data-n="3"></div>
+  <h2 class="h2 mb8">确认你的事实卡片</h2>
+  <p class="step-hint">AI 把你的回答整理成了下面这些"事实卡片"。每张卡都带着你当时说的原话。确认 / 编辑 / 删除——<strong>只有你确认的才会进简历</strong>。已确认 <span id="b-facts-count" style="color:var(--green);font-weight:700;">0</span> 张。</p>
+  <div class="b-facts-grid">
+    <div>
+      <div id="b-facts-list"></div>
+      <div class="row between mt20">
+        <button class="btn btn-ghost" onclick="show('b-quiz')">← 改答案</button>
+        <button class="btn" id="b-next-tpl-btn" onclick="bGoTemplate()" disabled>选模板生成简历 →</button>
+      </div>
+    </div>
+    <div>
+      <div class="b-ai-card" id="b-ai-card-facts"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     视图:路B - 选模板(第4步)
+============================================================ -->
+<div id="view-b-template" class="hidden">
+  <div class="b-crumb" data-n="4"></div>
+  <h2 class="h2 mb8">选一个简历模板</h2>
+  <p class="step-hint">模板只是排版不同,内容都来自你刚确认的事实——不会偷偷加料。选一个,下一步生成。</p>
+  <div class="card">
+    <div class="tpl-grid" id="b-tpl-grid"></div>
+    <div class="row between mt20">
+      <button class="btn btn-ghost" onclick="show('b-facts')">← 改事实</button>
+      <button class="btn" id="b-generate-btn" onclick="bGenerate()">用这个模板生成简历 →</button>
+    </div>
+  </div>
+  <div id="b-loading3" class="loading hidden mt24"><span class="dots"><span></span><span></span><span></span></span><span>AI 正在用你的事实生成简历……</span></div>
+</div>
+
+<!-- ============================================================
+     视图:路B - 生成简历(第5步):左表单 + 中预览(按模板) + 右AI侧栏
+============================================================ -->
+<div id="view-b-resume" class="hidden">
+  <div class="b-crumb" data-n="5"></div>
+  <div class="row between mb16">
+    <div>
+      <h2 class="h2 mb8">简历生成好了</h2>
+      <p class="step-hint">左边改字,中间立刻变(用的「<span id="b-tpl-name"></span>」模板)。点带 🔗 的句子能看原话。右边 AI 助手会给检查建议。</p>
+    </div>
+    <button class="btn-outline btn" onclick="bExportPDF()">📥 导出 PDF</button>
+  </div>
+  <div class="b-resume-grid">
+    <!-- 左:可编辑表单(bf- 前缀,路B 专属) -->
+    <div>
+      <div class="form-section">
+        <h4>顶部 · 姓名 / 职位</h4>
+        <label class="field">姓名</label>
+        <input type="text" id="bf-name" class="mini-input" placeholder="你的名字" oninput="bUpdateTop('name',this.value)">
+        <label class="field mt8">求职职位</label>
+        <input type="text" id="bf-title" class="mini-input" placeholder="如:数据分析实习生" oninput="bUpdateTop('title',this.value)">
+        <label class="field mt8">联系方式(可选)</label>
+        <input type="text" id="bf-contact" class="mini-input" placeholder="电话 / 邮箱 / 城市,用 / 分隔" oninput="bUpdateTop('contact',this.value)">
+      </div>
+      <div class="form-section"><h4>个人概述</h4><div id="bf-summary-list"></div></div>
+      <div class="form-section"><h4>教育背景</h4><div id="bf-edu-list"></div></div>
+      <div class="form-section"><h4>经历 / 项目</h4><div id="bf-exp-list"></div></div>
+      <div class="form-section"><h4>技能</h4><div id="bf-skill-list"></div></div>
+    </div>
+    <!-- 中:实时预览(按选中模板) -->
+    <div>
+      <div class="b-preview-wrap"><div class="b-a4" id="b-a4page"></div></div>
+    </div>
+    <!-- 右:AI 助手侧栏 -->
+    <div class="b-ai-col">
+      <div class="b-ai-card" id="b-ai-card"></div>
+    </div>
+  </div>
+  <!-- 底部:缺失信息 + 面试追问风险 -->
+  <div id="b-warn-area" class="mt24"></div>
+  <div class="row mt24">
+    <button class="btn btn-ghost" onclick="show('b-template')">← 换模板</button>
+    <button class="btn btn-ghost" onclick="show('entry')">重新开始</button>
+  </div>
+</div>
+
+<!-- ============================================================
+     视图:生成简历(左右联动 + 溯源)
+============================================================ -->
+<div id="view-resume" class="hidden">
+  <div class="crumb">
+    <div class="crumb-step done"><div class="crumb-dot">✓</div><span id="rc-step1-label">贴 JD</span></div>
+    <div class="crumb-line"></div>
+    <div class="crumb-step done"><div class="crumb-dot">✓</div>确认事实</div>
+    <div class="crumb-line"></div>
+    <div class="crumb-step active"><div class="crumb-dot">3</div>生成简历</div>
+  </div>
+
+  <div class="row between mb16">
+    <div>
+      <h2 class="h2 mb8">简历生成好了</h2>
+      <p class="step-hint">左边改字，右边立刻变。点简历里带 🔗 的句子能看原话。</p>
+    </div>
+    <button class="btn-outline btn" onclick="exportPDF()">📥 导出 PDF</button>
+  </div>
+
+  <div class="resume-grid">
+    <!-- 左:可编辑表单 -->
+    <div>
+      <div class="form-section">
+        <h4>顶部 · 姓名 / 职位</h4>
+        <label class="field">姓名</label>
+        <input type="text" id="f-name" class="mini-input" placeholder="你的名字" oninput="updateTop('name',this.value)">        <label class="field mt8">求职职位</label>
+        <input type="text" id="f-title" class="mini-input" placeholder="如：数据分析实习生" oninput="updateTop('title',this.value)">
+        <label class="field mt8">联系方式（可选）</label>
+        <input type="text" id="f-contact" class="mini-input" placeholder="电话 / 邮箱 / 城市，用 / 分隔" oninput="updateTop('contact',this.value)">
+      </div>
+
+      <div class="form-section">
+        <h4>个人概述</h4>
+        <div id="f-summary-list"></div>
+      </div>
+
+      <div class="form-section">
+        <h4>教育背景</h4>
+        <div id="f-edu-list"></div>
+      </div>
+
+      <div class="form-section">
+        <h4>经历 / 项目</h4>
+        <div id="f-exp-list"></div>
+      </div>
+
+      <div class="form-section">
+        <h4>技能</h4>
+        <div id="f-skill-list"></div>
+      </div>
+    </div>
+
+    <!-- 右:A4 实时预览 -->
+    <div>
+      <div class="a4-wrap">
+        <div class="a4" id="a4page"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 底部:缺失信息 + 面试追问风险 -->
+  <div id="warn-area" class="mt24"></div>
+
+  <div class="row mt24">
+    <button class="btn btn-ghost" onclick="show('entry')">← 重新开始</button>
+  </div>
+</div>
+
+<!-- 溯源弹窗 -->
+<div class="ev-modal" id="ev-modal" onclick="if(event.target===this)closeEvModal()">
+  <div class="box">
+    <div class="label">📄 简历里这句话，来自你说的原话：</div>
+    <div class="stmt" id="ev-stmt"></div>
+    <div class="label">📝 你的原话：</div>
+    <div class="quote" id="ev-quote"></div>
+    <div class="row mt16" style="justify-content:flex-end;">
+      <button class="btn btn-sm" onclick="closeEvModal()">明白</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   状态 + mode
+============================================================ */
+var jobProfile=null, questions=[], facts=[], confirmedFacts=[], generatedResume=null, missingInfo=[], interviewRisks=[];
+var currentMode='mock';
+var pathUsed=''; // 'A' 或 'B'
+
+function setMode(mode){
+  currentMode=mode||'mock';
+  var el=document.getElementById('global-mode');
+  el.className='mode-badge mode-'+currentMode;
+  el.textContent = currentMode==='live'?'🟢 真实 AI (live)'
+    : currentMode==='fallback'?'⚠️ 降级数据 (fallback)'
+    : '🔸 演示数据 (mock)';
+}
+
+/* 视图切换 */
+function show(view){
+  ['entry','a-input','a-diag','b-input','b-quiz','b-facts','b-template','resume'].forEach(function(v){
+    document.getElementById('view-'+v).classList.add('hidden');
+  });
+  document.getElementById('view-'+view).classList.remove('hidden');
+  window.scrollTo(0,0);
+}
+
+function startPath(p){
+  pathUsed=p;
+  if(p==='A'){ show('a-input'); }
+  else { bReset(); show('b-input'); }
+}
+
+/* ============================================================
+   API client(直连后端,POST JSON,看 mode)
+============================================================ */
+// 用相对路径:页面必须从后端 3001 打开(http://localhost:3001/student-resume.html),
+// 这样是同源,浏览器会自动绕过本机代理(127.0.0.1:1080 Privoxy),不会返回错误页。
+// 不要用 127.0.0.1 写死——本机代理会截胡 127.0.0.1 的请求。
+async function api(url,body){
+  var res;
+  try{
+    res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  }catch(e){
+    // 在 GitHub 静态页或未启动后端时,fetch 直接抛错。给一个友好的引导,而不是裸报错。
+    var offlineHint='⚠️ 连不上后端服务。\n\n如果你是在 GitHub 或本地直接打开这个网页(没用后端),AI 接口是跑不起来的。\n要看完整效果,请在本地启动后端:\n  cd backend && pnpm build && LLM_MODE=mock PORT=3001 node dist/server.js\n然后从 http://localhost:3001/student-resume.html 打开。';
+    var err=new Error(offlineHint);
+    err.offline=true;
+    throw err;
+  }
+  var txt=await res.text(),json;
+  try{ json=JSON.parse(txt); }
+  catch(e){
+    var peek=txt.replace(/\s+/g,' ').slice(0,160);
+    var hint = /privoxy|proxy|404|not found|<!doctype|<html/i.test(txt) ? '\n(看起来被代理截胡或连错了服务器。务必从 localhost:3001 打开本页面。)' : '';
+    throw new Error('后端没返回 JSON。HTTP='+res.status+'。开头: 「'+peek+'」'+hint);
+  }
+  return json;
+}
+function showApiError(json,where){
+  var msg=(json&&json.error&&json.error.message)?json.error.message:'请求失败';
+  var fe=json&&json.error&&json.error.fieldErrors;
+  if(fe){ Object.keys(fe).forEach(function(k){msg+='\n· '+k+': '+(fe[k]||[]).join('、');}); }
+  alert('['+(where||'')+'] '+msg);
+}
+
+/* ============================================================
+   路 A:贴 JD + 旧简历 → seeker/analyze
+============================================================ */
+async function aAnalyze(){
+  var jd=document.getElementById('a-jd').value.trim();
+  var oldR=document.getElementById('a-old').value.trim();
+  if(!jd){alert('请贴上目标岗位的 JD');return;}
+  if(!oldR){alert('路 A 需要你的旧简历。没有旧简历?换「路 B · 从零开始」。');return;}
+  var btn=document.getElementById('a-analyze-btn');btn.disabled=true;
+  var load=document.getElementById('a-loading');load.classList.remove('hidden');
+  document.getElementById('a-loading-text').textContent='AI 正在分析岗位要求……';
+  try{
+    var json=await api('/api/seeker/analyze',{jdText:jd,oldResume:oldR});
+    if(!json.ok){ showApiError(json,'岗位分析'); return; }
+    setMode(json.mode);
+    jobProfile=json.data.jobProfile;
+    window._aJdText=jd; // 记住 JD 原文,诊断报告里用来标 mustHave 出处
+    ['responsibilities','coreCompetencies','mustHaves','niceToHaves','expectedOutcomes','constraints','keywords','uncertainties'].forEach(function(k){
+      if(!Array.isArray(jobProfile[k]))jobProfile[k]=[];
+    });
+    renderADiag();
+    show('a-diag');
+  }catch(e){ alert('岗位分析失败:'+e.message); }
+  finally{ btn.disabled=false; load.classList.add('hidden'); }
+}
+
+function renderADiag(){
+  document.getElementById('a-jobtitle').textContent=jobProfile.jobTitle||'(未命名岗位)';
+  document.getElementById('a-keywords').textContent=(jobProfile.keywords||[]).join('、') || '(无)';
+  var mhs=jobProfile.mustHaves||[];
+  var jdText=(window._aJdText||'');
+  var html='';
+  if(mhs.length===0){
+    html='<div class="diag-item"><p class="muted">AI 没从这份 JD 里拆出明确的"必须具备"项。你可以把 JD 写得更具体一点再试。</p></div>';
+  }
+  mhs.forEach(function(mh,i){
+    var ctx=jdContext(jdText,mh);
+    var advice=diagAdvice(mh);
+    html+='<div class="diag-item" id="diag-'+i+'">'+
+      '<div class="must-have">'+(i+1)+'. '+mh+'</div>'+
+      (ctx?'<div class="diag-ctx"><span class="hint">📌 JD 出处:</span> '+ctx+'</div>':'')+
+      '<div class="diag-options">'+
+        '<div class="diag-opt ok" data-i="'+i+'" data-v="ok" onclick="pickDiag(this)">✅ 我有证据</div>'+
+        '<div class="diag-opt weak" data-i="'+i+'" data-v="weak" onclick="pickDiag(this)">⚠️ 证据弱</div>'+
+        '<div class="diag-opt missing" data-i="'+i+'" data-v="missing" onclick="pickDiag(this)">🟡 我没有</div>'+
+      '</div>'+
+      '<div class="diag-advice hidden" id="diag-advice-'+i+'"></div>'+
+      '<div class="diag-note hidden"><label class="field" style="margin-bottom:4px;">补一句:这条的证据/原话是?</label>'+
+        '<input type="text" id="diag-note-'+i+'" placeholder="例如:便利店一学期销售数据,用 Excel 去重清洗" oninput="updateADiagState()"></div>'+
+      '</div>';
+  });
+  document.getElementById('a-diag-list').innerHTML=html;
+  // 初始化诊断状态 + 记住建议文案
+  window.diagAdviceMap={};
+  mhs.forEach(function(mh,i){window.diagAdviceMap[i]=diagAdvice(mh);});
+  window.diagState=mhs.map(function(){return {v:null,note:''};});
+  updateADiagState();
+}
+
+/* JD 出处:找到 mh 在 JD 文本里出现的位置,截前后 10 字当上下文。 */
+function jdContext(jd,needle){
+  if(!jd||!needle)return '';
+  var lower=jd.toLowerCase(), n=needle.toLowerCase();
+  var idx=lower.indexOf(n);
+  if(idx<0){
+    // 整词没命中,试着匹配关键词里的子串(比如"视频剪辑"→"视频")
+    var core=needle.replace(/运营|能力|开发|分析$/,'');
+    if(core&&core!==needle){idx=lower.indexOf(core.toLowerCase());}
+  }
+  if(idx<0)return '';
+  var start=Math.max(0,idx-10), end=Math.min(jd.length,idx+needle.length+10);
+  var snip=jd.slice(start,end).replace(/\s+/g,' ').trim();
+  return '…'+snip+'…';
+}
+
+/* 证据弱时,给一句"面试官可能问什么"的建议。纯文案,按岗位关键词给。 */
+function diagAdvice(mh){
+  var m=mh;
+  if(/视频|剪辑/.test(m))return '面试官可能问:"你剪过哪条视频?用什么工具?承担了哪一环?" 提前准备一个能讲清职责、不夸大个人贡献的例子。';
+  if(/小红书/.test(m))return '面试官可能问:"你做过哪个账号?数据怎么样?选题怎么定的?" 准备一个有真实数据的案例。';
+  if(/React/.test(m))return '面试官可能问:"你用 React 做过什么项目?组件怎么拆的?" 准备一个能说清自己写了哪部分的例子。';
+  if(/TypeScript|TS/.test(m))return '面试官可能问:"TypeScript 熟到什么程度?interface/type 怎么用?" 别把"了解"说成"精通"。';
+  if(/SQL/.test(m))return '面试官可能问:"你写过什么 SQL 查询?JOIN/子查询用过吗?" 诚实说清是课程还是项目。';
+  if(/Excel/.test(m))return '面试官可能问:"用 Excel 处理过什么数据?透视表/函数会吗?" 准备一个真实处理过的数据集。';
+  if(/Java/.test(m))return '面试官可能问:"用 Java 做过什么?Spring 用到什么程度?" 说清自己承担的环节,别把参与说成主导。';
+  if(/接口/.test(m))return '面试官可能问:"写过什么接口?入参出参怎么设计的?" 准备一个能讲清设计思路的例子。';
+  if(/数据库/.test(m))return '面试官可能问:"用过哪些数据库?复杂查询写过吗?" 诚实说清程度。';
+  return '面试官可能追问:"你具体做过什么?承担什么角色?有可验证的结果吗?" 提前准备一个例子,把"参与"和"负责"讲清楚。';
+}
+
+function pickDiag(el){
+  var i=parseInt(el.dataset.i),v=el.dataset.v;
+  window.diagState[i].v=v;
+  // 选中样式
+  var item=document.getElementById('diag-'+i);
+  item.querySelectorAll('.diag-opt').forEach(function(o){o.classList.remove('selected');});
+  el.classList.add('selected');
+  // 有证据/证据弱 时显示补充框
+  var note=item.querySelector('.diag-note');
+  if(v==='ok'||v==='weak'){ note.classList.remove('hidden'); var inp=document.getElementById('diag-note-'+i); setTimeout(function(){inp.focus();},0); }
+  else{ note.classList.add('hidden'); }
+  // 证据弱时显示"面试官会问什么"建议;否则隐藏
+  var adviceEl=document.getElementById('diag-advice-'+i);
+  if(adviceEl){
+    if(v==='weak'){adviceEl.classList.remove('hidden');adviceEl.innerHTML='<span class="hint">💡 '+window.diagAdviceMap[i]+'</span>';}
+    else{adviceEl.classList.add('hidden');}
+  }
+  updateADiagState();
+}
+
+function updateADiagState(){
+  // 同步 note
+  if(!window.diagState)return;
+  window.diagState.forEach(function(s,i){
+    var inp=document.getElementById('diag-note-'+i);
+    if(inp) s.note=inp.value.trim();
+  });
+  // 启用生成按钮:只要有一条选了就行
+  var anyPicked=window.diagState.some(function(s){return s.v;});
+  document.getElementById('a-generate-btn').disabled=!anyPicked;
+}
+
+/* ============================================================
+   路 A:用户确认 → 构造 confirmedFacts → 生成简历
+   前端主导,不依赖后端从旧简历提事实。
+   confirmed:true, sourceQuote 用"用户从旧简历认领"(可省 sourceQuestionId)。
+============================================================ */
+async function aGenerate(){
+  var mhs=jobProfile.mustHaves||[];
+  confirmedFacts=[];
+  var weakList=[],missingList=[];
+  window.diagState.forEach(function(s,i){
+    var mh=mhs[i];
+    if(s.v==='ok'){
+      confirmedFacts.push({
+        id:'fa_'+(i+1), category:'skill', statement:mh+'(用户从旧简历认领)',
+        sourceQuote: s.note||('用户认领:简历中具备 '+mh), confirmed:true
+      });
+    }else if(s.v==='weak'){
+      weakList.push('岗位要求「'+mh+'」,但你简历里证据偏弱(可能只是课程/了解/参与)。');
+      // 证据弱的也作为 fact 传进去(标 confirmed),让生成接口知道这点存在但弱
+      confirmedFacts.push({
+        id:'fa_'+(i+1), category:'skill', statement:'了解/参与过 '+mh+'(证据偏弱)',
+        sourceQuote: s.note||('用户认领:偏弱地接触过 '+mh), confirmed:true
+      });
+    }else if(s.v==='missing'){
+      missingList.push('岗位要求「'+mh+'」,但你简历里没有相关内容。');
+    }
+  });
+  if(confirmedFacts.length===0){alert('至少选一条「有证据」或「证据弱」才能生成简历。');return;}
+
+  // 直接进生成视图(先把 weak/missing 存着,生成后再合并接口返回的)
+  window.preWeakList=weakList;
+  window.preMissingList=missingList;
+  await generateResume();
+}
+
+/* ============================================================
+   生成简历:seeker/generate
+============================================================ */
+async function generateResume(){
+  show('resume-loading'==='x'?'x':'resume'); // 先切视图
+  // 实际上需要一个 loading。临时:直接调接口,期间禁用导出。
+  var btnList=document.querySelectorAll('#view-resume .btn');btnList.forEach(function(b){b.disabled=true;});
+  document.getElementById('a4page').innerHTML='<div class="loading"><span class="dots"><span></span><span></span><span></span></span><span>AI 正在用你确认的事实生成简历……</span></div>';
+  try{
+    var json=await api('/api/seeker/generate',{jobProfile:jobProfile,confirmedFacts:confirmedFacts});
+    if(!json.ok){ showApiError(json,'简历生成'); document.getElementById('a4page').innerHTML='<p class="muted">生成失败,点「重新开始」再试。</p>'; return; }
+    setMode(json.mode);
+    generatedResume=json.data.resume;
+    // 合并缺失信息:接口返回 + 路A前端算的 missing
+    missingInfo=(json.data.missingInformation||[]).concat(window.preMissingList||[]);
+    interviewRisks=(json.data.interviewRisks||[]).concat(window.preWeakList||[]);
+    buildEvidenceMap();
+    renderResumeForm();
+    renderA4();
+    renderWarnings();
+  }catch(e){
+    document.getElementById('a4page').innerHTML='<p class="muted">生成失败:'+e.message+'</p>';
+  }
+  finally{ btnList.forEach(function(b){b.disabled=false;}); }
+}
+
+/* ============================================================
+   溯源:evidenceIds → fact.sourceQuote
+============================================================ */
+var evidenceMap={};
+function buildEvidenceMap(){evidenceMap={};confirmedFacts.forEach(function(f){evidenceMap[f.id]=f;});}
+function showEvModal(factId){
+  var f=evidenceMap[factId];
+  if(!f)return;
+  document.getElementById('ev-stmt').textContent=f.statement;
+  document.getElementById('ev-quote').textContent='"'+f.sourceQuote+'"';
+  document.getElementById('ev-modal').classList.add('show');
+}
+function closeEvModal(){document.getElementById('ev-modal').classList.remove('show');}
+
+/* ============================================================
+   简历表单状态(可编辑,从 generatedResume 初始化)
+============================================================ */
+var formData={name:'',title:'',contact:'',summary:[],education:[],experiences:[],skills:[]};
+
+function renderResumeForm(){
+  var d=generatedResume;
+  formData={
+    name:'求职者',
+    title:d.title||'',
+    contact:'',
+    summary:(d.summary||[]).map(function(b){return {text:b.text,evidenceIds:b.evidenceIds||[]};}),
+    education:(d.education||[]).map(function(b){return {text:b.text,evidenceIds:b.evidenceIds||[]};}),
+    experiences:(d.experiences||[]).map(function(e){return {name:e.name,bullets:(e.bullets||[]).map(function(b){return {text:b.text,evidenceIds:b.evidenceIds||[]};})};}),
+    skills:(d.skills||[]).map(function(b){return {text:b.text,evidenceIds:b.evidenceIds||[]};})
+  };
+  // 顶部
+  document.getElementById('f-name').value=formData.name;
+  document.getElementById('f-title').value=formData.title;
+  document.getElementById('f-contact').value=formData.contact;
+  // 各列表
+  renderBulletList('f-summary-list',formData.summary,'summary','个人概述');
+  renderEduList();
+  renderExpList();
+  renderBulletList('f-skill-list',formData.skills,'skill','技能');
+}
+
+/* 通用 bullet 列表编辑器(summary / skill) */
+function renderBulletList(containerId,arr,group,placeholder){
+  var html='';
+  arr.forEach(function(b,i){
+    var evChips='';
+    if(b.evidenceIds&&b.evidenceIds.length){
+      evChips=' <div class="mt8"><span class="hint">🔗 原话:</span> '+b.evidenceIds.map(function(eid){var f=evidenceMap[eid];return f?'<span class="ev-chip" onclick="showEvModal(\''+eid+'\')">'+esc((f.sourceQuote||'').slice(0,14))+'…</span>':'';}).join('')+'</div>';
+    }
+    html+='<div class="bullet-edit">'+
+      '<textarea oninput="updateBullet(\''+group+'\','+i+',this.value)" placeholder="'+placeholder+'">'+esc(b.text)+'</textarea>'+
+      evChips+
+      '<button class="btn btn-ghost btn-sm mt8" onclick="delBullet(\''+group+'\','+i+')">🗑 删除</button>'+
+      '</div>';
+  });
+  html+='<button class="bullet-add" onclick="addBullet(\''+group+'\')">+ 加一条</button>';
+  document.getElementById(containerId).innerHTML=html;
+}
+
+function addBullet(group){
+  if(group==='summary')formData.summary.push({text:'',evidenceIds:[]});
+  if(group==='skill')formData.skills.push({text:'',evidenceIds:[]});
+  renderResumeForm();renderA4();
+}
+function delBullet(group,i){
+  if(group==='summary')formData.summary.splice(i,1);
+  if(group==='skill')formData.skills.splice(i,1);
+  renderResumeForm();renderA4();
+}
+function updateBullet(group,i,val){
+  if(group==='summary'){formData.summary[i].text=val;patchA4Summary();}
+  if(group==='skill'){formData.skills[i].text=val;patchA4SideSkills();}
+}
+
+/* 顶部姓名/职位/联系方式 —— 只更新 A4 对应单元格,不重建表单(避免输入失焦) */
+function updateTop(field,val){
+  formData[field]=val;
+  var a4=document.getElementById('a4page');
+  if(field==='name'){var n=a4.querySelector('.a4-head .name');if(n)n.textContent=val||'求职者';}
+  else if(field==='title'){var t=a4.querySelector('.a4-head .title');if(t)t.textContent=val||'';}
+  else if(field==='contact'){
+    var c=a4.querySelector('.a4-head .contact');
+    var parts=val.split('/').map(function(s){return s.trim();}).filter(Boolean).join(' · ');
+    if(c){if(parts)c.textContent=parts;else c.remove();}
+    else if(parts){var head=a4.querySelector('.a4-head');var div=document.createElement('div');div.className='contact';div.textContent=parts;head.appendChild(div);}
+  }
+}
+
+/* 教育(简单文本行) */
+function renderEduList(){
+  var html='';
+  formData.education.forEach(function(b,i){
+    var evChips='';
+    if(b.evidenceIds&&b.evidenceIds.length){
+      evChips=' <div class="mt8"><span class="hint">🔗 原话:</span> '+b.evidenceIds.map(function(eid){var f=evidenceMap[eid];return f?'<span class="ev-chip" onclick="showEvModal(\''+eid+'\')">'+esc((f.sourceQuote||'').slice(0,14))+'…</span>':'';}).join('')+'</div>';
+    }
+    html+='<div class="bullet-edit">'+
+      '<input type="text" class="mini-input" oninput="updateEdu('+i+',this.value)" placeholder="如:XX大学 · 数据科学 · 2022-2026" value="'+esc(b.text)+'">'+
+      evChips+
+      '<button class="btn btn-ghost btn-sm mt8" onclick="delEdu('+i+')">🗑 删除</button>'+
+      '</div>';
+  });
+  html+='<button class="bullet-add" onclick="addEdu()">+ 加一条</button>';
+  document.getElementById('f-edu-list').innerHTML=html;
+}
+function addEdu(){formData.education.push({text:'',evidenceIds:[]});renderResumeForm();renderA4();}
+function delEdu(i){formData.education.splice(i,1);renderResumeForm();renderA4();}
+function updateEdu(i,val){formData.education[i].text=val;patchA4SideEdu();}
+
+/* 经历(带名称 + bullets) */
+function renderExpList(){
+  var html='';
+  formData.experiences.forEach(function(exp,ei){
+    html+='<div class="form-section" style="margin-bottom:10px;padding:12px;background:var(--bg);">'+
+      '<input type="text" class="mini-input mb8" oninput="updateExpName('+ei+',this.value)" placeholder="经历/项目名称,如:校园便利店销售数据分析" value="'+esc(exp.name)+'">'+
+      '<div class="bullet-edit">';
+    exp.bullets.forEach(function(b,bi){
+      var evChips='';
+      if(b.evidenceIds&&b.evidenceIds.length){
+        evChips=' <div class="mt8"><span class="hint">🔗 原话:</span> '+b.evidenceIds.map(function(eid){var f=evidenceMap[eid];return f?'<span class="ev-chip" onclick="showEvModal(\''+eid+'\')">'+esc((f.sourceQuote||'').slice(0,14))+'…</span>':'';}).join('')+'</div>';
+      }
+      html+='<div class="bullet-edit" style="margin-bottom:6px;">'+
+        '<textarea oninput="updateExpBullet('+ei+','+bi+',this.value)" class="mini-input" style="height:40px;" placeholder="具体做了什么,有数字更好">'+esc(b.text)+'</textarea>'+
+        evChips+
+        '</div>';
+    });
+    html+='</div>'+
+      '<div class="row" style="gap:6px;"><button class="btn btn-ghost btn-sm" onclick="addExpBullet('+ei+')">+ 加一条要点</button>'+
+      '<button class="btn btn-ghost btn-sm" onclick="delExp('+ei+')">🗑 删除整段</button></div>'+
+      '</div>';
+  });
+  html+='<button class="bullet-add" onclick="addExp()">+ 加一段经历</button>';
+  document.getElementById('f-exp-list').innerHTML=html;
+}
+function addExp(){formData.experiences.push({name:'',bullets:[{text:'',evidenceIds:[]}]});renderResumeForm();renderA4();}
+function delExp(i){formData.experiences.splice(i,1);renderResumeForm();renderA4();}
+function addExpBullet(ei){formData.experiences[ei].bullets.push({text:'',evidenceIds:[]});renderResumeForm();renderA4();}
+function updateExpName(ei,val){formData.experiences[ei].name=val;patchA4ExpHead(ei);}
+function updateExpBullet(ei,bi,val){formData.experiences[ei].bullets[bi].text=val;patchA4ExpBlock(ei);}
+
+/* ---- A4 局部刷新(只改对应格子,不重建整个 A4,避免 oninput 闪烁/失焦) ---- */
+function patchA4SideEdu(){
+  var a4=document.getElementById('a4page');
+  var side=a4.querySelector('.a4-side');if(!side)return;
+  var existing=side.querySelector('.block.edu');
+  var items=formData.education.filter(function(b){return b.text;});
+  var html=items.map(function(b){return '<p>'+esc(b.text)+'</p>';}).join('');
+  if(existing){if(items.length)existing.innerHTML=html;else existing.remove();}
+  else if(items.length){
+    var block=document.createElement('div');block.className='block edu';
+    block.innerHTML='<h3>教育</h3>'+html;
+    side.appendChild(block);
+  }
+}
+function patchA4SideSkills(){
+  var a4=document.getElementById('a4page');
+  var side=a4.querySelector('.a4-side');if(!side)return;
+  var existing=side.querySelector('.block.skills');
+  var items=formData.skills.filter(function(b){return b.text;});
+  var html='<li>'+items.map(function(b){return esc(b.text);}).join('</li><li>')+'</li>';
+  if(items.length===0)html='';
+  if(existing){if(items.length)existing.querySelector('ul').innerHTML=html;else existing.remove();}
+  else if(items.length){
+    var block=document.createElement('div');block.className='block skills';
+    block.innerHTML='<h3>技能</h3><ul>'+html+'</ul>';
+    side.insertBefore(block,side.firstChild);
+  }
+}
+function patchA4Summary(){
+  var a4=document.getElementById('a4page');
+  var main=a4.querySelector('.a4-main');if(!main)return;
+  var existing=main.querySelector('.block.summary');
+  var items=formData.summary.filter(function(b){return b.text;});
+  if(existing){if(items.length)existing.querySelector('ul').innerHTML=items.map(renderA4Bullet).join('');else existing.remove();}
+  else if(items.length){
+    var block=document.createElement('div');block.className='block summary';
+    block.innerHTML='<h3>个人概述</h3><ul>'+items.map(renderA4Bullet).join('')+'</ul>';
+    main.insertBefore(block,main.firstChild);
+  }
+}
+function patchA4ExpHead(ei){
+  var a4=document.getElementById('a4page');
+  var blocks=a4.querySelectorAll('.a4-main .block');
+  var expBlocks=Array.prototype.slice.call(blocks).filter(function(b){return !b.classList.contains('summary');});
+  var expBlock=expBlocks[ei];
+  if(expBlock){var h3=expBlock.querySelector('h3');if(h3)h3.textContent=formData.experiences[ei].name||'经历';}
+}
+function patchA4ExpBlock(ei){
+  var a4=document.getElementById('a4page');
+  var blocks=a4.querySelectorAll('.a4-main .block');
+  var expBlocks=Array.prototype.slice.call(blocks).filter(function(b){return !b.classList.contains('summary');});
+  var expBlock=expBlocks[ei];
+  if(!expBlock)return;
+  var ul=expBlock.querySelector('ul');
+  var bs=formData.experiences[ei].bullets.filter(function(b){return b.text;});
+  if(bs.length){var lis=bs.map(renderA4Bullet).join('');if(ul){ul.innerHTML=lis;}else{ul=document.createElement('ul');ul.innerHTML=lis;expBlock.appendChild(ul);}}
+  else if(ul){ul.remove();}
+}
+
+/* ============================================================
+   A4 实时预览(单一干净模板,参考桌面 hack 简历图)
+============================================================ */
+function renderA4(){
+  var d=formData;
+  var contact=d.contact?(d.contact.split('/').map(function(s){return s.trim();}).filter(Boolean).join(' · ')):'';
+  var html='<div class="a4-head">'+
+    '<div class="name">'+esc(d.name||'求职者')+'</div>'+
+    '<div class="title">'+esc(d.title||'')+'</div>'+
+    (contact?'<div class="contact">'+esc(contact)+'</div>':'')+
+    '</div><div class="a4-body">';
+
+  // 左栏:技能 / 教育
+  html+='<div class="a4-side">';
+  if(d.skills.length){
+    html+='<div class="block skills"><h3>技能</h3><ul>'+d.skills.filter(function(b){return b.text;}).map(function(b){return '<li>'+esc(b.text)+'</li>';}).join('')+'</ul></div>';
+  }
+  if(d.education.length){
+    html+='<div class="block edu"><h3>教育</h3>'+d.education.filter(function(b){return b.text;}).map(function(b){return '<p>'+esc(b.text)+'</p>';}).join('')+'</div>';
+  }
+  html+='</div>';
+
+  // 右栏:概述 / 经历
+  html+='<div class="a4-main">';
+  if(d.summary.filter(function(b){return b.text;}).length){
+    html+='<div class="block summary"><h3>个人概述</h3><ul>'+d.summary.filter(function(b){return b.text;}).map(function(b){return renderA4Bullet(b);}).join('')+'</ul></div>';
+  }
+  d.experiences.forEach(function(exp){
+    var bs=exp.bullets.filter(function(b){return b.text;});
+    if(!exp.name&&!bs.length)return;
+    html+='<div class="block"><h3>'+esc(exp.name||'经历')+'</h3>';
+    if(bs.length)html+='<ul>'+bs.map(function(b){return renderA4Bullet(b);}).join('')+'</ul>';
+    html+='</div>';
+  });
+  html+='</div></div>';
+  document.getElementById('a4page').innerHTML=html;
+}
+
+function renderA4Bullet(b){
+  var hasEv=b.evidenceIds&&b.evidenceIds.length;
+  var evStr='';
+  if(hasEv){
+    // 用第一个 evidence 的 id 作为锚点
+    var eid=b.evidenceIds[0];
+    evStr=' <span class="ev-mark">🔗</span><div class="ev-pop">这是你当时说的原话:"'+esc(evidenceMap[eid]?evidenceMap[eid].sourceQuote:'')+'"</div>';
+    return '<li class="has-ev" onclick="this.classList.toggle(\'ev-open\')">'+esc(b.text)+evStr+'</li>';
+  }
+  return '<li>'+esc(b.text)+'</li>';
+}
+
+/* ============================================================
+   底部:缺失信息(黄) + 面试追问风险(红)
+============================================================ */
+function renderWarnings(){
+  var html='';
+  if(missingInfo.length){
+    html+='<div class="warn-box warn-amber"><h4>🟡 岗位要的,你还没有</h4><ul>';
+    missingInfo.forEach(function(m){html+='<li>'+esc(m)+'</li>';});
+    html+='</ul></div>';
+  }
+  if(interviewRisks.length){
+    html+='<div class="warn-box warn-red"><h4>🔴 这里证据弱,面试官会追问</h4><ul>';
+    interviewRisks.forEach(function(r){
+      // 契约:interviewRisks 是 string[]
+      var txt=(typeof r==='string')?r:((r&&r.risk)||JSON.stringify(r));
+      html+='<li>'+esc(txt)+'</li>';
+    });
+    html+='</ul></div>';
+  }
+  if(!missingInfo.length&&!interviewRisks.length){
+    html='<div class="warn-box" style="background:var(--green-soft);border-color:var(--green-line);"><h4 style="color:#15803D;">✅ 没发现明显的缺失和风险点</h4><p class="hint" style="color:#15803D;">不过面试时还是会被深挖,提前想想怎么讲清楚每条经历。</p></div>';
+  }
+  document.getElementById('warn-area').innerHTML=html;
+}
+
+/* ============================================================
+   PDF 导出
+============================================================ */
+function exportPDF(){
+  var page=document.getElementById('a4page');
+  var clone=page.cloneNode(true);
+  clone.style.width='794px';clone.style.minHeight='1123px';
+  clone.style.position='absolute';clone.style.left='-9999px';clone.style.top='0';clone.style.background='#fff';
+  document.body.appendChild(clone);
+  html2pdf().set({margin:0,filename:(formData.name||'resume')+'_简历.pdf',image:{type:'jpeg',quality:0.98},html2canvas:{scale:2,backgroundColor:'#ffffff',width:794,windowWidth:794},jsPDF:{unit:'px',format:[794,1123],orientation:'portrait'}}).from(clone).save().then(function(){document.body.removeChild(clone);}).catch(function(){document.body.removeChild(clone);alert('导出失败,请重试。');});
+}
+
+/* ============================================================
+   小工具
+============================================================ */
+function esc(s){if(s==null)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// 初始化
+setMode('mock');
+
+/* ============================================================
+   路 B:从零开始(b- 前缀,独立状态,不碰路A 变量)
+   共享 confirmedFacts / generatedResume / jobProfile(开始处复用,生成处覆盖)。
+============================================================ */
+var bQuestions=[], bAnswers=[], bFacts=[], bMissing=[], bTemplate='classic';
+var bForm={name:'求职者',title:'',contact:'',summary:[],education:[],experiences:[],skills:[]};
+
+/* 模板定义(4 个,纯样式不同,数据来源一样) */
+var B_TEMPLATES=[
+  {id:'classic',  name:'经典单栏',   desc:'居中姓名 + 标准分栏,最稳妥',                 thumb:'classic'},
+  {id:'modern',   name:'现代双栏',   desc:'静蓝标题 + 左侧边栏,清爽现代',               thumb:'modern'},
+  {id:'compact',  name:'紧凑信息型', desc:'黑底小标题,信息密度高,一页放更多',           thumb:'compact'},
+  {id:'academic', name:'学术型',     desc:'衬线字体,适合科研/学术方向',                 thumb:'academic'}
+];
+
+/* 路 B 面包屑(5步) */
+function renderBCrumb(active){
+  var steps=[['1','贴 JD'],['2','答题'],['3','确认事实'],['4','选模板'],['5','生成简历']];
+  var html='<div class="crumb mb24">';
+  steps.forEach(function(s,i){
+    var cls = (i+1)<active ? 'done' : (i+1)===active ? 'active' : '';
+    var dot = (i+1)<active ? '✓' : s[0];
+    html+='<div class="crumb-step '+cls+'"><div class="crumb-dot">'+dot+'</div>'+s[1]+'</div>';
+    if(i<steps.length-1) html+='<div class="crumb-line '+(i+1<active?'':'')+'"></div>';
+  });
+  html+='</div>';
+  return html;
+}
+function setBCrumb(active){
+  document.querySelectorAll('.b-crumb').forEach(function(el){
+    el.innerHTML=renderBCrumb(active);
+  });
+}
+
+/* ---- 路 B 重置 ---- */
+function bReset(){
+  bQuestions=[];bAnswers=[];bFacts=[];bMissing=[];bTemplate='classic';
+  bForm={name:'求职者',title:'',contact:'',summary:[],education:[],experiences:[],skills:[]};
+  var jd=document.getElementById('b-jd'); if(jd) jd.value='';
+}
+
+/* ============================================================
+   路 B 第1步:贴 JD → seeker/analyze 拿 questions
+============================================================ */
+async function bAnalyze(){
+  var jd=document.getElementById('b-jd').value.trim();
+  if(!jd){alert('请贴上目标岗位的 JD');return;}
+  var btn=document.getElementById('b-analyze-btn');btn.disabled=true;
+  var load=document.getElementById('b-loading');load.classList.remove('hidden');
+  document.getElementById('b-loading-text').textContent='AI 正在分析岗位、准备问题……';
+  try{
+    var json=await api('/api/seeker/analyze',{jdText:jd});
+    if(!json.ok){ showApiError(json,'岗位分析'); return; }
+    setMode(json.mode);
+    jobProfile=json.data.jobProfile;
+    ['responsibilities','coreCompetencies','mustHaves','niceToHaves','expectedOutcomes','constraints','keywords','uncertainties'].forEach(function(k){
+      if(!Array.isArray(jobProfile[k]))jobProfile[k]=[];
+    });
+    bQuestions=json.data.questions||[];
+    renderBQuiz();
+    setBCrumb(2);
+    show('b-quiz');
+  }catch(e){ alert('岗位分析失败:'+e.message); }
+  finally{ btn.disabled=false; load.classList.add('hidden'); }
+}
+
+/* ============================================================
+   路 B 第2步:答题
+============================================================ */
+function renderBQuiz(){
+  var html='';
+  if(!bQuestions.length){
+    html='<p class="muted">AI 没准备出问题。把 JD 写得更具体一点再试。</p>';
+  }
+  bQuestions.forEach(function(q,i){
+    var reqTag = q.required ? '<span class="hint" style="color:var(--red);">必答</span>' : '<span class="hint">选答</span>';
+    html+='<div class="b-quiz-q">'+
+      '<div class="q-num">问题 '+(i+1)+' '+reqTag+'</div>'+
+      '<div class="q-text">'+esc(q.text)+'</div>'+
+      (q.reason?'<div class="q-reason">想知道:'+esc(q.reason)+'</div>':'')+
+      (q.answerType==='choice' && q.options
+        ? '<select class="mt8" id="b-ans-'+q.id+'" onchange="bMarkAnswered('+i+')">'+
+            '<option value="">— 选一个 —</option>'+
+            q.options.map(function(o){return '<option value="'+esc(o)+'">'+esc(o)+'</option>';}).join('')+
+          '</select>'
+        : '<textarea id="b-ans-'+q.id+'" rows="3" placeholder="如实说,越具体越好" oninput="bMarkAnswered('+i+')"></textarea>'
+      )+
+    '</div>';
+  });
+  document.getElementById('b-quiz-list').innerHTML=html;
+}
+function bMarkAnswered(i){
+  // 实时点亮下一步按钮:必答题答完才放行
+  var allReq = bQuestions.filter(function(q){return q.required;});
+  var ok = allReq.every(function(q){
+    var el=document.getElementById('b-ans-'+q.id);
+    return el && el.value.trim();
+  });
+  document.getElementById('b-facts-btn').disabled=!ok;
+}
+
+/* 提交答案 → seeker/facts */
+async function bSubmitAnswers(){
+  bAnswers=[];
+  var any=false;
+  for(var i=0;i<bQuestions.length;i++){
+    var q=bQuestions[i];
+    var el=document.getElementById('b-ans-'+q.id);
+    var ans = el ? el.value.trim() : '';
+    if(ans){ bAnswers.push({questionId:q.id, answer:ans}); any=true; }
+  }
+  if(!any){ alert('至少回答一个问题才能继续。'); return; }
+  var btn=document.getElementById('b-facts-btn');btn.disabled=true;
+  var load=document.getElementById('b-loading2');load.classList.remove('hidden');
+  try{
+    var json=await api('/api/seeker/facts',{jobProfile:jobProfile,questions:bQuestions,answers:bAnswers});
+    if(!json.ok){ showApiError(json,'事实整理'); return; }
+    setMode(json.mode);
+    bFacts=(json.data.facts||[]).map(function(f){f.confirmed=false;return f;}); // 契约:初始 confirmed=false
+    bMissing=json.data.missingInformation||[];
+    renderBFacts();
+    renderBAiCard('facts');
+    setBCrumb(3);
+    show('b-facts');
+  }catch(e){ alert('整理事实失败:'+e.message); }
+  finally{ btn.disabled=false; load.classList.add('hidden'); }
+}
+
+/* ============================================================
+   路 B 第3步:事实卡片确认
+============================================================ */
+function renderBFacts(){
+  var html='';
+  if(!bFacts.length){
+    html='<div class="card"><p class="muted">AI 没整理出事实卡片。试试把答案写得更具体。</p></div>';
+  }
+  bFacts.forEach(function(f,i){
+    var cls = f.confirmed ? 'fact confirmed' : 'fact';
+    html+='<div class="'+cls+'" id="bf-card-'+i+'">'+
+      '<div class="fact-head"><span class="fact-cat">'+esc(f.category||'其他')+'</span>'+
+        '<span class="hint" id="bf-state-'+i+'">'+(f.confirmed?'✅ 已确认':'未确认')+'</span></div>'+
+      '<div class="fact-stmt" id="bf-stmt-'+i+'">'+esc(f.statement)+'</div>'+
+      '<div class="fact-quote">📝 原话:'+esc(f.sourceQuote)+'</div>'+
+      '<div class="fact-actions">'+
+        '<button class="btn btn-sm" onclick="bToggleConfirm('+i+')">'+(f.confirmed?'撤回确认':'✓ 确认')+'</button>'+
+        '<button class="btn btn-outline btn-sm" onclick="bEditFact('+i+')">✏ 编辑</button>'+
+        '<button class="btn btn-ghost btn-sm" onclick="bDelFact('+i+')">🗑 删除</button>'+
+      '</div>'+
+    '</div>';
+  });
+  document.getElementById('b-facts-list').innerHTML=html;
+  updateBFactsCount();
+}
+function updateBFactsCount(){
+  var n=bFacts.filter(function(f){return f.confirmed && !f._deleted;}).length;
+  var el=document.getElementById('b-facts-count'); if(el) el.textContent=n;
+  var next=document.getElementById('b-next-tpl-btn'); if(next) next.disabled=(n===0);
+}
+function bToggleConfirm(i){
+  var f=bFacts[i]; if(f._deleted)return;
+  f.confirmed=!f.confirmed;
+  var card=document.getElementById('bf-card-'+i);
+  card.className = f.confirmed ? 'fact confirmed' : 'fact';
+  document.getElementById('bf-state-'+i).textContent = f.confirmed?'✅ 已确认':'未确认';
+  card.querySelector('.fact-actions .btn').textContent = f.confirmed?'撤回确认':'✓ 确认';
+  updateBFactsCount();
+  renderBAiCard('facts');
+}
+function bEditFact(i){
+  var f=bFacts[i];
+  var cur=prompt('编辑这条事实(改写):', f.statement);
+  if(cur===null)return;
+  cur=cur.trim();
+  if(!cur)return;
+  f.statement=cur;
+  document.getElementById('bf-stmt-'+i).textContent=cur;
+  renderBAiCard('facts');
+}
+function bDelFact(i){
+  var f=bFacts[i];
+  f._deleted=true; f.confirmed=false;
+  var card=document.getElementById('bf-card-'+i);
+  card.classList.add('deleted');
+  card.querySelector('.fact-actions').innerHTML='<span class="hint">已删除(进不了简历)</span>';
+  updateBFactsCount();
+  renderBAiCard('facts');
+}
+
+/* 进第4步:选模板 */
+function bGoTemplate(){
+  var c=bFacts.filter(function(f){return f.confirmed && !f._deleted;});
+  if(c.length===0){ alert('至少确认一张事实卡片才能生成简历。'); return; }
+  renderBTemplates();
+  setBCrumb(4);
+  show('b-template');
+}
+
+/* ============================================================
+   路 B 第4步:选模板
+============================================================ */
+function renderBTemplates(){
+  var html='';
+  B_TEMPLATES.forEach(function(t){
+    var sel = t.id===bTemplate ? 'selected' : '';
+    html+='<div class="tpl-card '+sel+'" onclick="bPickTemplate(\''+t.id+'\')" id="tpl-'+t.id+'">'+
+      '<div class="tpl-name">'+esc(t.name)+(sel?' <span style="color:var(--blue);font-size:12px;">✓ 已选</span>':'')+'</div>'+
+      '<div class="tpl-thumb">'+tplThumb(t.thumb)+'</div>'+
+      '<div class="hint mt8" style="font-size:12px;">'+esc(t.desc)+'</div>'+
+    '</div>';
+  });
+  document.getElementById('b-tpl-grid').innerHTML=html;
+}
+function tplThumb(kind){
+  if(kind==='classic')
+    return '<div class="thumb-classic"><div class="t-name">张三</div><div>数据分析实习生</div>'+
+      '<div style="border-bottom:1px solid #999;margin:4px 0;"></div>'+
+      '<div>• Excel 数据清洗</div><div>• SQL 基础查询</div><div>• 便利店销售分析</div>'+
+      '<div style="margin-top:4px;border-bottom:1px solid #999;"></div>'+
+      '<div>教育经历</div><div>项目经历</div></div>';
+  if(kind==='modern')
+    return '<div class="thumb-modern"><div class="t-side">'+
+      '<div class="t-name" style="font-size:8px;font-weight:700;color:#2563EB;border-bottom:1px solid #2563EB;">张三</div>'+
+      '<div style="margin-top:3px;">技能</div><div>• Excel</div><div>• SQL</div>'+
+      '<div style="margin-top:3px;">教育</div><div>XX大学</div>'+
+      '</div><div><div style="font-size:8px;font-weight:700;border-bottom:1px solid #1A1A1A;">经历</div>'+
+      '<div style="margin-top:3px;">▸ 便利店分析</div><div>▸ 数据清洗</div>'+
+      '<div style="margin-top:3px;font-weight:700;border-bottom:1px solid #1A1A1A;">概述</div>'+
+      '<div style="margin-top:2px;">数据清洗实践</div></div></div>';
+  if(kind==='compact')
+    return '<div class="thumb-compact"><div class="t-name">张三 <span style="font-size:8px;color:#999;">13800000000</span></div>'+
+      '<span class="tag">技能</span> Excel · SQL · 数据清洗<br>'+
+      '<span class="tag">经历</span> 便利店销售数据分析<br>'+
+      '<span class="tag">教育</span> XX大学 · 数据科学</div>';
+  if(kind==='academic')
+    return '<div class="thumb-academic"><div class="t-name">张 三</div>'+
+      '<div>数据分析实习生 · 13800000000</div>'+
+      '<div style="border-bottom:1px solid #333;margin:3px 0;"></div>'+
+      '<div style="text-align:left;">§ 教育背景</div>'+
+      '<div style="text-align:left;">§ 研究经历</div>'+
+      '<div style="text-align:left;">§ 技能与方法</div></div>';
+  return '';
+}
+function bPickTemplate(id){
+  bTemplate=id;
+  document.querySelectorAll('.tpl-card').forEach(function(c){c.classList.remove('selected');});
+  document.getElementById('tpl-'+id).classList.add('selected');
+  renderBTemplates(); // 重渲染以更新 ✓ 标记
+}
+
+/* ============================================================
+   路 B 第5步:生成简历
+============================================================ */
+async function bGenerate(){
+  var btn=document.getElementById('b-generate-btn');btn.disabled=true;
+  var load=document.getElementById('b-loading3');load.classList.remove('hidden');
+  // 收集已确认事实 → confirmedFacts(共享变量,generate 用)
+  confirmedFacts = bFacts.filter(function(f){return f.confirmed && !f._deleted;}).map(function(f){
+    var c={id:f.id,category:f.category,statement:f.statement,sourceQuote:f.sourceQuote,confirmed:true};
+    if(f.sourceQuestionId) c.sourceQuestionId=f.sourceQuestionId;
+    return c;
+  });
+  try{
+    var json=await api('/api/seeker/generate',{jobProfile:jobProfile,confirmedFacts:confirmedFacts});
+    if(!json.ok){ showApiError(json,'简历生成'); return; }
+    setMode(json.mode);
+    generatedResume=json.data.resume;
+    missingInfo=(json.data.missingInformation||[]).concat(bMissing||[]);
+    interviewRisks=json.data.interviewRisks||[];
+    buildEvidenceMap(); // 复用路A 的 evidenceMap
+    renderBResumeForm();
+    renderBA4();
+    renderBWarnings();
+    renderBAiCard('resume');
+    setBCrumb(5);
+    show('b-resume');
+  }catch(e){ alert('生成简历失败:'+e.message); }
+  finally{ btn.disabled=false; load.classList.add('hidden'); }
+}
+
+/* 路 B 简历表单(用 generatedResume 初始化 bForm,独立于路A 的 formData) */
+function renderBResumeForm(){
+  var d=generatedResume;
+  bForm={
+    name:'求职者',
+    title:d.title||'',
+    contact:'',
+    summary:(d.summary||[]).map(function(b){return {text:b.text,evidenceIds:b.evidenceIds||[]};}),
+    education:(d.education||[]).map(function(b){return {text:b.text,evidenceIds:b.evidenceIds||[]};}),
+    experiences:(d.experiences||[]).map(function(e){return {name:e.name,bullets:(e.bullets||[]).map(function(b){return {text:b.text,evidenceIds:b.evidenceIds||[]};})};}),
+    skills:(d.skills||[]).map(function(b){return {text:b.text,evidenceIds:b.evidenceIds||[]};})
+  };
+  document.getElementById('bf-name').value=bForm.name;
+  document.getElementById('bf-title').value=bForm.title;
+  document.getElementById('bf-contact').value=bForm.contact;
+  document.getElementById('b-tpl-name').textContent = (B_TEMPLATES.filter(function(t){return t.id===bTemplate;})[0]||{}).name||'';
+  renderBBulletList('bf-summary-list',bForm.summary,'summary','个人概述');
+  renderBEduList();
+  renderBExpList();
+  renderBBulletList('bf-skill-list',bForm.skills,'skill','技能');
+}
+function bUpdateTop(key,val){ bForm[key]=val; renderBA4(); }
+
+/* 通用 bullet 列表(summary/skill) */
+function renderBBulletList(containerId,arr,group,placeholder){
+  var html='';
+  arr.forEach(function(b,i){
+    var evChips=bEvChips(b);
+    html+='<div class="bullet-edit">'+
+      '<textarea oninput="bUpdateBullet(\''+group+'\','+i+',this.value)" placeholder="'+placeholder+'">'+esc(b.text)+'</textarea>'+
+      evChips+
+      '<button class="btn btn-ghost btn-sm mt8" onclick="bDelBullet(\''+group+'\','+i+')">🗑 删除</button>'+
+      '</div>';
+  });
+  html+='<button class="bullet-add" onclick="bAddBullet(\''+group+'\')">+ 加一条</button>';
+  document.getElementById(containerId).innerHTML=html;
+}
+function bAddBullet(group){
+  if(group==='summary')bForm.summary.push({text:'',evidenceIds:[]});
+  if(group==='skill')bForm.skills.push({text:'',evidenceIds:[]});
+  renderBResumeForm();renderBA4();renderBAiCard('resume');
+}
+function bDelBullet(group,i){
+  if(group==='summary')bForm.summary.splice(i,1);
+  if(group==='skill')bForm.skills.splice(i,1);
+  renderBResumeForm();renderBA4();renderBAiCard('resume');
+}
+function bUpdateBullet(group,i,val){
+  if(group==='summary')bForm.summary[i].text=val;
+  if(group==='skill')bForm.skills[i].text=val;
+  renderBA4();renderBAiCard('resume');
+}
+
+/* 教育 */
+function renderBEduList(){
+  var html='';
+  bForm.education.forEach(function(b,i){
+    html+='<div class="bullet-edit">'+
+      '<input type="text" class="mini-input" oninput="bUpdateEdu('+i+',this.value)" placeholder="如:XX大学 · 数据科学 · 2022-2026" value="'+esc(b.text)+'">'+
+      bEvChips(b)+
+      '<button class="btn btn-ghost btn-sm mt8" onclick="bDelEdu('+i+')">🗑 删除</button>'+
+      '</div>';
+  });
+  html+='<button class="bullet-add" onclick="bAddEdu()">+ 加一条</button>';
+  document.getElementById('bf-edu-list').innerHTML=html;
+}
+function bAddEdu(){bForm.education.push({text:'',evidenceIds:[]});renderBResumeForm();renderBA4();renderBAiCard('resume');}
+function bDelEdu(i){bForm.education.splice(i,1);renderBResumeForm();renderBA4();renderBAiCard('resume');}
+function bUpdateEdu(i,val){bForm.education[i].text=val;renderBA4();renderBAiCard('resume');}
+
+/* 经历 */
+function renderBExpList(){
+  var html='';
+  bForm.experiences.forEach(function(exp,ei){
+    html+='<div class="form-section" style="margin-bottom:10px;padding:12px;background:var(--bg);">'+
+      '<input type="text" class="mini-input mb8" oninput="bUpdateExpName('+ei+',this.value)" placeholder="经历/项目名称,如:校园便利店销售数据分析" value="'+esc(exp.name)+'">'+
+      '<div class="bullet-edit">';
+    exp.bullets.forEach(function(b,bi){
+      html+='<div class="bullet-edit" style="margin-bottom:6px;">'+
+        '<textarea oninput="bUpdateExpBullet('+ei+','+bi+',this.value)" class="mini-input" style="height:40px;" placeholder="具体做了什么,有数字更好">'+esc(b.text)+'</textarea>'+
+        bEvChips(b)+
+        '</div>';
+    });
+    html+='</div>'+
+      '<div class="row" style="gap:6px;"><button class="btn btn-ghost btn-sm" onclick="bAddExpBullet('+ei+')">+ 加一条要点</button>'+
+      '<button class="btn btn-ghost btn-sm" onclick="bDelExp('+ei+')">🗑 删除整段</button></div>'+
+      '</div>';
+  });
+  html+='<button class="bullet-add" onclick="bAddExp()">+ 加一段经历</button>';
+  document.getElementById('bf-exp-list').innerHTML=html;
+}
+function bAddExp(){bForm.experiences.push({name:'',bullets:[{text:'',evidenceIds:[]}]});renderBResumeForm();renderBA4();renderBAiCard('resume');}
+function bDelExp(i){bForm.experiences.splice(i,1);renderBResumeForm();renderBA4();renderBAiCard('resume');}
+function bAddExpBullet(ei){bForm.experiences[ei].bullets.push({text:'',evidenceIds:[]});renderBResumeForm();renderBA4();renderBAiCard('resume');}
+function bUpdateExpName(ei,val){bForm.experiences[ei].name=val;renderBA4();}
+function bUpdateExpBullet(ei,bi,val){bForm.experiences[ei].bullets[bi].text=val;renderBA4();renderBAiCard('resume');}
+
+/* 共享:bullet 的原话 chips(用路A 的 evidenceMap / showEvModal) */
+function bEvChips(b){
+  if(!b.evidenceIds||!b.evidenceIds.length)return '';
+  return ' <div class="mt8"><span class="hint">🔗 原话:</span> '+b.evidenceIds.map(function(eid){
+    var f=evidenceMap[eid];
+    return f?'<span class="ev-chip" onclick="showEvModal(\''+eid+'\')">'+esc((f.sourceQuote||'').slice(0,14))+'…</span>':'';
+  }).join('')+'</div>';
+}
+
+/* ============================================================
+   路 B:A4 预览(按选中模板渲染)
+============================================================ */
+function renderBA4(){
+  var d=bForm;
+  var contact=d.contact?(d.contact.split('/').map(function(s){return s.trim();}).filter(Boolean).join(' · ')):'';
+  var html='';
+  // 顶部
+  if(bTemplate==='classic'){
+    html+='<div class="tpl-classic"><div class="b-head">'+
+      '<div class="name">'+esc(d.name||'求职者')+'</div>'+
+      '<div class="title">'+esc(d.title||'')+'</div>'+
+      (contact?'<div class="contact">'+esc(contact)+'</div>':'')+
+      '</div>';
+    if(d.summary.filter(function(b){return b.text;}).length)
+      html+='<h3>个人概述</h3><ul>'+d.summary.filter(function(b){return b.text;}).map(function(b){return bA4Bullet(b);}).join('')+'</ul>';
+    d.experiences.forEach(function(exp){
+      var bs=exp.bullets.filter(function(b){return b.text;});
+      if(!exp.name&&!bs.length)return;
+      html+='<h3>'+esc(exp.name||'经历')+'</h3>'+(bs.length?'<ul>'+bs.map(function(b){return bA4Bullet(b);}).join('')+'</ul>':'');
+    });
+    if(d.skills.filter(function(b){return b.text;}).length)
+      html+='<h3>技能</h3><ul>'+d.skills.filter(function(b){return b.text;}).map(function(b){return '<li>'+esc(b.text)+'</li>';}).join('')+'</ul>';
+    if(d.education.filter(function(b){return b.text;}).length)
+      html+='<h3>教育</h3>'+d.education.filter(function(b){return b.text;}).map(function(b){return '<p>'+esc(b.text)+'</p>';}).join('');
+    html+='</div>';
+  }
+  else if(bTemplate==='modern'){
+    html+='<div class="tpl-modern"><div class="b-head">'+
+      '<div class="name">'+esc(d.name||'求职者')+'</div>'+
+      '<div class="title">'+esc(d.title||'')+'</div>'+
+      (contact?'<div class="contact">'+esc(contact)+'</div>':'')+
+      '</div><div class="b-body"><div class="b-side">';
+    // 左栏
+    if(d.skills.filter(function(b){return b.text;}).length){
+      html+='<div class="block"><h3>技能</h3><ul>'+d.skills.filter(function(b){return b.text;}).map(function(b){return '<li>'+esc(b.text)+'</li>';}).join('')+'</ul></div>';
+    }
+    if(d.education.filter(function(b){return b.text;}).length){
+      html+='<div class="block"><h3>教育</h3>'+d.education.filter(function(b){return b.text;}).map(function(b){return '<p>'+esc(b.text)+'</p>';}).join('')+'</div>';
+    }
+    html+='</div><div class="b-main">';
+    if(d.summary.filter(function(b){return b.text;}).length)
+      html+='<div class="block"><h3>个人概述</h3><ul>'+d.summary.filter(function(b){return b.text;}).map(function(b){return bA4Bullet(b);}).join('')+'</ul></div>';
+    d.experiences.forEach(function(exp){
+      var bs=exp.bullets.filter(function(b){return b.text;});
+      if(!exp.name&&!bs.length)return;
+      html+='<div class="block"><h3>'+esc(exp.name||'经历')+'</h3>'+(bs.length?'<ul>'+bs.map(function(b){return bA4Bullet(b);}).join('')+'</ul>':'')+'</div>';
+    });
+    html+='</div></div></div>';
+  }
+  else if(bTemplate==='compact'){
+    html+='<div class="tpl-compact"><div class="b-head">'+
+      '<div><div class="name">'+esc(d.name||'求职者')+'</div><div class="title">'+esc(d.title||'')+'</div></div>'+
+      (contact?'<div class="contact">'+esc(contact)+'</div>':'')+
+      '</div>';
+    if(d.skills.filter(function(b){return b.text;}).length){
+      html+='<h3>技能</h3><ul>'+d.skills.filter(function(b){return b.text;}).map(function(b){return '<li>'+esc(b.text)+'</li>';}).join('')+'</ul>';
+    }
+    if(d.summary.filter(function(b){return b.text;}).length)
+      html+='<h3>概述</h3><ul>'+d.summary.filter(function(b){return b.text;}).map(function(b){return bA4Bullet(b);}).join('')+'</ul>';
+    d.experiences.forEach(function(exp){
+      var bs=exp.bullets.filter(function(b){return b.text;});
+      if(!exp.name&&!bs.length)return;
+      html+='<h3>'+esc(exp.name||'经历')+'</h3>'+(bs.length?'<ul>'+bs.map(function(b){return bA4Bullet(b);}).join('')+'</ul>':'');
+    });
+    if(d.education.filter(function(b){return b.text;}).length){
+      html+='<h3>教育</h3><ul>'+d.education.filter(function(b){return b.text;}).map(function(b){return '<li>'+esc(b.text)+'</li>';}).join('')+'</ul>';
+    }
+    html+='</div>';
+  }
+  else if(bTemplate==='academic'){
+    html+='<div class="tpl-academic"><div class="b-head">'+
+      '<div class="name">'+esc(d.name||'求职者')+'</div>'+
+      '<div class="title">'+esc(d.title||'')+'</div>'+
+      (contact?'<div class="contact">'+esc(contact)+'</div>':'')+
+      '</div><div class="b-body">';
+    if(d.summary.filter(function(b){return b.text;}).length)
+      html+='<h3>个人概述</h3><ul>'+d.summary.filter(function(b){return b.text;}).map(function(b){return bA4Bullet(b);}).join('')+'</ul>';
+    if(d.education.filter(function(b){return b.text;}).length){
+      html+='<h3>教育背景</h3><ul>'+d.education.filter(function(b){return b.text;}).map(function(b){return '<li>'+esc(b.text)+'</li>';}).join('')+'</ul>';
+    }
+    d.experiences.forEach(function(exp){
+      var bs=exp.bullets.filter(function(b){return b.text;});
+      if(!exp.name&&!bs.length)return;
+      html+='<h3>'+esc(exp.name||'研究经历')+'</h3>'+(bs.length?'<ul>'+bs.map(function(b){return bA4Bullet(b);}).join('')+'</ul>':'');
+    });
+    if(d.skills.filter(function(b){return b.text;}).length){
+      html+='<h3>技能与方法</h3><ul>'+d.skills.filter(function(b){return b.text;}).map(function(b){return '<li>'+esc(b.text)+'</li>';}).join('')+'</ul>';
+    }
+    html+='</div></div>';
+  }
+  document.getElementById('b-a4page').innerHTML=html;
+}
+/* 模板内 bullet 渲染(带溯源点击 → 复用 showEvModal) */
+function bA4Bullet(b){
+  var hasEv=b.evidenceIds&&b.evidenceIds.length;
+  if(!hasEv) return '<li>'+esc(b.text)+'</li>';
+  var eid=b.evidenceIds[0];
+  return '<li class="has-ev" onclick="this.classList.toggle(\'ev-open\')">'+esc(b.text)+
+    ' <span class="ev-mark">🔗</span><div class="ev-pop">这是你当时说的原话:"'+esc(evidenceMap[eid]?evidenceMap[eid].sourceQuote:'')+'"</div></li>';
+}
+
+/* ============================================================
+   路 B:底部 缺失信息(黄) + 面试追问风险(红)
+============================================================ */
+function renderBWarnings(){
+  var html='';
+  if(missingInfo.length){
+    html+='<div class="warn-box warn-amber"><h4>🟡 岗位要的,你还没有</h4><ul>';
+    missingInfo.forEach(function(m){html+='<li>'+esc(m)+'</li>';});
+    html+='</ul></div>';
+  }
+  if(interviewRisks.length){
+    html+='<div class="warn-box warn-red"><h4>🔴 这里证据弱,面试官会追问</h4><ul>';
+    interviewRisks.forEach(function(r){
+      var txt=(typeof r==='string')?r:((r&&r.risk)||JSON.stringify(r));
+      html+='<li>'+esc(txt)+'</li>';
+    });
+    html+='</ul></div>';
+  }
+  if(!missingInfo.length&&!interviewRisks.length){
+    html='<div class="warn-box" style="background:var(--green-soft);border-color:var(--green-line);"><h4 style="color:#15803D;">✅ 没发现明显的缺失和风险点</h4><p class="hint" style="color:#15803D;">不过面试时还是会被深挖,提前想想怎么讲清楚每条经历。</p></div>';
+  }
+  document.getElementById('b-warn-area').innerHTML=html;
+}
+
+/* ============================================================
+   AI 助手侧栏(诚实:基于本地规则的静态建议,非 AI 生成)
+   预留接口口子:getAiSuggestion(context) 现返回静态建议,
+   将来接真 AI 接口时只改这个函数体。
+============================================================ */
+var B_WEAK_WORDS=['参与','了解','做过一点','课程','学过','接触','看过','听说过','基础','暂无','没有','只是','仅'];
+/**
+ * AI 助手建议入口(预留)。当前实现是"基于本地规则的检查性建议"。
+ * context = { where: 'facts'|'resume', facts?, bForm?, missing?, risks? }
+ * 返回 { honest: string, items: [{type, text}] }
+ * 以后接真接口时,把函数体换成 await fetch(...) 即可,调用方不变。
+ */
+async function getAiSuggestion(context){
+  var items=[];
+  if(context.where==='facts' && context.facts){
+    context.facts.forEach(function(f){
+      if(f._deleted||!f.confirmed)return;
+      var txt=f.statement+' '+f.sourceQuote;
+      var hit=B_WEAK_WORDS.filter(function(w){return txt.indexOf(w)!==-1;});
+      if(hit.length){
+        items.push({type:'weak', text:'「'+(f.statement.length>20?f.statement.slice(0,20)+'…':f.statement)+'」里出现「'+hit[0]+'」,证据偏弱,面试官可能追问。要不要补一个具体例子?'});
+      }
+    });
+    if(context.missing && context.missing.length){
+      context.missing.forEach(function(m){
+        items.push({type:'missing', text:'岗位要的「'+(m.length>24?m.slice(0,24)+'…':m)+'」你还没有。补上简历会更完整(不补也行,老实标缺失)。'});
+      });
+    }
+  }
+  if(context.where==='resume' && context.bForm){
+    // 检查每条 bullet 有没有 evidenceIds
+    var allBullets=[];
+    context.bForm.summary.forEach(function(b){allBullets.push({g:'概述',b:b});});
+    context.bForm.experiences.forEach(function(e){e.bullets.forEach(function(b){allBullets.push({g:e.name||'经历',b:b});});});
+    context.bForm.skills.forEach(function(b){allBullets.push({g:'技能',b:b});});
+    allBullets.forEach(function(x){
+      if(x.b.text && (!x.b.evidenceIds||!x.b.evidenceIds.length)){
+        items.push({type:'noev', text:'「'+x.g+'」里有一句没有来源(没挂原话):"'+(x.b.text.length>16?x.b.text.slice(0,16)+'…':x.b.text)+'"。建议删掉,或补一个事实给它。'});
+      }
+    });
+    // 弱词检查(同 facts)
+    allBullets.forEach(function(x){
+      if(!x.b.text)return;
+      var hit=B_WEAK_WORDS.filter(function(w){return x.b.text.indexOf(w)!==-1;});
+      if(hit.length){
+        items.push({type:'weak', text:'「'+x.g+'」里这句含「'+hit[0]+'」,证据偏弱,面试官会追问。'});
+      }
+    });
+    if(context.risks && context.risks.length){
+      context.risks.slice(0,2).forEach(function(r){
+        var txt=(typeof r==='string')?r:((r&&r.risk)||'');
+        items.push({type:'weak', text:'后端标的风险点:'+(txt.length>30?txt.slice(0,30)+'…':txt)});
+      });
+    }
+  }
+  return { honest:'基于规则的检查建议(非 AI 生成)', items: items };
+}
+
+/* 渲染 AI 助手卡片 */
+function renderBAiCard(where){
+  var ctx = where==='facts'
+    ? { where:'facts', facts:bFacts, missing:bMissing }
+    : { where:'resume', bForm:bForm, missing:missingInfo, risks:interviewRisks };
+  getAiSuggestion(ctx).then(function(res){
+    var html='<div class="b-ai-h">🤖 AI 助手</div>'+
+      '<div class="b-ai-honest">'+esc(res.honest)+'</div>';
+    if(!res.items.length){
+      html+='<div class="b-ai-empty">目前没发现要提醒的。继续。</div>';
+    }else{
+      res.items.forEach(function(it){
+        html+='<div class="b-ai-item '+it.type+'">'+esc(it.text)+'</div>';
+      });
+    }
+    var el = where==='facts' ? document.getElementById('b-ai-card-facts') : document.getElementById('b-ai-card');
+    if(el) el.innerHTML=html;
+  });
+}
+
+/* 路 B PDF 导出(导出当前选中模板的预览) */
+function bExportPDF(){
+  var page=document.getElementById('b-a4page');
+  var clone=page.cloneNode(true);
+  clone.style.width='794px';clone.style.minHeight='1123px';
+  clone.style.position='absolute';clone.style.left='-9999px';clone.style.top='0';clone.style.background='#fff';
+  document.body.appendChild(clone);
+  html2pdf().set({margin:0,filename:(bForm.name||'resume')+'_简历.pdf',image:{type:'jpeg',quality:0.98},html2canvas:{scale:2,backgroundColor:'#ffffff',width:794,windowWidth:794},jsPDF:{unit:'px',format:[794,1123],orientation:'portrait'}}).from(clone).save().then(function(){document.body.removeChild(clone);}).catch(function(){document.body.removeChild(clone);alert('导出失败,请重试。');});
+}
+</script>
+</body>
+</html>
