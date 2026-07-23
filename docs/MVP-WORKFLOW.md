@@ -36,6 +36,8 @@
 
 前后端并行开发的前提不是 Prompt，而是接口结构不再随意变化。
 
+字段名、请求与响应层级、必填规则、错误格式和完整示例以 [`team-contract/API-CONTRACT.md`](../team-contract/API-CONTRACT.md) 为唯一契约来源。本文件说明产品流程；如果两份文档出现不一致，应先停止实现并更新两份文档，不能由开发者自行选择一种格式。
+
 ### 3.1 岗位结构 `JobProfile`
 
 两个端必须共用同一种岗位结构。
@@ -65,6 +67,7 @@ export interface AIQuestion {
   reason: string;
   answerType: 'text' | 'number' | 'choice';
   required: boolean;
+  options?: string[];
 }
 ```
 
@@ -104,8 +107,6 @@ export interface GeneratedResume {
     bullets: ResumeBullet[];
   }>;
   skills: ResumeBullet[];
-  missingInformation: string[];
-  interviewRisks: string[];
 }
 ```
 
@@ -145,15 +146,21 @@ export interface RecruitmentKit {
 所有接口统一返回：
 
 ```ts
-export interface APIResponse<T> {
-  ok: boolean;
-  data?: T;
-  error?: {
-    code: string;
-    message: string;
-  };
-  mode: 'live' | 'mock' | 'fallback';
-}
+export type APIResponse<T> =
+  | {
+      ok: true;
+      data: T;
+      mode: 'live' | 'mock' | 'fallback';
+    }
+  | {
+      ok: false;
+      error: {
+        code: string;
+        message: string;
+        fieldErrors?: Record<string, string[]>;
+      };
+      mode: 'live' | 'mock' | 'fallback';
+    };
 ```
 
 ### 流程 A：求职者岗位解析与动态提问
