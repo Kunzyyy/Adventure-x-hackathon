@@ -969,13 +969,22 @@ document.getElementById('tplGrid').addEventListener('click', (e) => {
 // ===== Export =====
 document.getElementById('exportBtn').addEventListener('click', () => {
   const page = document.getElementById('a4page');
+  // Clone to avoid layout shifts & fix blank PDF on file://
+  var clone = page.cloneNode(true);
+  clone.style.width = '794px';
+  clone.style.minHeight = '1123px';
+  clone.style.position = 'absolute';
+  clone.style.left = '-9999px';
+  clone.style.top = '0';
+  clone.style.background = '#fff';
+  document.body.appendChild(clone);
   html2pdf().set({
     margin: 0,
     filename: (resumeData.name || 'resume') + '_简历.pdf',
     image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true },
+    html2canvas: { scale: 2, useCORS: false, backgroundColor: '#ffffff', width: 794, windowWidth: 794 },
     jsPDF: { unit: 'px', format: [794, 1123], orientation: 'portrait' }
-  }).from(page).save();
+  }).from(clone).save().then(function(){ document.body.removeChild(clone); });
 });
 
 // ===== Init =====
