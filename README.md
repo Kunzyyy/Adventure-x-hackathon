@@ -3,6 +3,7 @@ AI 求职助手
 
 ## 项目方案
 
+- [Codex 当前任务交接文件](handoff.md)
 - [三天最小 MVP 工作流与 AI 后端契约](docs/MVP-WORKFLOW.md)
 
 ## Jin Ziyao 分支

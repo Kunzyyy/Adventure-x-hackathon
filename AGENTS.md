@@ -2,6 +2,7 @@
 
 ## Jin Ziyao 的工作边界
 
+- 新会话开始时，先完整阅读根目录 `handoff.md` 和 `docs/MVP-WORKFLOW.md`，再决定下一步工作。
 - 默认且唯一允许工作的分支是 `Jin-Ziyao`。
 - 开始任何写操作前，必须运行 `git branch --show-current`，结果必须严格等于 `Jin-Ziyao`。
 - 代码、文档、配置、提交和推送都只允许发生在 `Jin-Ziyao`。
