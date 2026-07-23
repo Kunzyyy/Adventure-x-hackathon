@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 模拟面试 — Keal</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ==================== HEADER ==================== -->
+<header class="header">
+  <div class="header-inner">
+    <a href="index.html" class="logo-link">
+      <div class="logo-mark">K</div>
+      AI Career Copilot
+    </a>
+    <nav class="header-nav">
+      <a href="index.html" class="nav-link">首页</a>
+      <a href="resume.html" class="nav-link">AI 简历</a>
+      <a href="interview.html" class="nav-link active">模拟面试</a>
+    </nav>
+    <div class="header-right">
+      <div class="user-badge">
+        <div class="user-avatar">K</div>
+        你好，Kael 👋
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ==================== MAIN ==================== -->
+<main class="main">
+
+  <!-- Back link -->
+  <div style="margin-bottom:20px;">
+    <a href="index.html" style="font-size:13px;color:var(--text-tertiary);display:inline-flex;align-items:center;gap:4px;transition:color var(--duration-fast) var(--ease-out);" onmouseover="this.style.color='var(--accent-500)'" onmouseout="this.style.color='var(--text-tertiary)'">
+      ← 返回首页
+    </a>
+  </div>
+
+  <!-- Interview Page -->
+  <div class="interview-page">
+
+    <!-- Header -->
+    <div class="interview-header">
+      <h1>🎙️ AI 模拟面试</h1>
+      <p>与 AI 面试官一对一实战演练，获取即时反馈</p>
+    </div>
+
+    <!-- Interviewer Card -->
+    <div class="interviewer-card" id="interviewerCard">
+      <div class="interviewer-avatar">🤖</div>
+      <div class="question-bubble" id="questionBubble">
+        请介绍一下你自己。
+      </div>
+      <div class="typing-dots" id="typingDots" style="display:none;margin-bottom:16px;">
+        <span></span><span></span><span></span>
+      </div>
+      <div class="interview-input-row">
+        <input
+          type="text"
+          id="answerInput"
+          placeholder="输入你的回答..."
+          onkeydown="if(event.key==='Enter')submitAnswer()"
+        >
+        <button class="btn-primary" onclick="submitAnswer()" id="submitBtn">
+          发送
+        </button>
+      </div>
+      <div style="margin-top:12px;font-size:12px;color:var(--text-tertiary);">
+        问题 <span id="qIndex">1</span> / 5 &nbsp;·&nbsp; 已训练 <strong>126</strong> 次
+      </div>
+    </div>
+
+    <!-- Feedback Card -->
+    <div class="feedback-card" id="feedbackCard">
+      <h3>📊 AI 面试反馈</h3>
+      <div class="feedback-scores">
+        <div class="fb-score-item">
+          <div class="fb-score-value" id="fbExpress">--</div>
+          <div class="fb-score-label">表达能力</div>
+          <div class="fb-progress-bg"><div class="fb-progress-fill" id="fbExpressBar" style="width:0%;"></div></div>
+        </div>
+        <div class="fb-score-item">
+          <div class="fb-score-value" id="fbLogic">--</div>
+          <div class="fb-score-label">逻辑能力</div>
+          <div class="fb-progress-bg"><div class="fb-progress-fill" id="fbLogicBar" style="width:0%;"></div></div>
+        </div>
+        <div class="fb-score-item">
+          <div class="fb-score-value" id="fbMatch">--</div>
+          <div class="fb-score-label">岗位匹配</div>
+          <div class="fb-progress-bg"><div class="fb-progress-fill" id="fbMatchBar" style="width:0%;"></div></div>
+        </div>
+      </div>
+      <div class="feedback-advice" id="feedbackAdvice">
+        完成回答后，AI 将给出详细评价和改进建议。
+      </div>
+    </div>
+
+  </div>
+
+</main>
+
+<script src="js/app.js"></script>
+</body>
+</html>

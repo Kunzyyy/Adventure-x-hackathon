@@ -1,0 +1,19 @@
+{
+  "name": "ai-career-copilot",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI Career Copilot — AI求职陪跑系统",
+  "scripts": {
+    "dev": "concurrently \"pnpm --filter backend dev\" \"pnpm --filter frontend dev\"",
+    "dev:frontend": "pnpm --filter frontend dev",
+    "dev:backend": "pnpm --filter backend dev"
+  },
+  "keywords": ["ai", "career", "resume", "interview"],
+  "author": "",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "@types/node": "^26.0.0",
+    "concurrently": "^10.0.3",
+    "typescript": "^6.0.3"
+  }
+}
