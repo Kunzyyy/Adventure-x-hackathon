@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 简历优化</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: #f5f5f7;
+  color: #1a1a1a;
+  min-height: 100vh;
+}
+
+.app {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 24px 20px 60px;
+}
+
+/* ===== Header ===== */
+.app-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+.app-header h1 {
+  font-size: 26px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #4A6CF7, #7B2FF7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 8px;
+}
+.app-header p {
+  font-size: 14px;
+  color: #888;
+}
+
+/* ===== Step Indicator ===== */
+.steps {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 32px;
+}
+.step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #999;
+}
+.step .num {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 600; font-size: 13px;
+  background: #e0e0e0; color: #999;
+}
+.step.active .num { background: #4A6CF7; color: #fff; }
+.step.done .num { background: #00A868; color: #fff; }
+.step.active { color: #4A6CF7; font-weight: 500; }
+.step.done { color: #00A868; }
+.step-line {
+  width: 60px; height: 2px; background: #e0e0e0; margin: 0 12px;
+  align-self: center;
+}
+.step-line.done { background: #00A868; }
+
+/* ===== Card ===== */
+.card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  margin-bottom: 20px;
+}
+
+.card h2 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ===== Textarea ===== */
+.resume-input {
+  width: 100%;
+  min-height: 200px;
+  padding: 14px;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: inherit;
+  line-height: 1.7;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.resume-input:focus { border-color: #4A6CF7; }
+.resume-input::placeholder { color: #ccc; }
+
+/* ===== API Config ===== */
+.api-config {
+  margin-top: 16px;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 16px;
+}
+.api-config-toggle {
+  font-size: 13px;
+  color: #888;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+}
+.api-config-toggle:hover { color: #4A6CF7; }
+.api-config-body {
+  display: none;
+  margin-top: 12px;
+}
+.api-config-body.open { display: block; }
+.api-field {
+  margin-bottom: 10px;
+}
+.api-field label {
+  display: block;
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 4px;
+}
+.api-field input, .api-field select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+}
+.api-field input:focus { border-color: #4A6CF7; }
+.api-fields-row { display: flex; gap: 10px; }
+.api-fields-row .api-field { flex: 1; }
+
+.api-hint {
+  font-size: 12px;
+  color: #999;
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  line-height: 1.6;
+}
+
+/* ===== Buttons ===== */
+.btn-primary {
+  width: 100%;
+  padding: 14px;
+  background: #4A6CF7;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-top: 16px;
+}
+.btn-primary:hover { background: #3A5CE5; transform: translateY(-1px); }
+.btn-primary:active { transform: translateY(0); }
+.btn-primary:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+
+.btn-success {
+  width: 100%;
+  padding: 14px;
+  background: #00A868;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-success:hover { background: #008F58; }
+
+/* ===== Chat Display ===== */
+.chat-area {
+  display: none;
+}
+.chat-area.active { display: block; }
+
+.msg {
+  margin-bottom: 16px;
+  animation: fadeIn 0.3s ease;
+}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+.msg.user .bubble {
+  background: #4A6CF7;
+  color: #fff;
+  margin-left: 60px;
+  border-radius: 16px 16px 4px 16px;
+}
+.msg.ai .bubble {
+  background: #f0f0f3;
+  color: #1a1a1a;
+  margin-right: 60px;
+  border-radius: 16px 16px 16px 4px;
+}
+.msg .bubble {
+  padding: 12px 16px;
+  font-size: 14px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.msg .role {
+  font-size: 11px;
+  color: #999;
+  margin-bottom: 4px;
+}
+.msg.user .role { text-align: right; margin-right: 60px; }
+.msg.ai .role { margin-left: 60px; }
+
+/* ===== Loading ===== */
+.loading-dots {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px 0;
+}
+.loading-dots span {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #4A6CF7;
+  animation: bounce 1.2s infinite;
+}
+.loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+.loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-6px); opacity: 1; }
+}
+
+/* ===== Success Card ===== */
+.success-card {
+  display: none;
+  background: #fff;
+  border: 2px solid #00A868;
+  border-radius: 16px;
+  padding: 24px;
+  text-align: center;
+  margin-top: 20px;
+  animation: fadeIn 0.4s ease;
+}
+.success-card.active { display: block; }
+.success-icon {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: #00A868; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; margin: 0 auto 12px;
+}
+.success-card h3 { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+.success-card p { font-size: 13px; color: #888; margin-bottom: 16px; }
+.success-preview {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 12px;
+  text-align: left;
+  font-size: 12px;
+  color: #555;
+  margin-bottom: 16px;
+  max-height: 200px;
+  overflow-y: auto;
+  font-family: "SF Mono", "Fira Code", monospace;
+  line-height: 1.6;
+}
+
+/* ===== Error ===== */
+.error-msg {
+  display: none;
+  background: #fff0f0;
+  border: 1px solid #ffcccc;
+  color: #cc0000;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-top: 12px;
+}
+.error-msg.active { display: block; }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Header -->
+  <div class="app-header">
+    <h1>AI 简历优化助手</h1>
+    <p>粘贴你的简历，AI 帮你优化，然后一键生成精美简历</p>
+  </div>
+
+  <!-- Steps -->
+  <div class="steps">
+    <div class="step active" id="step1">
+      <div class="num">1</div>
+      <span>输入简历</span>
+    </div>
+    <div class="step-line" id="line1"></div>
+    <div class="step" id="step2">
+      <div class="num">2</div>
+      <span>AI 优化</span>
+    </div>
+    <div class="step-line" id="line2"></div>
+    <div class="step" id="step3">
+      <div class="num">3</div>
+      <span>选模板导出</span>
+    </div>
+  </div>
+
+  <!-- Input Card -->
+  <div class="card" id="inputCard">
+    <h2>粘贴你的简历内容</h2>
+    <textarea class="resume-input" id="resumeInput" placeholder="把你的简历内容粘贴到这里...&#10;&#10;例如：&#10;张明，男，1998年生&#10;电话：138-0013-8000&#10;邮箱：zhangming@email.com&#10;教育：北京大学 计算机科学 硕士 2019-2022&#10;工作：腾讯 产品经理 2022至今&#10;负责社交产品增长，做了很多功能..."></textarea>
+
+    <!-- API Config -->
+    <div class="api-config">
+      <div class="api-config-toggle" onclick="toggleApiConfig()">
+        <span id="apiToggleIcon">&#9658;</span>
+        <span>AI 接口设置（不填则用模拟模式）</span>
+      </div>
+      <div class="api-config-body" id="apiConfigBody">
+        <div class="api-fields-row">
+          <div class="api-field">
+            <label>API 地址</label>
+            <input type="text" id="apiUrl" value="https://api.deepseek.com/v1/chat/completions" placeholder="https://api.openai.com/v1/chat/completions">
+          </div>
+          <div class="api-field" style="max-width:200px;">
+            <label>模型</label>
+            <input type="text" id="apiModel" value="deepseek-chat" placeholder="gpt-4o">
+          </div>
+        </div>
+        <div class="api-field">
+          <label>API Key</label>
+          <input type="password" id="apiKey" placeholder="sk-... (留空则用模拟模式)">
+        </div>
+        <div class="api-hint">
+          支持 OpenAI / DeepSeek / Moonshot 等兼容接口。留空 API Key 会使用模拟模式（生成示例数据），方便体验完整流程。
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-primary" id="optimizeBtn" onclick="optimize()">开始优化</button>
+    <div class="error-msg" id="errorMsg"></div>
+  </div>
+
+  <!-- Chat Area -->
+  <div class="chat-area" id="chatArea">
+    <div class="card">
+      <h2>AI 优化结果</h2>
+      <div id="messages"></div>
+    </div>
+  </div>
+
+  <!-- Success Card -->
+  <div class="success-card" id="successCard">
+    <div class="success-icon">&#10003;</div>
+    <h3>简历优化完成！</h3>
+    <p>AI 已将你的简历优化为结构化数据，点击下方按钮选择模板生成精美简历</p>
+    <div class="success-preview" id="jsonPreview"></div>
+    <button class="btn-success" onclick="goToEditor()">选模板生成简历 &rarr;</button>
+  </div>
+</div>
+
+<script>
+// ===== System Prompt =====
+const SYSTEM_PROMPT = `你是一个专业的简历优化助手。请优化用户的简历内容，并严格按照以下JSON格式输出结果。
+
+要求：
+1. 只输出 JSON，不要输出任何其他文字、不要 markdown 代码块标记
+2. 工作经历用 STAR 法则重写，量化成果（数字、百分比）
+3. 技能按岗位相关性排序
+4. 自我评价简洁有力，3-4 句话
+
+JSON 格式：
+{
+  "name": "姓名",
+  "title": "求职意向/目标岗位",
+  "phone": "电话",
+  "email": "邮箱",
+  "location": "所在城市",
+  "education": [
+    {"school": "学校名", "major": "专业", "degree": "学历", "period": "时间段"}
+  ],
+  "experience": [
+    {"company": "公司名", "role": "职位", "period": "时间段", "desc": "工作描述，用STAR法则，量化成果"}
+  ],
+  "skills": "技能1, 技能2, 技能3",
+  "eval": "自我评价"
+}`;
+
+// ===== Toggle API Config =====
+function toggleApiConfig() {
+  const body = document.getElementById('apiConfigBody');
+  const icon = document.getElementById('apiToggleIcon');
+  body.classList.toggle('open');
+  icon.innerHTML = body.classList.contains('open') ? '&#9660;' : '&#9658;';
+}
+
+// ===== Add Message =====
+function addMessage(role, content) {
+  const messages = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  div.innerHTML = `
+    <div class="role">${role === 'user' ? '你' : 'AI 助手'}</div>
+    <div class="bubble">${escapeHtml(content)}</div>
+  `;
+  messages.appendChild(div);
+  messages.parentElement.scrollTop = messages.parentElement.scrollHeight;
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// ===== Add Loading =====
+function addLoading() {
+  const messages = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg ai';
+  div.id = 'loadingMsg';
+  div.innerHTML = `
+    <div class="role">AI 助手</div>
+    <div class="bubble"><div class="loading-dots"><span></span><span></span><span></span></div></div>
+  `;
+  messages.appendChild(div);
+  messages.parentElement.scrollTop = messages.parentElement.scrollHeight;
+}
+
+function removeLoading() {
+  const el = document.getElementById('loadingMsg');
+  if (el) el.remove();
+}
+
+// ===== Show Error =====
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg;
+  el.classList.add('active');
+}
+function hideError() {
+  document.getElementById('errorMsg').classList.remove('active');
+}
+
+// ===== Update Steps =====
+function updateStep(step) {
+  for (let i = 1; i <= 3; i++) {
+    const el = document.getElementById('step' + i);
+    el.classList.remove('active', 'done');
+    if (i < step) el.classList.add('done');
+    else if (i === step) el.classList.add('active');
+  }
+  document.getElementById('line1').classList.toggle('done', step > 1);
+  document.getElementById('line2').classList.toggle('done', step > 2);
+}
+
+// ===== Extract JSON from text =====
+function extractJSON(text) {
+  // Try direct parse
+  try { return JSON.parse(text); } catch(e) {}
+  // Try extracting from code blocks
+  const codeBlock = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (codeBlock) {
+    try { return JSON.parse(codeBlock[1].trim()); } catch(e) {}
+  }
+  // Try finding JSON object
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    try { return JSON.parse(jsonMatch[0]); } catch(e) {}
+  }
+  return null;
+}
+
+// ===== Mock AI Response =====
+function mockOptimize(input) {
+  // Generate a realistic sample from input or use defaults
+  const lines = input.split('\n').filter(l => l.trim());
+  let name = "张明", phone = "138-0013-8000", email = "zhangming@email.com";
+
+  // Try to extract basic info from input
+  for (const line of lines) {
+    if (line.includes('电话') || line.includes('手机') || /^1[3-9]\d/.test(line.trim())) {
+      const m = line.match(/1[3-9]\d[\s-]?\d{4}[\s-]?\d{4}/);
+      if (m) phone = m[0];
+    }
+    if (line.includes('邮箱') || line.includes('@')) {
+      const m = line.match(/[\w.+-]+@[\w-]+\.[\w.-]+/);
+      if (m) email = m[0];
+    }
+    if (line.includes('姓名') || (line.length < 10 && /[\u4e00-\u9fa5]{2,4}/.test(line) && !line.includes('：'))) {
+      const m = line.match(/[\u4e00-\u9fa5]{2,4}/);
+      if (m && !name) name = m[0];
+    }
+  }
+
+  return {
+    name: name,
+    title: "产品经理",
+    phone: phone,
+    email: email,
+    location: "深圳",
+    education: [
+      { school: "北京大学", major: "计算机科学与技术", degree: "硕士", period: "2019.09 - 2022.06" },
+      { school: "武汉大学", major: "软件工程", degree: "本科", period: "2015.09 - 2019.06" }
+    ],
+    experience: [
+      {
+        company: "腾讯",
+        role: "高级产品经理",
+        period: "2022.07 - 至今",
+        desc: "负责社交产品增长方向，主导裂变传播体系搭建，6个月内DAU提升40%。建立数据驱动的AB实验机制，月均上线实验15+项，核心留存提升12%。推动跨部门协作，协调设计、开发、运营团队高效交付。"
+      },
+      {
+        company: "字节跳动",
+        role: "产品经理",
+        period: "2020.03 - 2022.06",
+        desc: "负责内容推荐产品迭代，优化推荐算法策略，人均使用时长提升25%。搭建创作者激励体系，月活创作者增长3倍。主导用户调研项目，输出洞察报告20+份，驱动产品方向调整。"
+      }
+    ],
+    skills: "产品设计, 数据分析, SQL, Python, Axure, 用户研究, A/B测试, 项目管理",
+    eval: "5年互联网产品经验，擅长从0到1搭建产品体系，主导过3款百万级DAU产品。具备较强的数据分析能力和跨团队协作能力，能快速理解业务需求并转化为产品方案。"
+  };
+}
+
+// ===== Main Optimize Function =====
+async function optimize() {
+  const input = document.getElementById('resumeInput').value.trim();
+  const apiKey = document.getElementById('apiKey').value.trim();
+  const apiUrl = document.getElementById('apiUrl').value.trim();
+  const apiModel = document.getElementById('apiModel').value.trim();
+
+  hideError();
+
+  if (!input) {
+    showError('请先粘贴你的简历内容');
+    return;
+  }
+
+  // Disable button
+  const btn = document.getElementById('optimizeBtn');
+  btn.disabled = true;
+  btn.textContent = '优化中...';
+
+  // Show chat area
+  document.getElementById('chatArea').classList.add('active');
+  updateStep(2);
+
+  // Add user message
+  addMessage('user', input.length > 500 ? input.substring(0, 500) + '...' : input);
+  addLoading();
+
+  let result = null;
+
+  try {
+    if (apiKey) {
+      // ===== Real API Call =====
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + apiKey
+        },
+        body: JSON.stringify({
+          model: apiModel,
+          messages: [
+            { role: 'system', content: SYSTEM_PROMPT },
+            { role: 'user', content: input }
+          ],
+          temperature: 0.7
+        })
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error('API 返回错误 (' + response.status + '): ' + errText.substring(0, 200));
+      }
+
+      const data = await response.json();
+      const aiText = data.choices[0].message.content;
+      removeLoading();
+      addMessage('ai', aiText);
+
+      result = extractJSON(aiText);
+      if (!result) {
+        throw new Error('AI 返回的内容无法解析为 JSON，请检查 AI 输出格式');
+      }
+    } else {
+      // ===== Mock Mode =====
+      await new Promise(r => setTimeout(r, 1500)); // simulate delay
+      result = mockOptimize(input);
+      removeLoading();
+      addMessage('ai', '已为你优化简历内容！\n\n主要优化点：\n1. 工作经历用 STAR 法则重写，量化了成果\n2. 技能按岗位相关性排序\n3. 自我评价精简为 3 句话\n\n（当前为模拟模式，配置 API Key 后可使用真实 AI 优化）');
+    }
+
+    // Show success
+    showSuccess(result);
+
+  } catch (err) {
+    removeLoading();
+    addMessage('ai', '优化失败：' + err.message + '\n\n你可以尝试：\n1. 检查 API Key 是否正确\n2. 清空 API Key 使用模拟模式体验\n3. 检查 API 地址和模型名称');
+    showError(err.message);
+    btn.disabled = false;
+    btn.textContent = '重新优化';
+  }
+}
+
+// ===== Show Success =====
+function showSuccess(data) {
+  updateStep(3);
+
+  // Store to localStorage
+  localStorage.setItem('resumeData', JSON.stringify(data));
+
+  // Show JSON preview
+  document.getElementById('jsonPreview').textContent = JSON.stringify(data, null, 2);
+
+  // Show success card
+  document.getElementById('successCard').classList.add('active');
+
+  // Scroll to success
+  document.getElementById('successCard').scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+  // Hide input card
+  document.getElementById('inputCard').style.display = 'none';
+}
+
+// ===== Go to Editor =====
+function goToEditor() {
+  window.location.href = 'index.html';
+}
+</script>
+</body>
+</html>

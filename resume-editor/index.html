@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>简历模板编辑器</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: #f5f5f7;
+  color: #1a1a1a;
+  min-height: 100vh;
+}
+
+/* ===== Layout ===== */
+.app { max-width: 1400px; margin: 0 auto; padding: 24px 20px; }
+
+.app-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+.app-header h1 {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.app-header p { font-size: 13px; color: #888; }
+
+/* ===== Form Card ===== */
+.form-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  margin-bottom: 20px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.field { display: flex; flex-direction: column; }
+.field label {
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 4px;
+}
+.field input, .field textarea {
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+}
+.field input:focus, .field textarea:focus { border-color: #4A6CF7; }
+.field textarea { resize: vertical; min-height: 60px; }
+
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 20px 0 12px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid #4A6CF7;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.add-btn {
+  padding: 4px 12px;
+  border: 1px dashed #4A6CF7;
+  background: transparent;
+  color: #4A6CF7;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+.add-btn:hover { background: #4A6CF710; }
+
+.array-item {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+  position: relative;
+}
+.array-item .remove-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 22px; height: 22px;
+  border: none; background: #ff4444; color: #fff;
+  border-radius: 50%; cursor: pointer; font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ===== Template Picker ===== */
+.tpl-picker {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  margin-bottom: 20px;
+}
+
+.tpl-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.tpl-card {
+  border: 2px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.15s;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+.tpl-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+.tpl-card.active { border-color: #4A6CF7; }
+.tpl-card img {
+  width: 100%;
+  display: block;
+  aspect-ratio: 794/1123;
+  object-fit: cover;
+  object-position: top;
+}
+.tpl-card .name {
+  padding: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+  border-top: 1px solid #eee;
+}
+
+/* ===== Preview Area ===== */
+.preview-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  position: relative;
+}
+
+.export-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  padding: 8px 20px;
+  background: #00A868;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 10;
+}
+.export-btn:hover { background: #008F58; }
+
+.preview-wrapper {
+  display: flex;
+  justify-content: center;
+  overflow-x: auto;
+}
+
+.a4-page {
+  width: 794px;
+  min-height: 1123px;
+  background: #fff;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+/* ===== Template 1: 简约风 ===== */
+.tpl-1 {
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+  color: #333;
+  font-size: 13px;
+  line-height: 1.8;
+  background: #fff;
+  min-height: 1123px;
+}
+.tpl-1 .header-bar {
+  height: 6px;
+  background: linear-gradient(to bottom, #1a4d80 0%, #1a4d80 50%, #d97b29 50%, #d97b29 100%);
+}
+.tpl-1 .header {
+  padding: 20px 40px 12px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  border-bottom: 1px solid #ddd;
+}
+.tpl-1 .header h1 {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1a4d80;
+  letter-spacing: 6px;
+  margin-bottom: 4px;
+}
+.tpl-1 .header .sub {
+  font-size: 12px;
+  color: #1a4d80;
+  letter-spacing: 1px;
+}
+.tpl-1 .header-icons {
+  display: flex; gap: 8px;
+  color: #d97b29; font-size: 18px;
+}
+.tpl-1 .content { padding: 16px 40px; }
+.tpl-1 .section { margin-bottom: 14px; }
+.tpl-1 .section-title {
+  display: inline-block;
+  background: #1a4d80;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 18px 4px 12px;
+  margin-bottom: 10px;
+  clip-path: polygon(0 0, 100% 0, 95% 100%, 0 100%);
+}
+.tpl-1 .basic-info {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+.tpl-1 .basic-info .info-text { flex: 1; }
+.tpl-1 .basic-info .photo {
+  width: 100px; height: 130px;
+  background: linear-gradient(135deg, #ddd, #bbb);
+  border: 1px solid #ccc;
+  display: flex; align-items: center; justify-content: center;
+  color: #888; font-size: 11px;
+  flex-shrink: 0;
+}
+.tpl-1 .info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px 20px;
+  font-size: 12px;
+}
+.tpl-1 .info-grid .row { display: flex; }
+.tpl-1 .info-grid .label { color: #666; width: 60px; }
+.tpl-1 .exp-item, .tpl-1 .edu-item {
+  margin-bottom: 10px;
+  font-size: 12px;
+}
+.tpl-1 .exp-head, .tpl-1 .edu-head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+.tpl-1 .exp-head .period, .tpl-1 .edu-head .period { color: #555; }
+.tpl-1 .exp-role { color: #1a4d80; font-weight: 500; margin-bottom: 4px; }
+.tpl-1 .exp-desc ul { padding-left: 20px; margin: 0; }
+.tpl-1 .exp-desc li { margin-bottom: 2px; }
+.tpl-1 .skills-list, .tpl-1 .eval {
+  font-size: 12px;
+  color: #444;
+  line-height: 1.9;
+}
+
+/* ===== Template 2: 应届生 ===== */
+.tpl-2 {
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+  color: #333;
+  font-size: 12px;
+  line-height: 1.8;
+  background: #fff;
+  min-height: 1123px;
+}
+.tpl-2 .top-band {
+  height: 16px;
+  background: #1a4d80;
+  display: flex;
+}
+.tpl-2 .top-band::after {
+  content: "";
+  flex: 1;
+  background: #fff;
+  height: 4px;
+  margin-top: 12px;
+}
+.tpl-2 .content { padding: 24px 40px; }
+.tpl-2 .section { margin-bottom: 14px; }
+.tpl-2 .section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a4d80;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #1a4d80;
+  padding-bottom: 4px;
+}
+.tpl-2 .section-title::before {
+  content: "<<<  ";
+  color: #1a4d80;
+  font-weight: 400;
+}
+.tpl-2 .section-title::after {
+  content: "";
+  display: block;
+  margin-top: 4px;
+}
+.tpl-2 .basic-info {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 16px;
+}
+.tpl-2 .basic-info .info { flex: 1; }
+.tpl-2 .basic-info .info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2px 16px;
+  font-size: 12px;
+}
+.tpl-2 .basic-info .info-grid .row { display: flex; }
+.tpl-2 .basic-info .info-grid .label { color: #666; width: 70px; }
+.tpl-2 .basic-info .photo {
+  width: 90px; height: 120px;
+  background: linear-gradient(135deg, #b8d4f0, #7fb0e0);
+  border: 1px solid #1a4d80;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 11px;
+  flex-shrink: 0;
+}
+.tpl-2 .edu-item, .tpl-2 .exp-item {
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+.tpl-2 .edu-row, .tpl-2 .exp-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 2px;
+}
+.tpl-2 .edu-row .period, .tpl-2 .exp-row .period { color: #555; min-width: 110px; }
+.tpl-2 .edu-row .school, .tpl-2 .exp-row .org { font-weight: 500; }
+.tpl-2 .exp-row .role { color: #1a4d80; }
+.tpl-2 .bottom-band {
+  height: 14px;
+  background: #1a4d80;
+  margin-top: 16px;
+}
+
+/* ===== Template 3: 外企英文 ===== */
+.tpl-3 {
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  color: #444;
+  font-size: 11px;
+  line-height: 1.7;
+  background: #fff;
+  min-height: 1123px;
+}
+.tpl-3 .top-band {
+  background: #2c3e50;
+  color: #fff;
+  padding: 18px 36px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.tpl-3 .top-band .name-block h1 {
+  font-size: 26px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.tpl-3 .top-band .name-block .target {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: #bdc3c7;
+  text-transform: uppercase;
+}
+.tpl-3 .top-band .contacts {
+  display: flex;
+  gap: 16px;
+  font-size: 11px;
+}
+.tpl-3 .top-band .contacts span {
+  display: flex; align-items: center; gap: 4px;
+}
+.tpl-3 .body {
+  display: flex;
+  min-height: 950px;
+}
+.tpl-3 .sidebar {
+  width: 280px;
+  background: #fce4ec;
+  padding: 24px 20px;
+}
+.tpl-3 .sidebar .photo {
+  width: 130px; height: 160px;
+  margin: 0 auto 16px;
+  background: linear-gradient(135deg, #d4a5b8, #b88799);
+  border-radius: 50% 50% 4px 4px;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 11px;
+}
+.tpl-3 .sidebar h2 {
+  font-size: 13px;
+  font-weight: 700;
+  color: #2c3e50;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+  display: flex; align-items: center; gap: 6px;
+}
+.tpl-3 .sidebar h2::before {
+  content: "▸";
+  color: #c2185b;
+}
+.tpl-3 .sidebar .section { margin-bottom: 18px; }
+.tpl-3 .sidebar .profile-text {
+  font-size: 11px;
+  line-height: 1.7;
+  color: #555;
+  text-align: justify;
+}
+.tpl-3 .sidebar .skill-bar {
+  margin-bottom: 6px;
+  font-size: 10px;
+}
+.tpl-3 .sidebar .skill-bar .label-row {
+  display: flex; justify-content: space-between;
+  margin-bottom: 2px;
+}
+.tpl-3 .sidebar .skill-bar .bar {
+  height: 4px;
+  background: rgba(194, 24, 91, 0.2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.tpl-3 .sidebar .skill-bar .bar .fill {
+  height: 100%;
+  background: #c2185b;
+  border-radius: 2px;
+}
+.tpl-3 .main {
+  flex: 1;
+  padding: 24px 28px;
+  background: #fff;
+  position: relative;
+}
+.tpl-3 .main h2 {
+  font-size: 14px;
+  font-weight: 700;
+  color: #2c3e50;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+}
+.tpl-3 .main .timeline {
+  position: relative;
+  padding-left: 24px;
+}
+.tpl-3 .main .timeline::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 8px;
+  bottom: 8px;
+  width: 1px;
+  background: #2c3e50;
+}
+.tpl-3 .main .timeline-item {
+  position: relative;
+  padding-bottom: 14px;
+}
+.tpl-3 .main .timeline-item::before {
+  content: "";
+  position: absolute;
+  left: -22px;
+  top: 4px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #2c3e50;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px #2c3e50;
+}
+.tpl-3 .main .timeline-item .period {
+  font-size: 10px;
+  color: #888;
+  margin-bottom: 2px;
+}
+.tpl-3 .main .timeline-item .company {
+  font-weight: 700;
+  font-size: 12px;
+  color: #2c3e50;
+}
+.tpl-3 .main .timeline-item .role {
+  font-size: 11px;
+  color: #c2185b;
+  margin-bottom: 4px;
+}
+.tpl-3 .main .timeline-item .desc {
+  font-size: 10px;
+  line-height: 1.6;
+  color: #555;
+}
+.tpl-3 .bottom-band {
+  background: #2c3e50;
+  color: #fff;
+  text-align: center;
+  padding: 10px;
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+
+/* ===== Template 4: 专业英文 ===== */
+.tpl-4 {
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  color: #222;
+  font-size: 11px;
+  line-height: 1.6;
+  background: #fff;
+  min-height: 1123px;
+  padding: 40px 48px;
+}
+.tpl-4 .header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+.tpl-4 .header h1 {
+  font-size: 26px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.tpl-4 .header .contact-line {
+  font-size: 10px;
+  color: #555;
+}
+.tpl-4 .header .photo {
+  width: 80px; height: 100px;
+  background: linear-gradient(135deg, #b0bec5, #78909c);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 10px;
+}
+.tpl-4 .section { margin-bottom: 14px; }
+.tpl-4 .section-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: underline;
+  margin-bottom: 8px;
+}
+.tpl-4 .section ul {
+  list-style: none;
+  padding: 0;
+}
+.tpl-4 .section li {
+  position: relative;
+  padding-left: 12px;
+  margin-bottom: 2px;
+  font-size: 11px;
+}
+.tpl-4 .section li::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  top: -2px;
+  font-size: 14px;
+}
+.tpl-4 .item {
+  margin-bottom: 8px;
+}
+.tpl-4 .item-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 11px;
+  margin-bottom: 4px;
+}
+.tpl-4 .item-head .left { font-weight: 600; }
+.tpl-4 .item-head .right { font-size: 10px; color: #555; min-width: 100px; text-align: right; }
+.tpl-4 .item ul { margin-top: 4px; }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .form-grid { grid-template-columns: repeat(2, 1fr); }
+  .tpl-grid { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="app-header">
+    <h1>简历模板编辑器</h1>
+    <p>填写简历内容 → 选择模板 → 导出 PDF</p>
+  </div>
+
+  <!-- ===== Form Card ===== -->
+  <div class="form-card">
+    <div class="section-title">个人信息</div>
+    <div class="form-grid">
+      <div class="field"><label>姓名</label><input type="text" data-key="name" value="张明"></div>
+      <div class="field"><label>求职意向</label><input type="text" data-key="title" value="产品经理"></div>
+      <div class="field"><label>电话</label><input type="text" data-key="phone" value="138-0013-8000"></div>
+      <div class="field"><label>邮箱</label><input type="text" data-key="email" value="zhangming@email.com"></div>
+      <div class="field"><label>所在城市</label><input type="text" data-key="location" value="深圳"></div>
+    </div>
+
+    <div class="section-title">
+      教育经历
+      <button class="add-btn" onclick="addEdu()">+ 添加</button>
+    </div>
+    <div id="eduList"></div>
+
+    <div class="section-title">
+      工作经历
+      <button class="add-btn" onclick="addExp()">+ 添加</button>
+    </div>
+    <div id="expList"></div>
+
+    <div class="section-title">技能证书</div>
+    <div class="field"><textarea data-key="skills" rows="2">英语 CET-6，良好的听说读写能力；熟练使用 office 办公软件；计算机二级证书</textarea></div>
+
+    <div class="section-title">自我评价</div>
+    <div class="field"><textarea data-key="eval" rows="3">5年互联网产品经验，擅长从0到1搭建产品体系，主导过3款百万级DAU产品。具备较强的数据分析能力和跨团队协作能力。</textarea></div>
+  </div>
+
+  <!-- ===== Template Picker ===== -->
+  <div class="tpl-picker">
+    <div class="section-title">选择模板</div>
+    <div class="tpl-grid" id="tplGrid">
+      <div class="tpl-card active" data-tpl="0">
+        <img src="templates/01.jpg" alt="简约风">
+        <div class="name">简约风</div>
+      </div>
+      <div class="tpl-card" data-tpl="1">
+        <img src="templates/02.jpg" alt="应届毕业生">
+        <div class="name">应届毕业生</div>
+      </div>
+      <div class="tpl-card" data-tpl="2">
+        <img src="templates/08.jpg" alt="外企英文">
+        <div class="name">外企英文</div>
+      </div>
+      <div class="tpl-card" data-tpl="3">
+        <img src="templates/09.jpg" alt="专业英文">
+        <div class="name">专业英文</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Preview ===== -->
+  <div class="preview-card">
+    <button class="export-btn" id="exportBtn">导出 PDF</button>
+    <div class="preview-wrapper">
+      <div class="a4-page" id="a4page"></div>
+    </div>
+  </div>
+</div>
+
+<script src="vendor/html2pdf.bundle.min.js"></script>
+<script>
+// ===== Data =====
+let resumeData = {
+  name: "张明",
+  title: "产品经理",
+  phone: "138-0013-8000",
+  email: "zhangming@email.com",
+  location: "深圳",
+  education: [
+    { school: "简历模板资源科技大学", major: "市场营销", degree: "本科", period: "2005.07-2009.06" }
+  ],
+  experience: [
+    { company: "简历模板资源信息科技有限公司", role: "市场部实习生", period: "2010.07-2010.09", desc: "负责公司线上端资源的销售工作，以开拓客户为主；负责了解行业的变化，跟踪客户的详细数据。" },
+    { company: "简历模板资源职业发展社", role: "社长", period: "2009.03-2011.06", desc: "负责社团组织建设，社团机构的管理，协调各部门工作；组织策划社团的成立大会、竞选会、团队培训、招新等运维活动。" }
+  ],
+  skills: "英语 CET-6，良好的听说读写能力；熟练使用 office 办公软件；计算机二级证书",
+  eval: "5年互联网产品经验，擅长从0到1搭建产品体系，主导过3款百万级DAU产品。具备较强的数据分析能力和跨团队协作能力。"
+};
+
+let currentTemplate = 0;
+
+// ===== Template Renderers =====
+const renderTpl1 = (d) => {
+  const skillsHtml = d.skills.split(/[，。；;\n]/).filter(s => s.trim()).map(s => `<div>${s.trim()}</div>`).join('');
+  return `<div class="tpl-1">
+    <div class="header-bar"></div>
+    <div class="header">
+      <div>
+        <h1>个人简历</h1>
+        <div class="sub">Personal resume</div>
+      </div>
+      <div class="header-icons">
+        <span>⚙</span><span>★</span><span>⚐</span>
+      </div>
+    </div>
+    <div class="content">
+      <div class="section">
+        <div class="section-title">基本信息</div>
+        <div class="basic-info">
+          <div class="info-text">
+            <div class="info-grid">
+              <div class="row"><div class="label">姓 名：</div><div>${d.name}</div></div>
+              <div class="row"><div class="label">电 话：</div><div>${d.phone}</div></div>
+              <div class="row"><div class="label">民 族：</div><div>汉</div></div>
+              <div class="row"><div class="label">邮 箱：</div><div>${d.email}</div></div>
+              <div class="row"><div class="label">住 址：</div><div>${d.location}</div></div>
+              <div class="row"><div class="label">求职意向：</div><div>${d.title}</div></div>
+            </div>
+          </div>
+          <div class="photo">照片</div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-title">教育背景</div>
+        ${d.education.map(e => `
+          <div class="edu-item">
+            <div class="edu-head"><span>${e.school}</span><span class="period">${e.period}</span></div>
+            <div style="color:#1a4d80;font-size:12px;">${e.major}（${e.degree}）</div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="section">
+        <div class="section-title">工作经历</div>
+        ${d.experience.map(e => `
+          <div class="exp-item">
+            <div class="exp-head"><span>${e.company}</span><span class="period">${e.period}</span></div>
+            <div class="exp-role">${e.role}</div>
+            <div class="exp-desc"><ul><li>${e.desc}</li></ul></div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="section">
+        <div class="section-title">技能证书</div>
+        <div class="skills-list">${skillsHtml}</div>
+      </div>
+      <div class="section">
+        <div class="section-title">自我评价</div>
+        <div class="eval">${d.eval}</div>
+      </div>
+    </div>
+  </div>`;
+};
+
+const renderTpl2 = (d) => {
+  return `<div class="tpl-2">
+    <div class="top-band"></div>
+    <div class="content">
+      <div class="basic-info">
+        <div class="info">
+          <div class="info-grid">
+            <div class="row"><div class="label">姓 名：</div><div>${d.name}</div></div>
+            <div class="row"><div class="label">联系电话：</div><div>${d.phone}</div></div>
+            <div class="row"><div class="label">籍 贯：</div><div>${d.location}</div></div>
+            <div class="row"><div class="label">邮 箱：</div><div>${d.email}</div></div>
+            <div class="row"><div class="label">求职意向：</div><div>${d.title}</div></div>
+          </div>
+        </div>
+        <div class="photo">照片</div>
+      </div>
+      <div class="section">
+        <div class="section-title">教育背景</div>
+        ${d.education.map(e => `
+          <div class="edu-item">
+            <div class="edu-row">
+              <span class="period">${e.period}</span>
+              <span class="school">${e.school}</span>
+              <span>${e.major}</span>
+              <span>${e.degree}</span>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="section">
+        <div class="section-title">工作经历</div>
+        ${d.experience.map(e => `
+          <div class="exp-item">
+            <div class="exp-row">
+              <span class="period">${e.period}</span>
+              <span class="org">${e.company}</span>
+              <span class="role">${e.role}</span>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="section">
+        <div class="section-title">技能证书</div>
+        <div style="font-size:12px;color:#444;">${d.skills}</div>
+      </div>
+      <div class="section">
+        <div class="section-title">自我评价</div>
+        <div style="font-size:12px;color:#444;line-height:1.8;">${d.eval}</div>
+      </div>
+    </div>
+    <div class="bottom-band"></div>
+  </div>`;
+};
+
+const renderTpl3 = (d) => {
+  const skillsList = ['Photoshop', 'Illustrator', 'HTML & CSS', 'JavaScript', 'MS Office'];
+  const skillsHtml = skillsList.map(s => {
+    const fill = 50 + Math.floor(Math.random() * 50);
+    return `<div class="skill-bar">
+      <div class="label-row"><span>${s.toUpperCase()}</span></div>
+      <div class="bar"><div class="fill" style="width:${fill}%"></div></div>
+    </div>`;
+  }).join('');
+  return `<div class="tpl-3">
+    <div class="top-band">
+      <div class="name-block">
+        <h1>${d.name}</h1>
+        <div class="target">TARGET: ${(d.title || 'POSITION').toUpperCase()}</div>
+      </div>
+      <div class="contacts">
+        <span>📞 ${d.phone}</span>
+        <span>✉ ${d.email}</span>
+        <span>📍 ${d.location}</span>
+      </div>
+    </div>
+    <div class="body">
+      <div class="sidebar">
+        <div class="photo">照片</div>
+        <div class="section">
+          <h2>Profile</h2>
+          <div class="profile-text">${d.eval}</div>
+        </div>
+        <div class="section">
+          <h2>Special Skills</h2>
+          ${skillsHtml}
+        </div>
+        <div class="section">
+          <h2>Skills</h2>
+          ${skillsHtml}
+        </div>
+      </div>
+      <div class="main">
+        <h2>Experience</h2>
+        <div class="timeline">
+          ${d.experience.map(e => `
+            <div class="timeline-item">
+              <div class="period">${e.period.toUpperCase()}</div>
+              <div class="company">${e.company}</div>
+              <div class="role">${e.role}</div>
+              <div class="desc">${e.desc}</div>
+            </div>
+          `).join('')}
+        </div>
+        <h2 style="margin-top:18px;">Education</h2>
+        <div class="timeline">
+          ${d.education.map(e => `
+            <div class="timeline-item">
+              <div class="period">${e.period.toUpperCase()}</div>
+              <div class="company">${e.school}</div>
+              <div class="role">${e.degree}, ${e.major}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+    <div class="bottom-band">Thank you for your busy schedule to read my resume</div>
+  </div>`;
+};
+
+const renderTpl4 = (d) => {
+  return `<div class="tpl-4">
+    <div class="header">
+      <div>
+        <h1>${d.name}</h1>
+        <div class="contact-line">(+86) ${d.phone} | E-mail: ${d.email}</div>
+        <div class="contact-line">Address: ${d.location}</div>
+      </div>
+      <div class="photo">照片</div>
+    </div>
+    <div class="section">
+      <div class="section-title">EDUCATION</div>
+      ${d.education.map(e => `
+        <div class="item">
+          <div class="item-head">
+            <span class="left">${e.school} · ${e.major}</span>
+            <span class="right">${e.period}</span>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+    <div class="section">
+      <div class="section-title">WORK EXPERIENCE</div>
+      ${d.experience.map(e => `
+        <div class="item">
+          <div class="item-head">
+            <span class="left">${e.company} · ${e.role}</span>
+            <span class="right">${e.period}</span>
+          </div>
+          <ul><li>${e.desc}</li></ul>
+        </div>
+      `).join('')}
+    </div>
+    <div class="section">
+      <div class="section-title">SKILLS</div>
+      <ul>${d.skills.split(/[，。；;\n]/).filter(s => s.trim()).map(s => `<li>${s.trim()}</li>`).join('')}</ul>
+    </div>
+    <div class="section">
+      <div class="section-title">HIGHLIGHTS</div>
+      <div style="font-size:11px;color:#444;line-height:1.7;">${d.eval}</div>
+    </div>
+  </div>`;
+};
+
+const templates = [renderTpl1, renderTpl2, renderTpl3, renderTpl4];
+
+// ===== Render =====
+function renderPreview() {
+  document.getElementById('a4page').innerHTML = templates[currentTemplate](resumeData);
+}
+
+function renderEduList() {
+  document.getElementById('eduList').innerHTML = resumeData.education.map((e, i) => `
+    <div class="array-item">
+      <button class="remove-btn" onclick="removeEdu(${i})">&times;</button>
+      <div class="form-grid">
+        <div class="field"><label>学校</label><input type="text" value="${e.school}" oninput="updateEdu(${i},'school',this.value)"></div>
+        <div class="field"><label>专业</label><input type="text" value="${e.major}" oninput="updateEdu(${i},'major',this.value)"></div>
+        <div class="field"><label>学历</label><input type="text" value="${e.degree}" oninput="updateEdu(${i},'degree',this.value)"></div>
+        <div class="field"><label>时间</label><input type="text" value="${e.period}" oninput="updateEdu(${i},'period',this.value)"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderExpList() {
+  document.getElementById('expList').innerHTML = resumeData.experience.map((e, i) => `
+    <div class="array-item">
+      <button class="remove-btn" onclick="removeExp(${i})">&times;</button>
+      <div class="form-grid">
+        <div class="field"><label>公司</label><input type="text" value="${e.company}" oninput="updateExp(${i},'company',this.value)"></div>
+        <div class="field"><label>职位</label><input type="text" value="${e.role}" oninput="updateExp(${i},'role',this.value)"></div>
+        <div class="field"><label>时间</label><input type="text" value="${e.period}" oninput="updateExp(${i},'period',this.value)"></div>
+      </div>
+      <div class="field" style="margin-top:8px;"><label>描述</label><textarea rows="2" oninput="updateExp(${i},'desc',this.value)">${e.desc}</textarea></div>
+    </div>
+  `).join('');
+}
+
+// ===== CRUD =====
+function addEdu() { resumeData.education.push({school:"",major:"",degree:"",period:""}); renderEduList(); renderPreview(); }
+function removeEdu(i) { resumeData.education.splice(i,1); renderEduList(); renderPreview(); }
+function updateEdu(i,k,v) { resumeData.education[i][k]=v; renderPreview(); }
+function addExp() { resumeData.experience.push({company:"",role:"",period:"",desc:""}); renderExpList(); renderPreview(); }
+function removeExp(i) { resumeData.experience.splice(i,1); renderExpList(); renderPreview(); }
+function updateExp(i,k,v) { resumeData.experience[i][k]=v; renderPreview(); }
+
+// ===== Bind =====
+document.querySelectorAll('[data-key]').forEach(input => {
+  const key = input.dataset.key;
+  input.addEventListener('input', () => {
+    resumeData[key] = input.value;
+    renderPreview();
+  });
+});
+
+// ===== Template picker =====
+document.getElementById('tplGrid').addEventListener('click', (e) => {
+  const card = e.target.closest('.tpl-card');
+  if (!card) return;
+  document.querySelectorAll('.tpl-card').forEach(c => c.classList.remove('active'));
+  card.classList.add('active');
+  currentTemplate = parseInt(card.dataset.tpl);
+  renderPreview();
+});
+
+// ===== Export =====
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const page = document.getElementById('a4page');
+  html2pdf().set({
+    margin: 0,
+    filename: (resumeData.name || 'resume') + '_简历.pdf',
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: 'px', format: [794, 1123], orientation: 'portrait' }
+  }).from(page).save();
+});
+
+// ===== Init =====
+const saved = localStorage.getItem('resumeData');
+if (saved) {
+  try { resumeData = Object.assign(resumeData, JSON.parse(saved)); } catch(e) {}
+}
+renderEduList();
+renderExpList();
+document.querySelectorAll('[data-key]').forEach(input => {
+  if (resumeData[input.dataset.key] !== undefined) input.value = resumeData[input.dataset.key];
+});
+renderPreview();
+</script>
+</body>
+</html>

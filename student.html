@@ -128,6 +128,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC"
     <button class="glow-btn-outline glow-btn-sm !text-xs !py-2 !px-4" onclick="nav('resume')" id="nav-resume">📋 AI简历</button>
     <button class="glow-btn-outline glow-btn-sm !text-xs !py-2 !px-4" onclick="nav('match')" id="nav-match">🎯 岗位匹配</button>
     <button class="glow-btn-outline glow-btn-sm !text-xs !py-2 !px-4" onclick="nav('interview')" id="nav-interview">🎤 模拟面试</button>
+    <button class="glow-btn glow-btn-sm !text-xs !py-2 !px-4" onclick="openResumeEditor()" id="nav-editor">📝 模板编辑器</button>
   </div>
 </nav>
 
@@ -288,7 +289,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC"
       </div>
       <div class="flex gap-3 justify-center">
         <button class="glow-btn-outline" onclick="resetQuickOptimizer()">🔄 再优化一段</button>
-        <button class="glow-btn" onclick="nav('match')">🎯 岗位匹配 →</button>
+        <button class="glow-btn" onclick="openResumeEditor()">📝 用模板生成简历</button>
+        <button class="glow-btn-outline" onclick="nav('match')">🎯 岗位匹配 →</button>
       </div>
     </div>
 
@@ -780,6 +782,22 @@ function renderQuickTplPreview(){
 function exportQuickResumePDF(){
   var page=document.getElementById('quick-a4page');
   html2pdf().set({margin:0,filename:'AI优化简历.pdf',image:{type:'jpeg',quality:0.98},html2canvas:{scale:2,useCORS:true},jsPDF:{unit:'px',format:[794,1123],orientation:'portrait'}}).from(page).save();
+}
+
+
+/* ===== Open Resume Editor with Data Bridge ===== */
+function openResumeEditor(){
+  var data={name:'',title:'',phone:'',email:'',location:'',education:[],experience:[],skills:'',eval:''};
+  // Try to grab quick optimized text
+  var afterEl=document.getElementById('quick-after');
+  if(afterEl&&afterEl.textContent.trim()){
+    data.name='求职者';data.title='个人简历';
+    data.experience=[{company:'项目经历',role:'',period:'',desc:afterEl.textContent.trim()}];
+    data.skills='团队协作, 沟通表达, 快速学习';
+    data.eval='AI优化生成的简历内容';
+  }
+  localStorage.setItem('resumeData',JSON.stringify(data));
+  window.open('resume-editor/index.html','_blank');
 }
 
 /* ===== Tab Switch ===== */
