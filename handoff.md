@@ -40,18 +40,20 @@
 
 ### 0.2 当前准确进度
 
+> 2026-07-23 更新：Task 0—9 已在 `Jin-Ziyao` 全部落地并本地提交（ahead 11）。公共骨架已从 `origin/Zheng-Xinyao` 合并进来，含 backend（Express+TS）、frontend（Vite+React）、根目录静态 MVP 页面与 pnpm workspace。`Jin-Ziyao` 保留了 AGENTS/handoff/docs/team-contract/task-prompts。后端五个契约接口全部经 Zod 校验，默认 `LLM_MODE=mock`（无 Key 时自动 mock，不询问用户）；未配置真实 Key，故真实外部模型 live 测试标记为"未执行"。student.html / enterprise.html 已接入五个新接口并通过 HTTP。111/111 单元+接口测试通过。详见下方完成状态。
+
 | Task | 名称 | 当前状态 | 下一步判断 |
 | --- | --- | --- | --- |
-| Task 0 | 确认或建立公共工程骨架 | 部分完成、等待队友 | 已在 `Zheng-Xinyao` 找到 Vite + React + Express 骨架；最终页面和同步方式未确认，`Jin-Ziyao` 目前仍无 `package.json` |
-| Task 1 | 共享类型、校验规则和统一响应 | 部分完成 | 文档契约已完成；TypeScript/Zod 可执行代码待骨架确定后落地 |
-| Task 2 | 五个稳定 MOCK 接口 | 未开始 | 依赖 Task 0 和 Task 1 可执行代码 |
-| Task 3 | LLM 统一调用基础设施 | 未开始 | 依赖 Task 0—2；模型提供商仍未确定 |
-| Task 4 | 求职者 JD 解析与动态提问 | 未开始 | 依赖 Task 3 |
-| Task 5 | 求职者回答转事实卡片 | 未开始 | 依赖 Task 3；联调依赖 Task 4 输出 |
-| Task 6 | 已确认事实生成一页简历 | 未开始 | 依赖 Task 5 的事实结构 |
-| Task 7 | 企业招聘需求解析与追问 | 未开始 | 依赖 Task 3 |
-| Task 8 | 企业招聘材料生成 | 未开始 | 依赖 Task 7 输出 |
-| Task 9 | 稳定性、反编造和端到端测试 | 未开始 | 依赖真实接口完成 |
+| Task 0 | 确认或建立公共工程骨架 | ✅ 完成 | 已合并 `origin/Zheng-Xinyao` 骨架；`pnpm install` + backend build + frontend build 全部通过 |
+| Task 1 | 共享类型、校验规则和统一响应 | ✅ 完成 | `backend/src/contracts/` 类型从 Zod 推导；41 条契约测试通过 |
+| Task 2 | 五个稳定 MOCK 接口 | ✅ 完成 | 五个 POST 接口 + 11 条 HTTP 烟雾测试；MOCK 真实不夸大 |
+| Task 3 | LLM 统一调用基础设施 | ✅ 完成 | `backend/src/llm/` 提供商无关 Client；13 条基础设施测试覆盖 mock/live/retry/timeout/fallback/注入/隐私 |
+| Task 4 | 求职者 JD 解析与动态提问 | ✅ 完成（mock 路径） | 5—8 道动态问题；live 路径已接线，缺 Key 时 fallback |
+| Task 5 | 求职者回答转事实卡片 | ✅ 完成（mock 路径） | sourceQuote 逐字校验；confirmed:false；反夸大测试通过 |
+| Task 6 | 已确认事实生成一页简历 | ✅ 完成（mock 路径） | evidenceIds 交叉校验；无教育事实 education=[] |
+| Task 7 | 企业招聘需求解析与追问 | ✅ 完成（mock 路径） | 3—5 道问题；uncertainties 保留 |
+| Task 8 | 企业招聘材料生成 | ✅ 完成（mock 路径） | 权重 100、5 道题；反歧视 + 反自动录用检查通过 |
+| Task 9 | 稳定性、反编造和端到端测试 | ✅ 完成（mock+fake provider） | 29 条矩阵测试 + 3×求职者 + 3×企业 e2e；真实外部模型 live 测试因无 Key 未执行 |
 
 Task 1 文档成果已在提交 `caa7fe4 docs: add shared team API contract` 推送到远程 `Jin-Ziyao`。不要重新设计另一套字段。
 
