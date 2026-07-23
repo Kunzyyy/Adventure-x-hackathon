@@ -1,0 +1,350 @@
+/* ─── Keal Platform Design System ────────────────────────── */
+/* Apple-inspired, glassmorphism, futuristic SaaS */
+
+.keal-root {
+  --keal-bg: #fafafa;
+  --keal-surface: #ffffff;
+  --keal-card: rgba(255, 255, 255, 0.72);
+  --keal-card-hover: rgba(255, 255, 255, 0.92);
+  --keal-text: #1d1d1f;
+  --keal-text-secondary: #6e6e73;
+  --keal-text-tertiary: #aeaeb2;
+  --keal-accent: #5b5fef;
+  --keal-accent-light: #7c7ff5;
+  --keal-accent-glow: rgba(91, 95, 239, 0.15);
+  --keal-gradient: linear-gradient(135deg, #5b5fef 0%, #8b5cf6 50%, #a855f7 100%);
+  --keal-gradient-subtle: linear-gradient(135deg, rgba(91, 95, 239, 0.06) 0%, rgba(168, 85, 247, 0.06) 100%);
+  --keal-border: rgba(0, 0, 0, 0.06);
+  --keal-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --keal-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  --keal-shadow-lg: 0 12px 48px rgba(0, 0, 0, 0.08);
+  --keal-radius: 24px;
+  --keal-radius-sm: 16px;
+
+  min-height: 100vh;
+  background: var(--keal-bg);
+  color: var(--keal-text);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Glass Card ─────────────────────────────────────────── */
+.keal-glass {
+  background: var(--keal-card);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--keal-border);
+  border-radius: var(--keal-radius);
+  box-shadow: var(--keal-shadow);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.keal-glass:hover {
+  background: var(--keal-card-hover);
+  box-shadow: var(--keal-shadow-lg);
+  transform: translateY(-2px);
+}
+
+/* ─── Glass Card Small ───────────────────────────────────── */
+.keal-glass-sm {
+  background: var(--keal-card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--keal-border);
+  border-radius: var(--keal-radius-sm);
+  box-shadow: var(--keal-shadow-sm);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.keal-glass-sm:hover {
+  box-shadow: var(--keal-shadow);
+  transform: translateY(-1px);
+}
+
+/* ─── Accent Gradient Button ─────────────────────────────── */
+.keal-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px;
+  border-radius: 980px;
+  font-size: 15px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+  background: var(--keal-gradient);
+  color: white;
+  letter-spacing: -0.01em;
+}
+.keal-btn:hover {
+  transform: scale(1.03);
+  box-shadow: 0 8px 32px rgba(91, 95, 239, 0.35);
+}
+.keal-btn:active {
+  transform: scale(0.98);
+}
+
+.keal-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px;
+  border-radius: 980px;
+  font-size: 15px;
+  font-weight: 500;
+  border: 1.5px solid var(--keal-border);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+  background: transparent;
+  color: var(--keal-text);
+  letter-spacing: -0.01em;
+}
+.keal-btn-ghost:hover {
+  border-color: var(--keal-accent);
+  color: var(--keal-accent);
+  background: rgba(91, 95, 239, 0.04);
+}
+
+/* ─── Gradient Text ──────────────────────────────────────── */
+.keal-gradient-text {
+  background: var(--keal-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ─── Feature Icon Circle ────────────────────────────────── */
+.keal-icon-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  background: var(--keal-gradient-subtle);
+  color: var(--keal-accent);
+}
+
+/* ─── Mode Toggle ────────────────────────────────────────── */
+.keal-mode-toggle {
+  display: flex;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 980px;
+  padding: 3px;
+  gap: 2px;
+}
+.keal-mode-btn {
+  padding: 8px 20px;
+  border-radius: 980px;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  background: transparent;
+  color: var(--keal-text-secondary);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  letter-spacing: -0.01em;
+}
+.keal-mode-btn.active {
+  background: white;
+  color: var(--keal-text);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* ─── Stats Number ───────────────────────────────────────── */
+.keal-stat {
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  background: var(--keal-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ─── Star Rating ────────────────────────────────────────── */
+.keal-stars {
+  display: flex;
+  gap: 3px;
+}
+.keal-star {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+}
+.keal-star.filled {
+  background: var(--keal-accent);
+}
+.keal-star.empty {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+/* ─── Progress Bar ───────────────────────────────────────── */
+.keal-progress {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+.keal-progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--keal-gradient);
+  transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ─── Tag / Badge ────────────────────────────────────────── */
+.keal-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 980px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.keal-tag-accent {
+  background: rgba(91, 95, 239, 0.08);
+  color: var(--keal-accent);
+}
+
+/* ─── Divider ────────────────────────────────────────────── */
+.keal-divider {
+  height: 1px;
+  background: var(--keal-border);
+  margin: 0;
+  border: none;
+}
+
+/* ─── Robot Container ────────────────────────────────────── */
+.keal-robot-stage {
+  width: 100%;
+  height: 380px;
+  border-radius: var(--keal-radius);
+  overflow: hidden;
+  position: relative;
+  background: radial-gradient(ellipse at center, rgba(91, 95, 239, 0.06) 0%, transparent 70%);
+}
+
+/* ─── Hero Section ───────────────────────────────────────── */
+.keal-hero {
+  padding: 80px 0 60px;
+  position: relative;
+}
+.keal-hero::before {
+  content: '';
+  position: absolute;
+  top: -200px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 800px;
+  height: 800px;
+  background: radial-gradient(circle, rgba(91, 95, 239, 0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* ─── Scroll Animations ──────────────────────────────────── */
+.keal-reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.keal-reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ─── Data Grid ──────────────────────────────────────────── */
+.keal-data-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+/* ─── Chart Placeholder ──────────────────────────────────── */
+.keal-chart {
+  width: 100%;
+  height: 200px;
+  border-radius: var(--keal-radius-sm);
+  background: linear-gradient(180deg, rgba(91, 95, 239, 0.04) 0%, rgba(91, 95, 239, 0.01) 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+/* ─── Avatar ─────────────────────────────────────────────── */
+.keal-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+  color: white;
+}
+
+/* ─── Company Logo Placeholder ───────────────────────────── */
+.keal-company-logo {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 18px;
+  color: white;
+  flex-shrink: 0;
+}
+
+/* ─── Scroll container ───────────────────────────────────── */
+.keal-scroll {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
+}
+.keal-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.keal-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.keal-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 2px;
+}
+
+/* ─── Footer ─────────────────────────────────────────────── */
+.keal-footer {
+  border-top: 1px solid var(--keal-border);
+  background: var(--keal-surface);
+  padding: 48px 0 32px;
+  margin-top: 80px;
+}
+
+/* ─── Pulse Ring ─────────────────────────────────────────── */
+.keal-pulse {
+  position: relative;
+}
+.keal-pulse::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  border: 2px solid var(--keal-accent);
+  opacity: 0;
+  animation: keal-pulse 2s ease-out infinite;
+}
+@keyframes keal-pulse {
+  0% { opacity: 0.4; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.15); }
+}
+
+/* ─── Selection ──────────────────────────────────────────── */
+.keal-root ::selection {
+  background: rgba(91, 95, 239, 0.18);
+  color: var(--keal-text);
+}

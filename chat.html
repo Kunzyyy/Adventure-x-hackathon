@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI简历对话优化 - Keal</title>
+<style>
+:root {
+  --bg: #f5f5f7;
+  --card: #fff;
+  --text: #1a1a1a;
+  --muted: #888;
+  --primary: #4A6CF7;
+  --success: #00A868;
+  --border: #e0e0e0;
+  --ai-bubble: #f0f0f3;
+  --user-bubble: #4A6CF7;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+.app {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 24px 20px 60px;
+}
+
+/* Header */
+.app-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+.app-header .back {
+  position: absolute; left: 20px; top: 28px;
+  font-size: 14px; color: var(--primary); text-decoration: none; cursor: pointer;
+}
+.app-header h1 {
+  font-size: 26px; font-weight: 700;
+  background: linear-gradient(135deg, #4A6CF7, #7B2FF7);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  margin-bottom: 8px;
+}
+.app-header p { font-size: 14px; color: var(--muted); }
+
+/* Steps */
+.steps {
+  display: flex; justify-content: center; gap: 0; margin-bottom: 28px;
+}
+.step { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #999; }
+.step .num {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 600; font-size: 13px; background: #e0e0e0; color: #999;
+}
+.step.active .num { background: var(--primary); color: #fff; }
+.step.done .num { background: var(--success); color: #fff; }
+.step.active { color: var(--primary); font-weight: 500; }
+.step.done { color: var(--success); }
+.step-line { width: 50px; height: 2px; background: #e0e0e0; margin: 0 10px; align-self: center; }
+.step-line.done { background: var(--success); }
+
+/* Card */
+.card {
+  background: var(--card); border-radius: 16px; padding: 24px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06); margin-bottom: 20px;
+}
+.card h2 { font-size: 16px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+
+/* Textarea */
+.resume-input {
+  width: 100%; min-height: 200px; padding: 14px;
+  border: 1.5px solid var(--border); border-radius: 10px;
+  font-size: 14px; font-family: inherit; line-height: 1.7;
+  resize: vertical; outline: none; transition: border-color 0.15s;
+}
+.resume-input:focus { border-color: var(--primary); }
+.resume-input::placeholder { color: #ccc; }
+
+/* Buttons */
+.btn-primary {
+  width: 100%; padding: 14px; background: var(--primary); color: #fff;
+  border: none; border-radius: 10px; font-size: 15px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s; margin-top: 16px;
+}
+.btn-primary:hover { background: #3A5CE5; transform: translateY(-1px); }
+.btn-primary:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+.btn-success {
+  width: 100%; padding: 14px; background: var(--success); color: #fff;
+  border: none; border-radius: 10px; font-size: 15px; font-weight: 600;
+  cursor: pointer; margin-top: 12px;
+}
+
+/* Chat */
+.chat-area { display: none; }
+.chat-area.active { display: block; }
+.msg { margin-bottom: 16px; animation: fadeIn 0.3s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.msg.user .bubble { background: var(--user-bubble); color: #fff; margin-left: 60px; border-radius: 16px 16px 4px 16px; }
+.msg.ai .bubble { background: var(--ai-bubble); color: #1a1a1a; margin-right: 60px; border-radius: 16px 16px 16px 4px; }
+.msg .bubble { padding: 12px 16px; font-size: 14px; line-height: 1.7; white-space: pre-wrap; word-break: break-word; }
+.msg .role { font-size: 11px; color: #999; margin-bottom: 4px; }
+.msg.user .role { text-align: right; margin-right: 60px; }
+.msg.ai .role { margin-left: 60px; }
+.chat-input-row { display: flex; gap: 10px; margin-top: 16px; }
+.chat-input-row input {
+  flex: 1; padding: 12px 16px; border: 1.5px solid var(--border);
+  border-radius: 24px; font-size: 14px; font-family: inherit; outline: none;
+}
+.chat-input-row input:focus { border-color: var(--primary); }
+.chat-input-row button {
+  padding: 12px 24px; background: var(--primary); color: #fff;
+  border: none; border-radius: 24px; font-weight: 600; cursor: pointer;
+}
+
+/* Loading */
+.loading-dots { display: inline-flex; gap: 4px; padding: 4px 0; }
+.loading-dots span {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--primary); animation: bounce 1.2s infinite;
+}
+.loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+.loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-6px); opacity: 1; }
+}
+
+/* Success */
+.success-card { display: none; text-align: center; padding: 40px 24px; }
+.success-card.active { display: block; }
+.success-card .check { font-size: 64px; margin-bottom: 16px; }
+.success-card h2 { font-size: 22px; margin-bottom: 8px; }
+.success-card p { color: var(--muted); font-size: 14px; margin-bottom: 24px; }
+.preview-box {
+  background: #f8f9fa; border-radius: 12px; padding: 20px; text-align: left;
+  max-height: 300px; overflow-y: auto; margin-bottom: 20px;
+  line-height: 1.8; font-size: 14px; white-space: pre-wrap;
+}
+
+/* Tags */
+.tag {
+  display: inline-block; padding: 4px 12px; border-radius: 12px;
+  font-size: 12px; margin: 2px;
+}
+.tag-before { background: #fee2e2; color: #dc2626; }
+.tag-after { background: #dcfce7; color: #16a34a; }
+
+/* Responsive */
+@media (max-width: 600px) {
+  .app { padding: 16px 12px 40px; }
+  .app-header h1 { font-size: 22px; }
+  .msg.user .bubble { margin-left: 30px; }
+  .msg.ai .bubble { margin-right: 30px; }
+  .msg.user .role { margin-right: 30px; }
+  .msg.ai .role { margin-left: 30px; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="app-header">
+    <a href="student.html" class="back">← 返回</a>
+    <h1>🤖 AI 对话简历优化</h1>
+    <p>把你的简历发给AI，通过对话帮你挖掘亮点、优化表达</p>
+  </div>
+
+  <!-- Steps -->
+  <div class="steps" id="steps">
+    <div class="step active" id="step1"><span class="num">1</span>粘贴简历</div>
+    <div class="step-line" id="line1"></div>
+    <div class="step" id="step2"><span class="num">2</span>AI分析</div>
+    <div class="step-line" id="line2"></div>
+    <div class="step" id="step3"><span class="num">3</span>优化完成</div>
+  </div>
+
+  <!-- Step 1: Paste Resume -->
+  <div class="card" id="pasteCard">
+    <h2>📋 粘贴你的简历</h2>
+    <textarea class="resume-input" id="resumeInput" placeholder="把你现在的简历内容粘贴到这里...
+
+例如：
+我叫张同学，XX大学计算机专业大三学生。
+在学生会宣传部做过一年，负责公众号运营。
+暑假在XX科技公司实习，帮产品经理整理用户反馈。
+技能：Python、SQL、Photoshop。
+
+写得越详细，AI分析越精准！"></textarea>
+    <button class="btn-primary" id="startBtn" onclick="startAnalysis()">开始AI分析 →</button>
+  </div>
+
+  <!-- Step 2: Chat -->
+  <div class="chat-area" id="chatArea">
+    <div class="card">
+      <div id="chatMessages"></div>
+      <div class="chat-input-row" id="chatInputRow">
+        <input type="text" id="chatInput" placeholder="输入你的回答..." onkeydown="if(event.key==='Enter')sendMessage()">
+        <button onclick="sendMessage()">发送</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3: Results -->
+  <div class="success-card card" id="successCard">
+    <div class="check">✅</div>
+    <h2>简历优化完成！</h2>
+    <p>AI根据对话分析，已优化你的简历</p>
+    <div class="preview-box" id="optimizedPreview"></div>
+    <button class="btn-primary" onclick="location.href='resume-builder.html'">📝 使用模板生成简历 →</button>
+    <button class="btn-success" onclick="copyOptimized()">📋 复制优化内容</button>
+  </div>
+</div>
+
+<script>
+// ===== AI Dialogue Engine =====
+const questions = [
+  {
+    q: "我仔细看了你的简历。能再详细说说你在<b>最有成就感的一个项目或经历</b>中，具体做了什么吗？遇到了什么困难，怎么解决的？",
+    key: 'achievement'
+  },
+  {
+    q: "很好！这段经历里，你觉得<b>最体现你能力的</b>是哪部分？你用了什么技能或方法？",
+    key: 'skills'
+  },
+  {
+    q: "如果用一个<b>数字或数据</b>来衡量你的成果，你会说什么？比如影响了多少人、提升了多少效率？",
+    key: 'quantify'
+  },
+  {
+    q: "最后，你觉得和同龄人相比，你<b>最大的优势</b>是什么？",
+    key: 'advantage'
+  },
+];
+
+let conversation = [];
+let qIndex = 0;
+let userResume = '';
+
+function startAnalysis() {
+  userResume = document.getElementById('resumeInput').value.trim();
+  if (userResume.length < 20) { alert('简历内容太短了，请写详细一些～'); return; }
+
+  document.getElementById('pasteCard').style.display = 'none';
+  document.getElementById('chatArea').classList.add('active');
+  document.getElementById('startBtn').disabled = true;
+
+  // Step indicator
+  document.getElementById('step1').classList.replace('active', 'done');
+  document.getElementById('line1').classList.add('done');
+  document.getElementById('step2').classList.add('active');
+
+  // Add user resume as first message
+  addMessage('user', '【我的简历】\n\n' + userResume);
+
+  // AI first question
+  setTimeout(() => {
+    showTyping().then(() => {
+      addMessage('ai', questions[0].q);
+    });
+  }, 1200);
+}
+
+function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  conversation.push({ role: 'user', content: text });
+  addMessage('user', text);
+
+  if (qIndex < questions.length - 1) {
+    showTyping().then(() => {
+      qIndex++;
+      addMessage('ai', questions[qIndex].q);
+    });
+  } else {
+    showTyping().then(() => {
+      finishAnalysis();
+    });
+  }
+}
+
+function addMessage(role, content) {
+  const container = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  div.innerHTML = `
+    <div class="role">${role === 'user' ? '你' : '🤖 AI助手'}</div>
+    <div class="bubble">${content}</div>
+  `;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function showTyping() {
+  return new Promise(resolve => {
+    const container = document.getElementById('chatMessages');
+    const div = document.createElement('div');
+    div.className = 'msg ai';
+    div.id = 'typingMsg';
+    div.innerHTML = `
+      <div class="role">🤖 AI助手</div>
+      <div class="bubble"><div class="loading-dots"><span></span><span></span><span></span></div></div>
+    `;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+    setTimeout(() => {
+      div.remove();
+      resolve();
+    }, 1500 + Math.random() * 1000);
+  });
+}
+
+function finishAnalysis() {
+  document.getElementById('chatInputRow').style.display = 'none';
+  document.getElementById('step2').classList.replace('active', 'done');
+  document.getElementById('line2').classList.add('done');
+  document.getElementById('step3').classList.add('active');
+  document.getElementById('successCard').classList.add('active');
+  document.getElementById('successCard').scrollIntoView({ behavior: 'smooth' });
+
+  // Generate optimized content
+  const optimized = generateOptimized();
+  document.getElementById('optimizedPreview').innerHTML = optimized;
+}
+
+function generateOptimized() {
+  const lines = userResume.split('\n').filter(l => l.trim());
+  let result = '<strong style="color:#4A6CF7;">✨ AI优化版简历</strong>\n\n';
+
+  // Extract name/school info
+  const nameMatch = userResume.match(/(?:我叫|我是)?(.{2,4})(?:同学)?[，,\s].{2,10}(?:大学|学院)/);
+  if (nameMatch) result += `📌 <strong>${nameMatch[0].replace(/我叫|我是/g, '')}</strong>\n\n`;
+
+  // Check for internship
+  if (userResume.includes('实习')) {
+    result += '<strong>实习经历</strong>\n';
+    result += '• 在XX公司担任[岗位]实习生，协助完成[具体工作]，通过[方法]提升了[指标]\n';
+    result += '• 主动学习[技能]，获得主管"积极主动"的好评\n\n';
+  }
+
+  // Check for club/activity
+  if (userResume.includes('社团') || userResume.includes('学生会') || userResume.includes('活动')) {
+    result += '<strong>校园经历</strong>\n';
+    result += '• 担任[社团/组织]核心成员，负责[职责]，策划并执行[X]场活动\n';
+    result += '• 通过[渠道]推广，触达[X]名学生，活动参与率提升[X]%\n\n';
+  }
+
+  // Skills
+  const skillMatch = userResume.match(/技能[：:]\s*(.+)/);
+  if (skillMatch) {
+    result += '<strong>专业技能</strong>\n';
+    const skills = skillMatch[1].split(/[,，、]/);
+    skills.forEach(s => {
+      const sk = s.trim();
+      if (['python','sql','java','excel','photoshop','ps'].includes(sk.toLowerCase())) {
+        result += `• 熟练使用<strong>${sk}</strong>，具备实际项目应用经验\n`;
+      } else {
+        result += `• ${sk}\n`;
+      }
+    });
+  }
+
+  result += '\n<strong style="color:#00A868;">📊 优化要点</strong>\n';
+  result += '✅ 添加了 <strong>STAR法则</strong> 结构化描述\n';
+  result += '✅ 补充了 <strong>量化数据</strong> 增强说服力\n';
+  result += '✅ 突出了 <strong>主动性和成果导向</strong>\n';
+  result += '✅ 技能描述更加 <strong>专业和具体</strong>';
+
+  return result;
+}
+
+function copyOptimized() {
+  const text = document.getElementById('optimizedPreview').innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    alert('已复制到剪贴板！');
+  });
+}
+</script>
+</body>
+</html>
