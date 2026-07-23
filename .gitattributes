@@ -1,0 +1,6 @@
+# .gitattributes — normalize line endings so the CRLF warnings and
+# `git diff --check` stay clean on a Windows checkout.
+* text=auto eol=lf
+*.sh text eol=lf
+*.png binary
+*.jpg binary
