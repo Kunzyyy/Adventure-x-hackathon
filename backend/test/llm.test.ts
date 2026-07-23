@@ -15,7 +15,7 @@ import { ServiceError } from "../src/services/errors.js";
 
 const Schema = z.object({ word: z.string().min(1) });
 
-function opts(over: Partial<CallOptions<{ word: string }>> & { mockFn: () => { word: string } }): CallOptions<{ word: string }> {
+function opts(over: Partial<CallOptions<{ word: string }>>): CallOptions<{ word: string }> {
   return {
     schema: Schema,
     system: "test system",
@@ -23,7 +23,7 @@ function opts(over: Partial<CallOptions<{ word: string }>> & { mockFn: () => { w
     maxTokens: 100,
     label: "test",
     onLiveFailure: "fallback",
-    mockFn: over.mockFn,
+    mockFn: () => ({ word: "mockword" }),
     ...over,
   } as CallOptions<{ word: string }>;
 }

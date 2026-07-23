@@ -233,10 +233,11 @@ export function toApiError(err: ServiceError): APIError {
   };
 }
 
-/** Test seam: force the resolved mode (used by fake-provider tests). */
+/** Test seam: force the resolved mode (used by fake-provider tests). Also
+ *  flips hasKey so callStructured takes the live branch. */
 export function __setModeForTest(mode: LlmMode): void {
   if (!cached) cached = readConfig();
-  cached = { ...cached, mode };
+  cached = { ...cached, mode, hasKey: mode === "live" ? true : cached.hasKey };
 }
 
 export { z };

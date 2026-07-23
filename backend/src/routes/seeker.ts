@@ -20,10 +20,13 @@ import { getLlmMode } from "../llm/index.js";
 
 export const seekerRouter = Router();
 
-const mode = () => (getLlmMode() === "live" ? "live" : "mock");
+// The "current" mode for error responses (before a call resolves) reflects
+// the switchboard's configured mode; success responses carry the actual mode
+// returned by the service (which may be 'fallback' even when configured live).
+const cfgMode = () => (getLlmMode() === "live" ? "live" : "mock");
 
 function handleErr(res: Response, e: unknown): void {
-  const m = mode();
+  const m = cfgMode();
   if (isServiceError(e)) {
     sendError(res, apiError(e.code, e.message), m);
   } else {
@@ -40,11 +43,11 @@ seekerRouter.post("/analyze", async (req: Request, res: Response) => {
   const v = validate(SeekerAnalyzeRequestSchema, req.body);
   if (!v.ok) return sendError(res, v.error, "mock");
   try {
-    const data = await seekerAnalyze(v.value);
+    const out = await seekerAnalyze(v.value);
     // Final structural guarantee: re-validate before leaving the boundary.
-    const out = validateAi(SeekerAnalyzeDataSchema, data);
-    if (!out.ok) return sendError(res, out.error, mode());
-    sendOk(res, out.value, mode());
+    const checked = validateAi(SeekerAnalyzeDataSchema, out.data);
+    if (!checked.ok) return sendError(res, checked.error, out.mode);
+    sendOk(res, checked.value, out.mode);
   } catch (e) {
     handleErr(res, e);
   }
@@ -55,10 +58,10 @@ seekerRouter.post("/facts", async (req: Request, res: Response) => {
   const v = validate(SeekerFactsRequestSchema, req.body);
   if (!v.ok) return sendError(res, v.error, "mock");
   try {
-    const data = await seekerFacts(v.value);
-    const out = validateAi(SeekerFactsDataSchema, data);
-    if (!out.ok) return sendError(res, out.error, mode());
-    sendOk(res, out.value, mode());
+    const out = await seekerFacts(v.value);
+    const checked = validateAi(SeekerFactsDataSchema, out.data);
+    if (!checked.ok) return sendError(res, checked.error, out.mode);
+    sendOk(res, checked.value, out.mode);
   } catch (e) {
     handleErr(res, e);
   }
@@ -69,10 +72,10 @@ seekerRouter.post("/generate", async (req: Request, res: Response) => {
   const v = validate(SeekerGenerateRequestSchema, req.body);
   if (!v.ok) return sendError(res, v.error, "mock");
   try {
-    const data = await seekerGenerate(v.value);
-    const out = validateAi(SeekerGenerateDataSchema, data);
-    if (!out.ok) return sendError(res, out.error, mode());
-    sendOk(res, out.value, mode());
+    const out = await seekerGenerate(v.value);
+    const checked = validateAi(SeekerGenerateDataSchema, out.data);
+    if (!checked.ok) return sendError(res, checked.error, out.mode);
+    sendOk(res, checked.value, out.mode);
   } catch (e) {
     handleErr(res, e);
   }

@@ -40,7 +40,7 @@ const Q5 = [
 
 describe("seeker analyze (mock)", () => {
   it("returns valid SeekerAnalyzeData", async () => {
-    const d = await seekerAnalyze({ jdText: "招聘数据分析实习生，要求熟悉SQL和Excel。" });
+    const { data: d } = await seekerAnalyze({ jdText: "招聘数据分析实习生，要求熟悉SQL和Excel。" });
     expect(SeekerAnalyzeDataSchema.safeParse(d).success).toBe(true);
     expect(d.questions.length).toBeGreaterThanOrEqual(5);
     expect(d.questions.length).toBeLessThanOrEqual(8);
@@ -58,7 +58,7 @@ describe("seeker facts (mock) — anti-fabrication", () => {
     { questionId: "sq_5", answer: "4" },
   ];
   it("returns facts whose sourceQuote is verbatim in the answers", async () => {
-    const d = await seekerFacts({ jobProfile: JP, questions: Q5, answers });
+    const { data: d } = await seekerFacts({ jobProfile: JP, questions: Q5, answers });
     expect(SeekerFactsDataSchema.safeParse(d).success).toBe(true);
     for (const f of d.facts) {
       const a = answers.find((x) => x.questionId === f.sourceQuestionId);
@@ -66,7 +66,7 @@ describe("seeker facts (mock) — anti-fabrication", () => {
     }
   });
   it("all facts start confirmed:false", async () => {
-    const d = await seekerFacts({ jobProfile: JP, questions: Q5, answers });
+    const { data: d } = await seekerFacts({ jobProfile: JP, questions: Q5, answers });
     expect(d.facts.every((f) => f.confirmed === false)).toBe(true);
   });
   it("does not upgrade a denial into proficiency", async () => {
@@ -77,7 +77,7 @@ describe("seeker facts (mock) — anti-fabrication", () => {
       { questionId: "sq_4", answer: "没展示过分析结果。" },
       { questionId: "sq_5", answer: "0" },
     ];
-    const d = await seekerFacts({ jobProfile: JP, questions: Q5, answers: denyAnswers });
+    const { data: d } = await seekerFacts({ jobProfile: JP, questions: Q5, answers: denyAnswers });
     const blob = JSON.stringify(d);
     expect(blob).not.toContain("熟练");
     expect(blob).not.toContain("精通");
@@ -93,7 +93,7 @@ describe("seeker facts (mock) — anti-fabrication", () => {
       { questionId: "sq_4", answer: "改短了一点数据就上去了。" },
       { questionId: "sq_5", answer: "3" },
     ];
-    const d = await seekerFacts({ jobProfile: JP, questions: Q5, answers: fuzzy });
+    const { data: d } = await seekerFacts({ jobProfile: JP, questions: Q5, answers: fuzzy });
     const blob = JSON.stringify(d);
     // fuzzy tokens preserved
     expect(blob).toContain("几次");
@@ -145,7 +145,7 @@ describe("seeker generate (mock) — evidence integrity", () => {
     },
   ];
   it("generates a valid resume with evidenceIds", async () => {
-    const d = await seekerGenerate({ jobProfile: JP, confirmedFacts: confirmed });
+    const { data: d } = await seekerGenerate({ jobProfile: JP, confirmedFacts: confirmed });
     expect(SeekerGenerateDataSchema.safeParse(d).success).toBe(true);
     const allBullets = [
       ...d.resume.summary,
@@ -156,17 +156,17 @@ describe("seeker generate (mock) — evidence integrity", () => {
     expect(allBullets.every((b) => b.evidenceIds.length > 0)).toBe(true);
     // every evidenceId references a real input fact
     const ids = new Set(confirmed.map((f) => f.id));
-    expect(allBullets.every((b) => b.evidenceIds.every((id) => ids.has(id)))).toBe(true);
+    expect(allBullets.every((b) => b.evidenceIds.every((id: string) => ids.has(id)))).toBe(true);
   });
   it("leaves education empty when no education fact", async () => {
-    const d = await seekerGenerate({ jobProfile: JP, confirmedFacts: confirmed });
+    const { data: d } = await seekerGenerate({ jobProfile: JP, confirmedFacts: confirmed });
     expect(d.resume.education).toEqual([]);
     // no invented school
     expect(JSON.stringify(d)).not.toContain("大学");
     expect(JSON.stringify(d)).not.toContain("学院");
   });
   it("interviewRisks is string[]", async () => {
-    const d = await seekerGenerate({ jobProfile: JP, confirmedFacts: confirmed });
+    const { data: d } = await seekerGenerate({ jobProfile: JP, confirmedFacts: confirmed });
     expect(Array.isArray(d.interviewRisks)).toBe(true);
     expect(d.interviewRisks.every((r) => typeof r === "string")).toBe(true);
   });

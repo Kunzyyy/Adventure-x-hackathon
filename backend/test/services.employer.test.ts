@@ -22,7 +22,7 @@ beforeAll(() => {
 
 describe("employer analyze (mock)", () => {
   it("returns valid EmployerAnalyzeData with 3-5 questions", async () => {
-    const d = await employerAnalyze({ jobTitle: "新媒体运营实习生", roughRequirement: "会剪视频，发发小红书，最好长期实习" });
+    const { data: d } = await employerAnalyze({ jobTitle: "新媒体运营实习生", roughRequirement: "会剪视频，发发小红书，最好长期实习" });
     expect(EmployerAnalyzeDataSchema.safeParse(d).success).toBe(true);
     expect(d.questions.length).toBeGreaterThanOrEqual(3);
     expect(d.questions.length).toBeLessThanOrEqual(5);
@@ -30,7 +30,7 @@ describe("employer analyze (mock)", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
   it("moves unconfirmed info to uncertainties, not into mustHaves", async () => {
-    const d = await employerAnalyze({ jobTitle: "新媒体运营实习生", roughRequirement: "会剪视频，发发小红书，最好长期实习" });
+    const { data: d } = await employerAnalyze({ jobTitle: "新媒体运营实习生", roughRequirement: "会剪视频，发发小红书，最好长期实习" });
     // roughRequirement mentions "长期实习" (fuzzy) — should NOT be written as a hard requirement
     const blob = JSON.stringify(d);
     // uncertainties should be present
@@ -40,7 +40,7 @@ describe("employer analyze (mock)", () => {
 
 describe("employer generate (mock)", () => {
   it("returns a valid RecruitmentKit with weights 100 and 5 questions", async () => {
-    const d = await employerGenerate({
+    const { data: d } = await employerGenerate({
       jobTitle: "新媒体运营实习生",
       roughRequirement: "会剪视频，发发小红书，最好长期实习",
       jobProfile: EMPLOYER_JOB_PROFILE,
@@ -54,7 +54,7 @@ describe("employer generate (mock)", () => {
     expect(d.interviewQuestions.every((q) => q.strongAnswerSignals.length > 0)).toBe(true);
   });
   it("does not invent salary not in input", async () => {
-    const d = await employerGenerate({
+    const { data: d } = await employerGenerate({
       jobTitle: "新媒体运营实习生",
       roughRequirement: "会剪视频", // no salary mentioned
       jobProfile: EMPLOYER_JOB_PROFILE,

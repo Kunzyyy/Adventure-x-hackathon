@@ -18,10 +18,10 @@ import { getLlmMode } from "../llm/index.js";
 
 export const employerRouter = Router();
 
-const mode = () => (getLlmMode() === "live" ? "live" : "mock");
+const cfgMode = () => (getLlmMode() === "live" ? "live" : "mock");
 
 function handleErr(res: Response, e: unknown): void {
-  const m = mode();
+  const m = cfgMode();
   if (isServiceError(e)) {
     sendError(res, apiError(e.code, e.message), m);
   } else {
@@ -38,10 +38,10 @@ employerRouter.post("/analyze", async (req: Request, res: Response) => {
   const v = validate(EmployerAnalyzeRequestSchema, req.body);
   if (!v.ok) return sendError(res, v.error, "mock");
   try {
-    const data = await employerAnalyze(v.value);
-    const out = validateAi(EmployerAnalyzeDataSchema, data);
-    if (!out.ok) return sendError(res, out.error, mode());
-    sendOk(res, out.value, mode());
+    const out = await employerAnalyze(v.value);
+    const checked = validateAi(EmployerAnalyzeDataSchema, out.data);
+    if (!checked.ok) return sendError(res, checked.error, out.mode);
+    sendOk(res, checked.value, out.mode);
   } catch (e) {
     handleErr(res, e);
   }
@@ -52,10 +52,10 @@ employerRouter.post("/generate", async (req: Request, res: Response) => {
   const v = validate(EmployerGenerateRequestSchema, req.body);
   if (!v.ok) return sendError(res, v.error, "mock");
   try {
-    const data = await employerGenerate(v.value);
-    const out = validateAi(RecruitmentKitSchema, data);
-    if (!out.ok) return sendError(res, out.error, mode());
-    sendOk(res, out.value, mode());
+    const out = await employerGenerate(v.value);
+    const checked = validateAi(RecruitmentKitSchema, out.data);
+    if (!checked.ok) return sendError(res, checked.error, out.mode);
+    sendOk(res, checked.value, out.mode);
   } catch (e) {
     handleErr(res, e);
   }

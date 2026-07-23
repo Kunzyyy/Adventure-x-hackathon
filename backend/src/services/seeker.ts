@@ -9,6 +9,7 @@ import type {
   SeekerFactsData,
   SeekerGenerateRequest,
   SeekerGenerateData,
+  APIMode,
 } from "../contracts/index.js";
 import {
   SeekerAnalyzeDataSchema,
@@ -16,13 +17,20 @@ import {
   SeekerGenerateDataSchema,
   findOrphanEvidenceIds,
 } from "../contracts/index.js";
-import { callStructured } from "../llm/index.js";
+import { callStructured, type CallResult } from "../llm/index.js";
 import {
   seekerAnalyzeMock,
   seekerFactsMock,
   seekerGenerateMock,
 } from "../mocks/seeker.js";
 import { ServiceError } from "./errors.js";
+
+/** Services return the validated data plus the mode the LLM switchboard
+ *  actually resolved (mock / live / fallback), so routes report the truth. */
+export interface ServiceOutcome<T> {
+  data: T;
+  mode: APIMode;
+}
 
 // ────────────────────────── analyze ──────────────────────────
 
@@ -36,7 +44,7 @@ const ANALYZE_SYSTEM = `你是岗位分析助手。任务：把目标JD解析为
 - 不诱导用户编造数字、奖项、公司、技能和经历。
 - 所有JobProfile数组字段必须存在，没有内容用空数组[]。`;
 
-export async function seekerAnalyze(req: SeekerAnalyzeRequest): Promise<SeekerAnalyzeData> {
+export async function seekerAnalyze(req: SeekerAnalyzeRequest): Promise<ServiceOutcome<SeekerAnalyzeData>> {
   const blocks = [
     "目标岗位JD：\n" + req.jdText,
     ...(req.oldResume ? ["求职者旧简历（仅用于发现已有证据和缺口，不是其能力背书）：\n" + req.oldResume] : []),
@@ -50,7 +58,7 @@ export async function seekerAnalyze(req: SeekerAnalyzeRequest): Promise<SeekerAn
     label: "seeker.analyze",
     onLiveFailure: "fallback",
   });
-  return result.data;
+  return { data: result.data, mode: result.mode };
 }
 
 // ────────────────────────── facts ──────────────────────────
@@ -66,7 +74,7 @@ const FACTS_SYSTEM = `你是事实整理助手。任务：把用户回答整理�
 - 与岗位相比仍缺少的重要证据放入missingInformation，不能生成虚假事实补齐。
 - 一个原话含多条独立事实可拆分，但每条仍引用真实sourceQuote。`;
 
-export async function seekerFacts(req: SeekerFactsRequest): Promise<SeekerFactsData> {
+export async function seekerFacts(req: SeekerFactsRequest): Promise<ServiceOutcome<SeekerFactsData>> {
   const blocks = [
     "岗位画像：\n" + JSON.stringify(req.jobProfile),
     "AI提问：\n" + JSON.stringify(req.questions),
@@ -86,7 +94,7 @@ export async function seekerFacts(req: SeekerFactsRequest): Promise<SeekerFactsD
   // answers/oldResume we sent. This is the safety net the prompt alone can't
   // guarantee. Failures are INVALID_AI_OUTPUT (retried once by the client).
   verifySourceQuotes(result.data.facts, req.answers, req.oldResume);
-  return result.data;
+  return { data: result.data, mode: result.mode };
 }
 
 /** Verify each fact's sourceQuote is a verbatim substring of an answer or oldResume. */
@@ -131,7 +139,7 @@ const GENERATE_SYSTEM = `你是简历生成助手。任务：只用用户确认�
 - 容易被追问/证据较弱/熟练度有限的内容进入interviewRisks(字符串数组)，但风险描述也不能增加新事实。
 - resume只含title/summary/education/experiences/skills；missingInformation与interviewRisks在resume外层同级返回。`;
 
-export async function seekerGenerate(req: SeekerGenerateRequest): Promise<SeekerGenerateData> {
+export async function seekerGenerate(req: SeekerGenerateRequest): Promise<ServiceOutcome<SeekerGenerateData>> {
   const blocks = [
     "岗位画像：\n" + JSON.stringify(req.jobProfile),
     "已确认事实(只允许使用这些)：\n" + JSON.stringify(req.confirmedFacts),
@@ -154,5 +162,5 @@ export async function seekerGenerate(req: SeekerGenerateRequest): Promise<Seeker
       `简历引用了不存在/未确认的事实ID：${orphans.join(", ")}`,
     );
   }
-  return result.data;
+  return { data: result.data, mode: result.mode };
 }

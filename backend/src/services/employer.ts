@@ -5,11 +5,17 @@ import type {
   EmployerAnalyzeData,
   EmployerGenerateRequest,
   RecruitmentKit,
+  APIMode,
 } from "../contracts/index.js";
 import { EmployerAnalyzeDataSchema, RecruitmentKitSchema } from "../contracts/index.js";
 import { callStructured } from "../llm/index.js";
 import { employerAnalyzeMock, employerGenerateMock } from "../mocks/employer.js";
 import { ServiceError } from "./errors.js";
+
+export interface ServiceOutcome<T> {
+  data: T;
+  mode: APIMode;
+}
 
 const ANALYZE_SYSTEM = `你是企业招聘需求解析助手。任务：把模糊招聘需求整理成初步岗位画像，并提出3—5道补充问题。
 规则：
@@ -20,7 +26,7 @@ const ANALYZE_SYSTEM = `你是企业招聘需求解析助手。任务：把模�
 - 不生成性别、年龄、婚育、籍贯、外貌等歧视性条件或问题。
 - 所有JobProfile数组必须存在，没有内容用[]。`;
 
-export async function employerAnalyze(req: EmployerAnalyzeRequest): Promise<EmployerAnalyzeData> {
+export async function employerAnalyze(req: EmployerAnalyzeRequest): Promise<ServiceOutcome<EmployerAnalyzeData>> {
   const blocks = [
     "岗位名称：\n" + req.jobTitle,
     "模糊招聘需求：\n" + req.roughRequirement,
@@ -34,7 +40,7 @@ export async function employerAnalyze(req: EmployerAnalyzeRequest): Promise<Empl
     label: "employer.analyze",
     onLiveFailure: "fallback",
   });
-  return result.data;
+  return { data: result.data, mode: result.mode };
 }
 
 const GENERATE_SYSTEM = `你是企业招聘材料生成助手。任务：把原始需求和补充回答合并，生成可编辑的标准招聘材料。
@@ -68,7 +74,7 @@ const DISCRIMINATION_TERMS = [
 
 const AUTO_DECISION_TERMS = ["录用", "淘汰", "排名", "评分", "匹配分数", "自动筛选", "决定录用"];
 
-export async function employerGenerate(req: EmployerGenerateRequest): Promise<RecruitmentKit> {
+export async function employerGenerate(req: EmployerGenerateRequest): Promise<ServiceOutcome<RecruitmentKit>> {
   const blocks = [
     "原始需求：\n" + req.roughRequirement,
     "岗位名称：\n" + req.jobTitle,
@@ -88,7 +94,7 @@ export async function employerGenerate(req: EmployerGenerateRequest): Promise<Re
   // Semantic safety nets the schema can't express:
   checkNoDiscrimination(result.data);
   checkNoAutoDecision(result.data);
-  return result.data;
+  return { data: result.data, mode: result.mode };
 }
 
 /** Reject any discriminatory condition leaking into the kit. */
