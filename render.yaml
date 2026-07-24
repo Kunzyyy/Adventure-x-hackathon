@@ -22,6 +22,6 @@ services:
     name: ai-career-copilot-ui
     runtime: static
     branch: Jin-Ziyao
-    buildCommand: mkdir -p static-dist && cp index.html student.html enterprise.html static-dist/ && cp -R css js static-dist/
+    buildCommand: node scripts/build-static-site.mjs static-dist
     staticPublishPath: ./static-dist
     autoDeployTrigger: off

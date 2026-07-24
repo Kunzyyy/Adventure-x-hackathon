@@ -1,5 +1,7 @@
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
+import { execFileSync } from "node:child_process";
 import { describe, expect, test } from "vitest";
 
 const repoRoot = path.resolve(process.cwd(), "..");
@@ -22,6 +24,31 @@ describe("approved UI integration", () => {
     const html = readRepoFile("index.html");
     expect(html).toContain('href="./student.html"');
     expect(html).toContain('href="./enterprise.html"');
+  });
+
+  test("static publish build inlines styles and scripts for subpath hosts", () => {
+    const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), "career-ui-static-"));
+
+    try {
+      execFileSync(process.execPath, [
+        path.join(repoRoot, "scripts/build-static-site.mjs"),
+        outputDir,
+      ]);
+
+      for (const page of ["index.html", "student.html", "enterprise.html"]) {
+        const html = fs.readFileSync(path.join(outputDir, page), "utf8");
+        expect(html).toContain("<style>");
+        expect(html).not.toContain('href="./css/approved-ui.css"');
+      }
+
+      for (const page of ["student.html", "enterprise.html"]) {
+        const html = fs.readFileSync(path.join(outputDir, page), "utf8");
+        expect(html).toContain('<script type="module">');
+        expect(html).not.toMatch(/src="\.\/js\/approved-(student|employer)\.js"/);
+      }
+    } finally {
+      fs.rmSync(outputDir, { recursive: true, force: true });
+    }
   });
 
   test("student UI contains the approved four-step shell and all seeker endpoints", () => {
