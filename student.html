@@ -1045,12 +1045,12 @@ function startInterview(){
       }
       ir=rounds.map(function(r,i){return {round:i+1,title:r.title,qs:r.qs.slice(0,3),cq:0};});
       while(ir.length<3){ir.push({round:ir.length+1,title:['第一轮 · 基础能力面试','第二轮 · 项目深挖','第三轮 · 综合评估'][ir.length],qs:['请简单介绍一下你自己。','你觉得自己最大的优势是什么？请举例。','你在团队合作中扮演什么角色？'],cq:0});}
-      iv={cr:0,answers:[],scores:[]};
+      iv={cr:0,answers:[],scores:[],review:[]};
       showQ();
     })
     .catch(function(err){
       ir=[{round:1,title:'第一轮 · 基础能力面试',qs:['请简单介绍一下你自己。','你觉得自己最大的优势是什么？请举例。','你在团队合作中扮演什么角色？'],cq:0},{round:2,title:'第二轮 · 项目深挖',qs:['请描述你最有挑战性的项目。','如果重新做一次你会改变什么？','你如何衡量项目成功？'],cq:0},{round:3,title:'第三轮 · 综合评估',qs:['面对陌生领域如何快速上手？','团队成员消极怠工怎么办？','未来3年职业规划是什么？'],cq:0}];
-      iv={cr:0,answers:[],scores:[]};
+      iv={cr:0,answers:[],scores:[],review:[]};
       console.warn('[interview] 题目生成失败,使用默认题库:',err&&err.message);
       showQ();
     });
@@ -1076,6 +1076,8 @@ function submitInterviewAnswer(){
       var ev=extractJSON(reply);
       var s1=clamp(ev.logicScore),s2=clamp(ev.expressionScore),s3=clamp(ev.matchScore);
       iv.scores.push({logic:s1,expression:s2,match:s3});
+      if(!iv.review)iv.review=[];
+      iv.review.push({roundTitle:r.title,question:q,answer:a,logic:s1,expression:s2,match:s3,feedback:ev.feedback||'',followUp:ev.followUp||''});
       document.getElementById('interview-score-cards').innerHTML=
         '<div class="text-center p-4 rounded-xl bg-white/3 border border-white/5"><div class="score-ring mx-auto mb-2"><svg viewBox="0 0 100 100" width="80" height="80"><defs><linearGradient id="sg1"><stop offset="0%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#6366f1"/></linearGradient></defs><circle cx="50" cy="50" r="42" class="bg-ring"/><circle cx="50" cy="50" r="42" stroke="url(#sg1)" stroke-dasharray="264" stroke-dashoffset="'+(264-(s1/100)*264)+'"/></svg></div><p class="text-lg font-bold text-white">'+s1+'</p><p class="text-xs text-gray-400">逻辑性</p></div>'+
         '<div class="text-center p-4 rounded-xl bg-white/3 border border-white/5"><div class="score-ring mx-auto mb-2"><svg viewBox="0 0 100 100" width="80" height="80"><circle cx="50" cy="50" r="42" class="bg-ring"/><circle cx="50" cy="50" r="42" stroke="#8b5cf6" stroke-dasharray="264" stroke-dashoffset="'+(264-(s2/100)*264)+'"/></svg></div><p class="text-lg font-bold text-white">'+s2+'</p><p class="text-xs text-gray-400">表达力</p></div>'+
@@ -1105,18 +1107,23 @@ function nextInterviewRound(){
         mins.sort(function(a,b){return a.v-b.v;});
         weakest=mins[0].k;
       }
-      var report='🎉 面试完成</p><p class="text-gray-200">综合评分：<strong class="text-tech-cyan">'+avg+'分</strong>';
+      var report='<p class="text-sm text-green-400 mb-1">🎉 面试完成</p><p class="text-gray-200">综合评分：<strong class="text-tech-cyan">'+avg+'分</strong>';
       if(sc.length){
         report+=' · 逻辑 '+avgLogic+' · 表达 '+avgExpr+' · 匹配 '+avgMatch;
         if(weakest)report+=' · 最薄弱：<strong class="text-amber-400">'+weakest+'</strong>';
       }
-      report+='</p><p class="text-gray-400 text-sm mt-2">建议针对最薄弱项做专项练习,可在「AI简历」里补充相关经历后再次面试。</p>';
-      document.getElementById('interview-question').innerHTML='<p class="text-sm text-green-400 mb-1">'+report;
+      report+='</p>';
+      report+='<div id="interview-advice"><p class="text-xs text-gray-500 mt-3 text-left">AI 正在基于你的全部回答生成共性薄弱点分析与提升建议...</p></div>';
+      report+=renderReview();
+      report+='<p class="text-gray-400 text-sm mt-4 text-left">建议针对薄弱项做专项练习,可在「AI简历」里补充相关经历后再次面试。</p>';
+      document.getElementById('interview-question').innerHTML=report;
+      document.getElementById('interview-question').scrollIntoView({behavior:'smooth',block:'start'});
       document.getElementById('interview-scores').classList.add('hidden');
       document.getElementById('interview-next-btn').textContent='重新面试';
       document.getElementById('interview-next-btn').onclick=function(){resetInterview();};
       document.getElementById('interview-answer').classList.add('hidden');
       document.getElementById('interview-submit-btn').classList.add('hidden');
+      generateInterviewAdvice(iv.review, weakest, avgLogic, avgExpr, avgMatch);
       return;
     }
     ir[iv.cr].cq=0;
@@ -1126,9 +1133,69 @@ function nextInterviewRound(){
 function resetInterview(){
   document.getElementById('interview-interface').classList.add('hidden');
   document.getElementById('interview-setup').classList.remove('hidden');
-  iv={cr:0,answers:[],scores:[]};
+  iv={cr:0,answers:[],scores:[],review:[]};
   prefillInterview();
   document.getElementById('interview-setup').scrollIntoView({behavior:'smooth'});
+}
+
+/* ===== 逐题回顾（可展开） ===== */
+function esc(x){return String(x==null?'':x).replace(/</g,'&lt;');}
+function renderReview(){
+  if(!iv.review||!iv.review.length)return '';
+  var html='<div class="mt-6 pt-6 border-t border-white/5 text-left"><h4 class="text-white font-semibold mb-3">📝 逐题回顾（点击展开查看回答与反馈）</h4><div class="space-y-2">';
+  iv.review.forEach(function(it,i){
+    var avgScore=Math.round((it.logic+it.expression+it.match)/3);
+    var scoreColor=avgScore>=80?'text-green-400':(avgScore>=60?'text-amber-400':'text-red-400');
+    html+='<div class="rounded-xl p-3" style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08)">'+
+      '<div class="flex items-start justify-between cursor-pointer" onclick="toggleReviewItem('+i+')">'+
+        '<div class="flex-1 pr-3"><span class="text-xs text-gray-500">'+esc(it.roundTitle)+'</span><p class="text-sm text-gray-200 mt-1">'+esc(it.question)+'</p></div>'+
+        '<span class="text-lg font-bold '+scoreColor+'">'+avgScore+'</span>'+
+        '<span class="ml-2 text-gray-500 text-xs mt-1" id="review-arrow-'+i+'">▼</span>'+
+      '</div>'+
+      '<div class="hidden mt-3 pt-3 border-t border-white/5 space-y-3" id="review-item-'+i+'">'+
+        '<div><p class="text-xs text-tech-cyan mb-1">你的回答</p><p class="text-sm text-gray-300 whitespace-pre-wrap">'+esc(it.answer)+'</p></div>'+
+        '<div class="flex gap-4 text-xs text-gray-400"><span>逻辑 '+it.logic+'</span><span>表达 '+it.expression+'</span><span>匹配 '+it.match+'</span></div>'+
+        (it.feedback?'<div><p class="text-xs text-tech-cyan mb-1">AI反馈</p><p class="text-sm text-gray-300">'+esc(it.feedback)+'</p></div>':'')+
+        (it.followUp?'<div><p class="text-xs text-amber-400 mb-1">面试官追问</p><p class="text-sm text-gray-300">'+esc(it.followUp)+'</p></div>':'')+
+      '</div>'+
+    '</div>';
+  });
+  html+='</div></div>';
+  return html;
+}
+function toggleReviewItem(i){
+  var el=document.getElementById('review-item-'+i);
+  var arrow=document.getElementById('review-arrow-'+i);
+  if(!el)return;
+  var show=el.classList.contains('hidden');
+  el.classList.toggle('hidden');
+  if(arrow)arrow.textContent=show?'▲':'▼';
+}
+
+/* ===== AI 共性薄弱点 + 提升建议 ===== */
+function generateInterviewAdvice(review, weakest, avgLogic, avgExpr, avgMatch){
+  var el=document.getElementById('interview-advice');
+  if(!review||!review.length){if(el)el.innerHTML='';return;}
+  var summary=review.map(function(it,i){
+    return '题'+(i+1)+'['+it.roundTitle+'] 问题:'+it.question+'\n  评分:逻辑'+it.logic+'/表达'+it.expression+'/匹配'+it.match+'\n  AI反馈:'+(it.feedback||'无');
+  }).join('\n\n');
+  var sys='你是资深面试辅导专家。基于候选人本次面试的全部题目、评分和逐题反馈，输出【共性薄弱点】和【可执行提升建议】。\n要求：\n1) 找出多条反馈中反复出现的共性问题（不要逐题复述）\n2) 建议要具体、可执行，最好带练习方法或示例方向\n3) 中文，分点，精炼\n\n按JSON输出(只输出JSON)：\n{\n  "weaknesses":["共性薄弱点1","共性薄弱点2"],\n  "suggestions":["具体提升建议1","具体提升建议2","具体提升建议3"]\n}';
+  var msg='最薄弱维度：'+weakest+'（逻辑'+avgLogic+'/表达'+avgExpr+'/匹配'+avgMatch+'）\n\n【本次面试逐题情况】\n'+summary;
+  callAI(msg, sys, 'career_advisor')
+    .then(function(reply){
+      var adv=extractJSON(reply);
+      var w=adv&&adv.weaknesses?adv.weaknesses:[];
+      var s2=adv&&adv.suggestions?adv.suggestions:[];
+      var html='<div class="mt-4 text-left"><div class="rounded-xl p-4" style="background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.3)">'+
+        '<h4 class="text-amber-400 font-semibold mb-2 text-sm">🎯 共性薄弱点</h4><ul class="space-y-1 text-sm text-gray-300">'+
+        w.map(function(x){return '<li>· '+esc(x)+'</li>';}).join('')+'</ul>'+
+        '<h4 class="text-tech-cyan font-semibold mb-2 mt-3 text-sm">💡 针对性提升建议</h4><ul class="space-y-1 text-sm text-gray-300">'+
+        s2.map(function(x){return '<li>· '+esc(x)+'</li>';}).join('')+'</ul></div></div>';
+      if(el)el.innerHTML=html;
+    })
+    .catch(function(err){
+      if(el)el.innerHTML='<p class="text-xs text-gray-500 mt-3 text-left">（提升建议生成失败：'+esc(err.message)+'）</p>';
+    });
 }
 
 
