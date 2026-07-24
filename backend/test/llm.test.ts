@@ -144,6 +144,9 @@ describe("retry once", () => {
     expect(r.mode).toBe("live");
     expect(r.data.word).toBe("ok");
     expect(r.retried).toBe(true);
+    const retryUser = (createArgs!.messages as any[])[1].content as string;
+    expect(retryUser).toContain("[上次输出校验失败]");
+    expect(retryUser).toContain("word: Required");
   });
 });
 

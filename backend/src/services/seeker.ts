@@ -95,6 +95,9 @@ const FACTS_SYSTEM = `你是事实整理助手。任务：把用户回答整理�
 - "参与"不能写成"负责/主导"；"了解/接触过/会一点"不能写成"熟练/精通/掌握"。
 - 模糊表达保持模糊："几次""十几个人""改短了一点"等不得替换成3次、10人、90秒到45秒等具体数字。
 - 每条事实：唯一id(fact_N)、category、谨慎的statement、逐字sourceQuote(必须能在输入原文中找到连续原话)。
+- category只能是以下6个英文值之一，禁止自创中文或英文标签：
+  education=教育/课程，project=项目，internship=实习，skill=工具/方法/能力，
+  activity=社团/活动，other=无法归入前述类别的事实。
 - 回答来源事实必须有sourceQuestionId；旧简历来源事实可省略sourceQuestionId但必须保留sourceQuote。
 - 所有事实confirmed必须为false。
 - 与岗位相比仍缺少的重要证据放入missingInformation，不能生成虚假事实补齐。
