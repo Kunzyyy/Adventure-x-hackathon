@@ -220,6 +220,29 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC"
       </div>
     </div>
 
+    <!-- GENERATE RESULTS（/api/employer/generate）-->
+    <div id="generate-results" class="hidden space-y-6">
+      <div class="glass-card p-6 md:p-8 fade-in-up">
+        <div class="flex items-center gap-2 mb-4"><span class="text-green-400 text-lg">✅</span><h3 class="text-white font-semibold text-lg">确认后的岗位画像</h3></div>
+        <div id="gen-profile-body"></div>
+      </div>
+      <div class="glass-card p-6 md:p-8 fade-in-up">
+        <div class="flex items-center gap-2 mb-4"><span class="text-tech-cyan text-lg">📄</span><h3 class="text-white font-semibold text-lg">标准化岗位 JD</h3></div>
+        <div id="gen-jd-body"></div>
+      </div>
+      <div class="glass-card p-6 md:p-8 fade-in-up">
+        <div class="flex items-center gap-2 mb-4"><span class="text-amber-400 text-lg">📊</span><h3 class="text-white font-semibold text-lg">筛选维度及权重</h3></div>
+        <div id="gen-screening-body"></div>
+      </div>
+      <div class="glass-card p-6 md:p-8 fade-in-up">
+        <div class="flex items-center gap-2 mb-4"><span class="text-purple-400 text-lg">🎤</span><h3 class="text-white font-semibold text-lg">面试题（5 道）</h3></div>
+        <div id="gen-interview-body"></div>
+      </div>
+      <div class="flex flex-wrap gap-3 justify-center pb-6">
+        <button class="glow-btn-outline" onclick="window.scrollTo({top:0,behavior:'smooth'})">🔄 重新开始</button>
+      </div>
+    </div>
+
     <!-- RESULTS -->
     <div id="results" class="hidden space-y-6">
 
@@ -503,6 +526,8 @@ async function generate() {
     if (!json.ok) { throw new Error((json.error && json.error.message) || ('HTTP ' + res.status)); }
     const modeEl = document.getElementById('analyze-mode');
     if (modeEl) modeEl.textContent = (json.mode === 'mock') ? '🔸 MOCK 演示数据' : ('Mode: ' + json.mode);
+    window.__employerJobTitle = role;
+    window.__employerRough = roughRequirement;
     renderAnalyze(json.data);
   } catch(err) {
     console.error(err);
@@ -547,9 +572,12 @@ function renderAnalyze(data) {
   ['responsibilities','coreCompetencies','mustHaves','niceToHaves','expectedOutcomes','constraints','keywords','uncertainties'].forEach(function(k){
     if(!Array.isArray(p[k])) p[k] = [];
   });
+  window.__employerJobProfile = p;
+  window.__employerQuestions = data.questions || [];
   document.getElementById('analyze-profile-body').innerHTML = buildProfileHTML(p);
-  var qs = data.questions || [];
-  document.getElementById('analyze-questions').innerHTML = qs.map(function(q, i){
+  var qs = window.__employerQuestions;
+  var html = qs.map(function(q, i){
+    var inputType = q.answerType === 'number' ? 'type="number"' : 'type="text"';
     return '<div class="border border-white/10 rounded-lg p-4">'+
       '<div class="flex items-center gap-2 mb-1">'+
       '<span class="text-xs text-gray-500">问题 '+(i+1)+'</span>'+
@@ -557,11 +585,101 @@ function renderAnalyze(data) {
       '<span class="text-xs text-gray-500">'+escH(q.answerType||'text')+'</span>'+
       '</div>'+
       '<p class="text-sm text-gray-200 mb-1">'+escH(q.text||'')+'</p>'+
-      (q.reason?'<p class="text-xs text-gray-500">💡 '+escH(q.reason)+'</p>':'')+
+      (q.reason?'<p class="text-xs text-gray-500 mb-2">💡 '+escH(q.reason)+'</p>':'')+
+      '<input '+inputType+' id="ans-'+q.id+'" class="ai-input !py-2 !text-sm" placeholder="输入企业回答（可留空）">'+
       '</div>';
   }).join('');
+  html += '<div class="mt-4"><button class="glow-btn w-full" id="gen-jd-btn" onclick="generateJD()">✅ 确认回答，生成岗位说明 →</button></div>';
+  document.getElementById('analyze-questions').innerHTML = html;
+  document.getElementById('generate-results').classList.add('hidden');
   document.getElementById('analyze-results').classList.remove('hidden');
   document.getElementById('analyze-results').scrollIntoView({behavior:'smooth'});
+}
+
+// ─── 列表渲染 helper ───────────────────────────────────────────────
+function listOrEmpty(arr){if(!arr||!arr.length)return '<p class="text-xs text-gray-600">无</p>';return '<ul class="space-y-1">'+arr.map(function(x){return '<li class="text-sm text-gray-300 flex gap-2"><span class="text-tech-cyan">•</span><span>'+escH(x)+'</span></li>';}).join('')+'</ul>';}
+
+// ─── 确认回答 → POST /api/employer/generate ────────────────────────
+async function generateJD() {
+  var qs = window.__employerQuestions || [];
+  var answers = qs.map(function(q){
+    var el = document.getElementById('ans-'+q.id);
+    return { questionId: q.id, answer: el ? el.value.trim() : '' };
+  });
+  var reqBody = {
+    jobTitle: window.__employerJobTitle,
+    roughRequirement: window.__employerRough,
+    jobProfile: window.__employerJobProfile,
+    questions: qs,
+    answers: answers
+  };
+  var btn = document.getElementById('gen-jd-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ 生成中...'; }
+  try {
+    var res = await apiPost('/api/employer/generate', reqBody);
+    var json = await res.json().catch(function(){return {};});
+    if (!json.ok) { throw new Error((json.error && json.error.message) || ('HTTP ' + res.status)); }
+    renderGenerate(json.data);
+  } catch(err) {
+    console.error(err);
+    alert('生成失败：' + err.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '✅ 确认回答，生成岗位说明 →'; }
+  }
+}
+
+// ─── 渲染 /api/employer/generate 结果 ──────────────────────────────
+function renderGenerate(data) {
+  var p = data.jobProfile || {};
+  ['responsibilities','coreCompetencies','mustHaves','niceToHaves','expectedOutcomes','constraints','keywords','uncertainties'].forEach(function(k){
+    if(!Array.isArray(p[k])) p[k] = [];
+  });
+  // 1. 确认后的岗位画像
+  document.getElementById('gen-profile-body').innerHTML = buildProfileHTML(p);
+  // 2. 标准化 JD
+  var jd = data.standardJD || {};
+  var jdHtml = '';
+  if (jd.overview) jdHtml += '<div class="mb-3"><p class="text-xs text-gray-500 mb-1">岗位概述</p><p class="text-sm text-gray-200 leading-relaxed">'+escH(jd.overview)+'</p></div>';
+  jdHtml += '<div class="mb-3"><p class="text-xs text-gray-500 mb-1">岗位职责</p>'+listOrEmpty(jd.responsibilities)+'</div>';
+  jdHtml += '<div class="mb-3"><p class="text-xs text-gray-500 mb-1">任职要求</p>'+listOrEmpty(jd.requirements)+'</div>';
+  jdHtml += '<div><p class="text-xs text-gray-500 mb-1">加分项</p>'+listOrEmpty(jd.niceToHave)+'</div>';
+  document.getElementById('gen-jd-body').innerHTML = jdHtml;
+  // 3. 筛选维度及权重
+  var dims = data.screeningDimensions || [];
+  var sum = dims.reduce(function(a,d){return a+(d.weight||0);},0);
+  var dimHtml = '<div class="space-y-3">';
+  dims.forEach(function(d,i){
+    dimHtml += '<div class="border border-white/10 rounded-lg p-3">'+
+      '<div class="flex items-center justify-between mb-1">'+
+      '<span class="text-sm text-gray-200">'+escH(d.name||('维度'+(i+1)))+'</span>'+
+      '<span class="text-xs px-2 py-0.5 rounded-full bg-tech-cyan/15 text-tech-cyan border border-tech-cyan/30">权重 '+d.weight+'</span>'+
+      '</div>'+
+      (d.description?'<p class="text-xs text-gray-500">'+escH(d.description)+'</p>':'')+
+      '</div>';
+  });
+  dimHtml += '</div>';
+  dimHtml += '<p class="text-xs text-gray-500 mt-3">权重总和：'+sum+'（须为正整数且合计 100）</p>';
+  document.getElementById('gen-screening-body').innerHTML = dimHtml;
+  // 4. 面试题（严格5道）
+  var qs = data.interviewQuestions || [];
+  var qHtml = '<div class="space-y-3">';
+  qs.forEach(function(q,i){
+    qHtml += '<div class="border border-white/10 rounded-lg p-4">'+
+      '<div class="flex items-center gap-2 mb-1">'+
+      '<span class="text-xs text-gray-500">问题 '+(i+1)+'</span>'+
+      '<span class="text-xs text-purple-300">'+escH(q.dimension||'')+'</span>'+
+      (q.weight?'<span class="text-xs px-2 py-0.5 rounded-full bg-purple-400/10 text-purple-300 border border-purple-400/30">'+escH(q.weight)+'</span>':'')+
+      '</div>'+
+      '<p class="text-sm text-gray-200 mb-2">'+escH(q.question||'')+'</p>'+
+      (q.whatToLookFor?'<p class="text-xs text-gray-500">💡 '+escH(q.whatToLookFor)+'</p>':'')+
+      '</div>';
+  });
+  qHtml += '</div>';
+  qHtml += '<p class="text-xs text-gray-500 mt-3">共 '+qs.length+' 道面试题（严格 5 道）</p>';
+  document.getElementById('gen-interview-body').innerHTML = qHtml;
+  // 显示
+  document.getElementById('generate-results').classList.remove('hidden');
+  document.getElementById('generate-results').scrollIntoView({behavior:'smooth'});
 }
 
 // ─── Local Fallback ─────────────────────────────────────────────────
