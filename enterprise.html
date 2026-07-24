@@ -277,7 +277,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC"
 
 <!-- ===== SCRIPTS ===== -->
 <script>
-const API = 'http://localhost:3001';
+const API_DIRECT = 'http://localhost:3001';
+// 接入后端：优先走 vite 同源代理（/api → localhost:3001），代理失败或 file:// 协议时回退直连
+async function apiPost(path, body) {
+  const opts = {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)};
+  if (location.protocol === 'file:') return fetch(API_DIRECT + path, opts);
+  try {
+    return await fetch(path, opts);
+  } catch(e) {
+    console.warn('[enterprise] 同源代理失败，改直连 3001：', e.message);
+    return fetch(API_DIRECT + path, opts);
+  }
+}
 
 // ─── Skills Database ───────────────────────────────────────────────
 const SKILLS_BY_INDUSTRY = {
@@ -466,15 +477,12 @@ async function generate() {
   document.getElementById('loading').scrollIntoView({behavior:'smooth'});
 
   try {
-    const res = await fetch(API + '/api/job/generate-jd', {
-      method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        company, role,
-        skills: selectedSkills,
-        salaryRange: selectedSalary,
-        industry: currentIndustry,
-        notes: ''
-      })
+    const res = await apiPost('/api/job/generate-jd', {
+      company, role,
+      skills: selectedSkills,
+      salaryRange: selectedSalary,
+      industry: currentIndustry,
+      notes: ''
     });
 
     if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error || e.detail || '请求失败'); }
