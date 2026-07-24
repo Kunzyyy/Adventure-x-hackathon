@@ -30,7 +30,12 @@ function opts(over: Partial<CallOptions<{ word: string }>>): CallOptions<{ word:
 }
 
 // Capture what the SDK's create() receives and control what it returns.
-let createArgs: { messages: unknown; temperature?: number; max_tokens?: number } | null = null;
+let createArgs: {
+  messages: unknown;
+  temperature?: number;
+  max_tokens?: number;
+  thinking?: { type: string };
+} | null = null;
 let createImpl: (() => Promise<unknown>) | null = null;
 
 beforeEach(() => {
@@ -45,7 +50,12 @@ beforeEach(() => {
 
   // Stub the SDK's chat.completions.create to drive retry/timeout/error paths.
   const stub = async (arg: any) => {
-    createArgs = { messages: arg.messages, temperature: arg.temperature, max_tokens: arg.max_tokens };
+    createArgs = {
+      messages: arg.messages,
+      temperature: arg.temperature,
+      max_tokens: arg.max_tokens,
+      thinking: arg.thinking,
+    };
     if (!createImpl) throw new Error("no createImpl set");
     return createImpl();
   };
@@ -55,6 +65,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.restoreAllMocks();
   delete process.env.AI_API_KEY;
+  delete process.env.AI_PROVIDER;
   delete process.env.LLM_MODE;
 });
 
@@ -100,6 +111,15 @@ describe("live happy path", () => {
     expect(sys).toContain("[输出契约]");
     expect(sys).toContain("<output_shape>");
     expect(sys).toContain('{"word":"string"}');
+  });
+
+  it("disables DeepSeek thinking mode for strict JSON calls", async () => {
+    process.env.AI_PROVIDER = "deepseek";
+    initLlm();
+    __setModeForTest("live");
+    createImpl = async () => ({ choices: [{ message: { content: '{"word":"x"}' } }] });
+    await callStructured(opts({ mockFn: () => ({ word: "x" }) }));
+    expect(createArgs?.thinking).toEqual({ type: "disabled" });
   });
 });
 

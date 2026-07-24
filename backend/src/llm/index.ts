@@ -173,13 +173,17 @@ export async function callStructured<T>(opts: CallOptions<T>): Promise<CallResul
       attempt > 1 ? lastErr?.message : undefined,
     );
     try {
-      const res = await client.chat.completions.create({
+      const request = {
         model: cfg.model,
         messages,
         temperature: 0,
         max_tokens: opts.maxTokens,
-        response_format: { type: "json_object" },
-      });
+        response_format: { type: "json_object" as const },
+        ...(cfg.provider.toLowerCase() === "deepseek"
+          ? { thinking: { type: "disabled" as const } }
+          : {}),
+      };
+      const res = await client.chat.completions.create(request);
       const content = res.choices?.[0]?.message?.content || "";
       const parsed = safeJsonParse(content, opts.label);
       const data = parseAndValidate(parsed, opts.schema, opts.label);
