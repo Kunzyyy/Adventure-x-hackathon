@@ -1,0 +1,193 @@
+/* ===== Keal Dark Theme Override for Resume Editor ===== */
+
+:root {
+  --space-black: #0a0a14;
+  --glass-bg: rgba(15, 15, 35, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-highlight: rgba(255, 255, 255, 0.04);
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --accent: #6366f1;
+  --accent-light: #818cf8;
+  --success: #22c55e;
+  --danger: #ef4444;
+}
+
+body {
+  background: var(--space-black) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Cards */
+.card, .form-card, .tpl-picker, .preview-card {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+}
+
+.card h2, .form-card .section-title {
+  color: var(--text-primary) !important;
+  border-bottom-color: rgba(99, 102, 241, 0.3) !important;
+}
+
+/* Inputs & Textareas */
+.resume-input, .field input, .field textarea {
+  background: rgba(20, 20, 40, 0.8) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: var(--text-primary) !important;
+}
+
+.resume-input:focus, .field input:focus, .field textarea:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.15) !important;
+}
+
+.resume-input::placeholder, .field input::placeholder, .field textarea::placeholder {
+  color: rgba(255, 255, 255, 0.25) !important;
+}
+
+.field label {
+  color: var(--text-secondary) !important;
+}
+
+/* Buttons */
+.btn-primary {
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6) !important;
+  box-shadow: 0 0 30px rgba(99, 102, 241, 0.3) !important;
+}
+.btn-primary:hover {
+  transform: translateY(-2px) scale(1.02) !important;
+  box-shadow: 0 0 50px rgba(99, 102, 241, 0.5) !important;
+}
+
+.btn-success {
+  background: var(--success) !important;
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.3) !important;
+}
+
+/* Array items */
+.array-item {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Template cards */
+.tpl-card {
+  background: rgba(15, 15, 35, 0.6) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3) !important;
+}
+.tpl-card:hover {
+  border-color: rgba(99, 102, 241, 0.4) !important;
+  box-shadow: 0 8px 32px rgba(99, 102, 241, 0.15) !important;
+}
+.tpl-card.active {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.2) !important;
+}
+.tpl-card .name {
+  color: var(--text-primary) !important;
+  border-top-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* A4 Preview */
+.a4-page {
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Chat Messages */
+.msg.ai .bubble {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: var(--text-primary) !important;
+}
+.msg.user .bubble {
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6) !important;
+}
+.msg .role {
+  color: var(--text-secondary) !important;
+}
+
+/* API Config */
+.api-config-toggle { color: var(--text-secondary) !important; }
+.api-config-toggle:hover { color: var(--accent-light) !important; }
+.api-config { border-top-color: rgba(255, 255, 255, 0.08) !important; }
+.api-field input, .api-field select {
+  background: rgba(20, 20, 40, 0.8) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: var(--text-primary) !important;
+}
+.api-hint {
+  background: rgba(99, 102, 241, 0.08) !important;
+  color: var(--text-secondary) !important;
+}
+
+/* Success card */
+.success-card {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border-color: rgba(34, 197, 94, 0.4) !important;
+}
+.success-preview {
+  background: rgba(0, 0, 0, 0.3) !important;
+  color: var(--text-secondary) !important;
+}
+
+/* Error */
+.error-msg {
+  background: rgba(239, 68, 68, 0.08) !important;
+  border-color: rgba(239, 68, 68, 0.2) !important;
+  color: #fca5a5 !important;
+}
+
+/* Steps */
+.step .num {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: var(--text-muted) !important;
+}
+.step.active .num {
+  background: rgba(99, 102, 241, 0.2) !important;
+  color: var(--accent-light) !important;
+}
+.step.done .num {
+  background: rgba(34, 197, 94, 0.15) !important;
+  color: var(--success) !important;
+}
+.step-line { background: rgba(255, 255, 255, 0.1) !important; }
+.step-line.done { background: var(--success) !important; }
+.step { color: var(--text-muted) !important; }
+.step.active { color: var(--accent-light) !important; }
+.step.done { color: var(--success) !important; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.3);
+  border-radius: 3px;
+}
+
+/* Add button */
+.add-btn {
+  border-color: rgba(99, 102, 241, 0.4) !important;
+  color: var(--accent-light) !important;
+}
+.add-btn:hover { background: rgba(99, 102, 241, 0.15) !important; }
+
+/* Export button positioning stays the same */
+.export-btn {
+  background: var(--success) !important;
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.3) !important;
+}
+
+/* Header */
+.app-header h1 {
+  background: linear-gradient(135deg, #818cf8, #c084fc) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+.app-header p { color: var(--text-muted) !important; }

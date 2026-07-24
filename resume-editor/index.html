@@ -587,8 +587,21 @@ body {
   .tpl-grid { grid-template-columns: repeat(2, 1fr); }
 }
 </style>
+<link rel="stylesheet" href="../css/keal-theme.css">
 </head>
 <body>
+<!-- Keal Navigation -->
+<nav style="position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);background:rgba(10,10,20,0.7);border-bottom:1px solid rgba(255,255,255,0.08);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;">
+  <a href="../student.html" style="display:flex;align-items:center;gap:10px;text-decoration:none;">
+    <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:16px;">K</div>
+    <span style="color:#e2e8f0;font-weight:600;font-size:15px;">Keal · 简历编辑器</span>
+  </a>
+  <div style="display:flex;gap:16px;align-items:center;">
+    <a href="../student.html" style="color:#94a3b8;text-decoration:none;font-size:13px;transition:color .2s;" onmouseover="this.style.color='#e2e8f0'" onmouseout="this.style.color='#94a3b8'">← 返回学生端</a>
+  </div>
+</nav>
+<div style="height:60px;"></div>
+
 <div class="app">
   <div class="app-header">
     <h1>简历模板编辑器</h1>
@@ -969,22 +982,20 @@ document.getElementById('tplGrid').addEventListener('click', (e) => {
 // ===== Export =====
 document.getElementById('exportBtn').addEventListener('click', () => {
   const page = document.getElementById('a4page');
-  // Clone to avoid layout shifts & fix blank PDF on file://
-  var clone = page.cloneNode(true);
-  clone.style.width = '794px';
-  clone.style.minHeight = '1123px';
-  clone.style.position = 'absolute';
-  clone.style.left = '-9999px';
-  clone.style.top = '0';
-  clone.style.background = '#fff';
-  document.body.appendChild(clone);
+  // 直接对可见的 #a4page 截图导出；off-screen clone (left:-9999px) 在部分 Chromium 会让 html2canvas 抓成空白 PDF
+  const origW = page.style.width, origMinH = page.style.minHeight;
+  page.style.width = '794px';
+  page.style.minHeight = '1123px';
   html2pdf().set({
     margin: 0,
     filename: (resumeData.name || 'resume') + '_简历.pdf',
     image: { type: 'jpeg', quality: 0.98 },
     html2canvas: { scale: 2, useCORS: false, backgroundColor: '#ffffff', width: 794, windowWidth: 794 },
     jsPDF: { unit: 'px', format: [794, 1123], orientation: 'portrait' }
-  }).from(clone).save().then(function(){ document.body.removeChild(clone); });
+  }).from(page).save().then(function(){
+    page.style.width = origW;
+    page.style.minHeight = origMinH;
+  });
 });
 
 // ===== Init =====

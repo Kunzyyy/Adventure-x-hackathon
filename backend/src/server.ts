@@ -13,7 +13,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(cors({ origin: "http://localhost:5200", credentials: true }));
+app.use(cors({ origin: "*" }));
 app.use(express.json());
 
 app.use("/api/resume", resumeRouter);

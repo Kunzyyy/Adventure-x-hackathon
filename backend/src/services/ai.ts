@@ -356,3 +356,86 @@ export function getCurrentConfig() {
       : "",
   };
 }
+
+// ─── Template Resume Optimize (for resume-editor) ─────────────────
+
+const TEMPLATE_SYSTEM_PROMPT = `你是一个专业的简历优化助手。请优化用户的简历内容，并严格按照以下JSON格式输出结果。
+
+要求：
+1. 只输出 JSON，不要输出任何其他文字、不要 markdown 代码块标记
+2. 工作经历用 STAR 法则重写，量化成果（数字、百分比）
+3. 技能按岗位相关性排序
+4. 自我评价简洁有力，3-4 句话
+
+JSON 格式：
+{
+  "name": "姓名",
+  "title": "求职意向/目标岗位",
+  "phone": "电话",
+  "email": "邮箱",
+  "location": "所在城市",
+  "education": [
+    {"school": "学校名", "major": "专业", "degree": "学历", "period": "时间段"}
+  ],
+  "experience": [
+    {"company": "公司名", "role": "职位", "period": "时间段", "desc": "工作描述，用STAR法则，量化成果"}
+  ],
+  "skills": "技能1, 技能2, 技能3",
+  "eval": "自我评价"
+}`;
+
+export async function templateOptimize(text: string) {
+  const cfg = getConfig();
+  const client = createClient(cfg);
+  if (!client) return mockTemplateOptimize(text);
+
+  const res = await client.chat.completions.create({
+    model: cfg.model,
+    messages: [
+      { role: "system", content: TEMPLATE_SYSTEM_PROMPT },
+      { role: "user", content: text },
+    ],
+    temperature: 0.7,
+  });
+
+  const content = res.choices[0].message.content || "{}";
+  // Try to extract JSON from the response
+  let parsed: any;
+  try { parsed = JSON.parse(content); } catch {
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try { parsed = JSON.parse(jsonMatch[0]); } catch { parsed = null; }
+    }
+  }
+  if (!parsed) throw new Error("AI 返回的内容无法解析为 JSON");
+
+  return parsed;
+}
+
+function mockTemplateOptimize(text: string) {
+  const lines = text.split('\n').filter((l: string) => l.trim());
+  let name = "求职者", phone = "", email = "";
+  for (const line of lines) {
+    const phoneMatch = line.match(/1[3-9]\d[\s-]?\d{4}[\s-]?\d{4}/);
+    if (phoneMatch) phone = phoneMatch[0];
+    const emailMatch = line.match(/[\w.+-]+@[\w-]+\.[\w.-]+/);
+    if (emailMatch) email = emailMatch[0];
+    const nameMatch = line.match(/[\u4e00-\u9fa5]{2,4}/);
+    if (nameMatch && name === "求职者") name = nameMatch[0];
+  }
+  return {
+    name,
+    title: "个人简历",
+    phone: phone || "未提供",
+    email: email || "未提供",
+    location: "未提供",
+    education: [
+      { school: "请补充学校", major: "请补充专业", degree: "本科", period: "" }
+    ],
+    experience: [
+      { company: "请补充公司", role: "请补充职位", period: "", desc: "请补充工作描述" }
+    ],
+    skills: "请补充技能",
+    eval: "🤖 这是演示模式。配置后端 API 后可获得 AI 优化版本。"
+  };
+}

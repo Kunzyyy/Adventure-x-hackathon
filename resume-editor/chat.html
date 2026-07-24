@@ -292,8 +292,21 @@ body {
 }
 .error-msg.active { display: block; }
 </style>
+<link rel="stylesheet" href="../css/keal-theme.css">
 </head>
 <body>
+<!-- Keal Navigation -->
+<nav style="position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);background:rgba(10,10,20,0.7);border-bottom:1px solid rgba(255,255,255,0.08);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;">
+  <a href="../student.html" style="display:flex;align-items:center;gap:10px;text-decoration:none;">
+    <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:16px;">K</div>
+    <span style="color:#e2e8f0;font-weight:600;font-size:15px;">Keal · 简历编辑器</span>
+  </a>
+  <div style="display:flex;gap:16px;align-items:center;">
+    <a href="../student.html" style="color:#94a3b8;text-decoration:none;font-size:13px;transition:color .2s;" onmouseover="this.style.color='#e2e8f0'" onmouseout="this.style.color='#94a3b8'">← 返回学生端</a>
+  </div>
+</nav>
+<div style="height:60px;"></div>
+
 <div class="app">
   <!-- Header -->
   <div class="app-header">
@@ -346,7 +359,7 @@ body {
           <input type="password" id="apiKey" placeholder="sk-... (留空则用模拟模式)">
         </div>
         <div class="api-hint">
-          支持 OpenAI / DeepSeek / Moonshot 等兼容接口。留空 API Key 会使用模拟模式（生成示例数据），方便体验完整流程。
+          支持 OpenAI / DeepSeek / Moonshot 等兼容接口。留空 API Key 会自动尝试 Keal 后端代理，后端不可用时回退模拟模式。
         </div>
       </div>
     </div>
@@ -599,11 +612,29 @@ async function optimize() {
         throw new Error('AI 返回的内容无法解析为 JSON，请检查 AI 输出格式');
       }
     } else {
-      // ===== Mock Mode =====
-      await new Promise(r => setTimeout(r, 1500)); // simulate delay
-      result = mockOptimize(input);
-      removeLoading();
-      addMessage('ai', '已为你优化简历内容！\n\n主要优化点：\n1. 工作经历用 STAR 法则重写，量化了成果\n2. 技能按岗位相关性排序\n3. 自我评价精简为 3 句话\n\n（当前为模拟模式，配置 API Key 后可使用真实 AI 优化）');
+      // ===== Try Keal Backend =====
+      try {
+        const backendUrl = 'http://localhost:3001/api/resume/template-optimize';
+        const response = await fetch(backendUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: input })
+        });
+        if (!response.ok) {
+          const errText = await response.text();
+          throw new Error('后端返回错误 (' + response.status + '): ' + errText.substring(0, 200));
+        }
+        result = await response.json();
+        removeLoading();
+        addMessage('ai', '\u2705 通过 Keal 后端 AI 优化完成！');
+      } catch (backendErr) {
+        // ===== Mock Mode Fallback =====
+        console.warn('后端不可用，使用模拟模式:', backendErr.message);
+        await new Promise(r => setTimeout(r, 1500));
+        result = mockOptimize(input);
+        removeLoading();
+        addMessage('ai', '已为你优化简历内容！\n\n主要优化点：\n1. 工作经历用 STAR 法则重写，量化了成果\n2. 技能按岗位相关性排序\n3. 自我评价精简为 3 句话\n\n（当前为模拟模式。启动 Keal 后端或配置 API Key 可使用真实 AI 优化）');
+      }
     }
 
     // Show success
