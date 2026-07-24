@@ -217,6 +217,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC"
     </div>
   </div>
 
+  <!-- STEP 2.5: 事实确认（契约 /api/seeker/facts） -->
+  <div id="step2-facts" class="hidden space-y-4 fade-in-up">
+    <div class="glass-card p-6 md:p-8">
+      <div class="flex items-center justify-between mb-4">
+        <div><h3 class="text-white font-semibold text-lg">✅ 事实确认</h3><p class="text-gray-400 text-sm">AI 从你的回答提炼出 <span id="fact-count">0</span> 条事实，请逐条确认或修改</p></div>
+        <span class="mode-badge mode-mock" id="facts-mode">🔸 MOCK</span>
+      </div>
+      <div class="space-y-4" id="facts-container"></div>
+      <button class="glow-btn w-full mt-5" onclick="proceedToGenerate()" id="facts-btn">✅ 全部确认，生成简历 →</button>
+    </div>
+  </div>
+
   <!-- STEP 3: Generated Resume -->
   <div id="step3" class="hidden space-y-6 fade-in-up">
     <!-- Resume Display -->
@@ -613,7 +625,7 @@ function renderQuestions(){
   document.getElementById('questions-container').innerHTML=html;
 }
 
-/* ===== STEP 2: Submit Answers ===== */
+/* ===== STEP 2: Submit Answers → POST /api/seeker/facts ===== */
 function step2Submit(){
   if(typeof questions==='undefined'||!Array.isArray(questions)||questions.length===0){alert('当前没有可提交的面试问题，请回到第 1 步先生成问题');return;}
   var allFilled=true, answers=[];
@@ -626,82 +638,129 @@ function step2Submit(){
   document.getElementById('step2').classList.add('hidden');
   var load=document.getElementById('step-loading');load.classList.remove('hidden');
   document.getElementById('loading-text').textContent='AI正在从你的回答中提炼事实...';
-  var answersText=answers.map(function(a){return '问题：'+a.text+'\n回答：'+a.answer;}).join('\n\n');
-  var sys='你是面试信息提炼专家。请从候选人回答中提炼事实性陈述(fact)，每条含：id(以f开头递增)、category(education/project/internship/skill/activity/other)、statement(客观事实陈述)、sourceQuestionId(对应问题id)、sourceQuote(候选人原话片段)、confirmed(固定为true)。\n要求：\n1) 至少提炼 5 条事实，即使回答简短也要从字面内容提炼（提到的技能、工具、课程、经历片段、态度、方法等均可作为事实）\n2) 只提炼候选人明确说过的内容，禁止推测、夸大或补充候选人未提及的事实（如公司名、职位、数据）\n3) 若回答确实过短，至少输出能提炼的全部条目，绝不返回空数组 []\n按JSON数组输出（只输出JSON）：\n[{"id":"f1","category":"project","statement":"...","sourceQuestionId":"q1","sourceQuote":"...","confirmed":true}]';
-  callAI(answersText, sys, 'career_advisor')
-    .then(function(reply){
-      facts=extractJSON(reply);
-      if(!Array.isArray(facts))facts=[];
+  apiPost('/api/seeker/facts', {jobProfile:jobProfile||{}, questions:questions, answers:answers})
+    .then(function(json){
+      load.classList.add('hidden');
+      if(!json.ok){
+        document.getElementById('step2').classList.remove('hidden');
+        showApiError(json,'事实提炼');
+        return;
+      }
+      setModeBadge(json.mode);
+      facts=Array.isArray(json.data&&json.data.facts)?json.data.facts:[];
       if(!facts.length){
-        // AI 提炼为空时，用回答原文作 fallback 事实，避免流程中断
-        answers.forEach(function(a,i){
-          if(a.answer && a.answer.trim()){
-            facts.push({id:'f'+(i+1),category:'other',statement:a.answer.trim().slice(0,120),sourceQuestionId:a.id,sourceQuote:a.answer.trim().slice(0,60),confirmed:true});
-          }
-        });
-        console.warn('[step2] AI 事实提炼为空，已用回答原文 fallback，共 '+facts.length+' 条');
+        document.getElementById('step2').classList.remove('hidden');
+        alert('未能从你的回答中提炼出有效事实，请补充更具体的回答后重试');
+        return;
       }
-      if(!facts.length){
-        throw new Error('未能从你的回答中提炼有效内容，请补充更具体的回答后重试');
-      }
-      // 全部默认确认,直接进入生成简历(跳过人工确认步骤)
-      facts.forEach(function(f){f.confirmed=true;});
-      // 紧接着生成简历
-      document.getElementById('loading-text').textContent='AI正在根据事实生成结构化简历...';
-      var confirmed=facts.filter(function(f){return f.confirmed;});
-      var factsText=confirmed.map(function(f){return '['+f.category+'] '+f.statement+(f.sourceQuote?('（来源原话：'+f.sourceQuote+'）'):'');}).join('\n');
-      var hasInternship=confirmed.some(function(f){return f.category==='internship';});
-      var expandHint='';
-      if(!hasInternship){
-        expandHint='\n\n【⚠️ 应届生扩充指令】\n候选人目前没有正式实习经验。你必须主动通过以下方式把简历做到信息充实、专业饱满：\n'+
-          '① 把【课程作业/毕业设计/课程项目/大作业】包装成 2-3 个"项目经验"，写出商业价值\n'+
-          '② 把【社团/学生会/志愿者/班级职务/比赛/兼职】包装成"实践经历"，体现组织/协作/领导力\n'+
-          '③ 补充【专业技能/工具/语言】时，只能基于候选人事实中提到的内容或其课程/项目的合理延伸；禁止虚构证书、获奖、竞赛名次\n'+
-          '④ 每个项目/经历必须用 STAR 方法描述，并尽量量化（数据/比例/排名/规模/用户数）\n'+
-          '⑤ 自我评价避免空洞词（不要"我积极乐观"），写真实体现岗位匹配的具体素质\n';
-      }
-      var resumeSys='你是资深简历生成专家，擅长为应届毕业生撰写专业简历。根据用户确认的事实（部分可能很简短），生成一份【信息充实、结构完整、专业饱满】的应届生简历 JSON。'+
-        '【真实性红线·最高优先级】\n'+
-        '0) 严禁虚构事实：公司名、学校名、专业、学位、职位、时间、GPA、主修课程必须 100% 来自用户提供的事实；候选人没提过的雇主（尤其是知名企业，如腾讯、阿里巴巴、字节跳动等）绝不允许出现在简历里；不得编造候选人没做过的项目或没获得过的奖项证书；教育背景(education)必须来自事实中 education 类别的条目，若用户未提供学校/专业/时间，education 必须设为空数组 []，绝不允许编造"XX大学·计算机专业·本科·2021-2025·GPA 3.5"这类内容\n'+
-        '核心要求：\n'+
-        '1) 不要局限于事实字面，每个事实都要【扩展、量化、提炼】成 1-3 个专业表达（"扩展"仅指对真实经历的专业化表达，绝不虚构新事实）\n'+
-        '2) 用 STAR 方法（情境/任务/行动/结果）描述项目/经历，结果尽量量化\n'+
-        '3) 动词开头，条理清晰，专业术语准确\n'+
-        '4) 技能要【分类】（专业技能/工具/语言/软技能），并标注熟练程度（熟练/掌握/了解）\n'+
-        '5) 自我评价避免空洞词，体现岗位匹配的具体素质'+
-        expandHint+
-        '\n\n【输出 JSON 结构】（只输出 JSON，不要任何解释文字、Markdown、代码块标记）：\n{\n'+
-        '  "title": "简历标题（如：短视频运营与内容创作专家）",\n'+
-        '  "name": "姓名",\n'+
-        '  "summary": [{"text":"个人概述","evidenceIds":[]}, ...至少 2 条],\n'+
-        '  "education": [{"text":"学校·专业·学位·时间·GPA·主修课程","evidenceIds":[]}]（仅来自事实 education 类别,若用户未提供教育信息则设为空数组 []）,\n'+
-        '  "experiences": [{"name":"项目/经历名","role":"你的角色","period":"时间","bullets":[{"text":"...","evidenceIds":[]}, ...3-5 条]}, ...至少 4-5 段],\n'+
-        '  "projects": [{"name":"项目名","role":"你的角色","period":"时间","desc":"一句话项目描述","tech":"技术栈","highlights":["亮点1","亮点2"]}, ...可选, 建议 1-3 个],\n'+
-        '  "skills": [{"text":"技能名（熟练程度）","evidenceIds":[]}, ...至少 6-10 条],\n'+
-        '  "awards": [{"text":"奖项/证书","evidenceIds":[]}, ...可选, 建议 1-3 条],\n'+
-        '  "certifications": [{"text":"证书名","evidenceIds":[]}, ...可选],\n'+
-        '  "languages": [{"text":"语言(等级)","evidenceIds":[]}, ...可选, 至少 1 条],\n'+
-        '  "selfEvaluation": "2-3 句话的自我评价，体现岗位匹配和个人优势，避免空洞词"\n'+
-        '}';
-      return callAI(factsText, resumeSys, 'resume_expert')
-        .then(function(reply){
-          generatedResume=extractJSON(reply);
-          document.getElementById('loading-text').textContent='AI正在分析简历的缺失信息与面试风险...';
-          var checkSys='你是求职辅导专家。基于生成的简历内容，分析：\n1) 简历中【缺失但应该补充】的信息（如起止时间、GPA、作品链接、数据量化等）\n2) 面试官看到这份简历后可能的【追问风险】（如对某个项目细节、某个数据、某个能力的怀疑）\n3) 必须基于这份简历的实际内容，不要输出无关的通用建议\n\n输出 JSON（只输出 JSON）：\n{\n  "missingInfo":["缺失信息1","缺失信息2", ...至少 3 条],\n  "interviewRisks":[{"risk":"追问风险描述","relatedFact":"简历中对应的内容点"}, ...至少 2 条]\n}';
-          return callAI('目标岗位：'+(jobProfile&&jobProfile.jobTitle?jobProfile.jobTitle:'')+'\n\n简历内容：\n'+JSON.stringify(generatedResume), checkSys, 'career_advisor');
-        })
-        .then(function(checkReply){
-          var ck=extractJSON(checkReply);
-          missingInfo=Array.isArray(ck.missingInfo)?ck.missingInfo:[];
-          interviewRisks=Array.isArray(ck.interviewRisks)?ck.interviewRisks:[];
-          load.classList.add('hidden');setStep(3);renderResume();
-          document.getElementById('step3').classList.remove('hidden');
-          document.getElementById('step3').scrollIntoView({behavior:'smooth',block:'start'});
-        });
+      renderFactsConfirm();
+      document.getElementById('step2-facts').classList.remove('hidden');
+      document.getElementById('step2-facts').scrollIntoView({behavior:'smooth',block:'start'});
     })
     .catch(function(err){
       document.getElementById('step2').classList.remove('hidden');
-      load.classList.add('hidden');alert('AI生成失败：'+err.message);
+      load.classList.add('hidden');
+      alert('事实提炼失败：'+err.message+'\n请确认后端已启动（cd /Users/mac/Documents/keal/backend && npm run dev）');
+    });
+}
+
+/* ===== STEP 2.5: 事实确认（逐条确认/修改） ===== */
+var FACT_CAT_LABEL={education:'🎓 教育',internship:'💼 实习',project:'🛠 项目',skill:'⚙️ 技能',activity:'🏅 活动',other:'📌 其他'};
+function renderFactsConfirm(){
+  document.getElementById('fact-count').textContent=facts.length;
+  var html='';
+  facts.forEach(function(f){
+    var cat=FACT_CAT_LABEL[f.category]||FACT_CAT_LABEL.other;
+    var confirmed=!!f.confirmed;
+    html+='<div class="fact-card" id="fact-card-'+f.id+'">';
+    html+='<div class="flex items-start justify-between mb-2"><div class="flex items-center gap-2 flex-wrap"><span class="text-xs px-2.5 py-1 rounded-full bg-tech-blue/15 text-tech-blue border border-tech-blue/30">'+cat+'</span><span class="text-xs '+(confirmed?'text-green-400':'text-amber-400')+'">'+(confirmed?'✅ 已确认':'⏳ 待确认')+'</span></div><span class="text-xs text-gray-500">ID: '+escH(f.id)+'</span></div>';
+    html+='<div id="fact-view-'+f.id+'"><p class="text-gray-200 text-sm mb-2">'+escH(f.statement)+'</p></div>';
+    html+='<div class="text-xs text-gray-500 bg-white/5 border border-white/10 rounded-lg px-3 py-2 mb-3">💬 来源原话（问题 '+escH(f.sourceQuestionId)+'）：<span class="text-gray-400">“'+escH(f.sourceQuote)+'”</span></div>';
+    html+='<div class="flex gap-2" id="fact-actions-'+f.id+'">';
+    html+='<button class="btn-export text-xs" style="background:linear-gradient(135deg,#22c55e,#16a34a)" onclick="toggleFact(\''+f.id+'\')">'+(confirmed?'↩ 取消确认':'✅ 确认这条')+'</button>';
+    html+='<button class="btn-export text-xs" style="background:linear-gradient(135deg,#3b82f6,#6366f1)" onclick="editFact(\''+f.id+'\')">✏️ 修改</button>';
+    html+='</div></div>';
+  });
+  document.getElementById('facts-container').innerHTML=html;
+}
+function findFact(id){for(var i=0;i<facts.length;i++){if(facts[i].id===id)return facts[i];}return null;}
+function toggleFact(id){var f=findFact(id);if(!f)return;f.confirmed=!f.confirmed;renderFactsConfirm();}
+function editFact(id){
+  var f=findFact(id);if(!f)return;
+  document.getElementById('fact-view-'+id).innerHTML='<textarea class="ai-input h-20 text-sm" id="fact-edit-'+id+'">'+escH(f.statement)+'</textarea>';
+  document.getElementById('fact-actions-'+id).innerHTML='<button class="btn-export text-xs" style="background:linear-gradient(135deg,#22c55e,#16a34a)" onclick="saveFact(\''+id+'\')">💾 保存</button><button class="btn-export text-xs" style="background:linear-gradient(135deg,#6b7280,#4b5563)" onclick="renderFactsConfirm()">取消</button>';
+}
+function saveFact(id){
+  var f=findFact(id);if(!f)return;
+  var ta=document.getElementById('fact-edit-'+id);
+  var v=ta?ta.value.trim():'';
+  if(!v){alert('事实内容不能为空');return;}
+  f.statement=v;f.confirmed=true;renderFactsConfirm();
+}
+function proceedToGenerate(){
+  var unconfirmed=facts.filter(function(f){return !f.confirmed;});
+  if(unconfirmed.length){alert('还有 '+unconfirmed.length+' 条事实未确认，请逐条确认或修改后再继续');return;}
+  document.getElementById('step2-facts').classList.add('hidden');
+  var load=document.getElementById('step-loading');load.classList.remove('hidden');
+  document.getElementById('loading-text').textContent='AI正在根据事实生成结构化简历...';
+  generateResumeFromFacts().catch(function(err){
+    load.classList.add('hidden');
+    document.getElementById('step2-facts').classList.remove('hidden');
+    alert('AI生成失败：'+err.message);
+  });
+}
+
+/* ===== 根据已确认事实生成简历（沿用原 AI 链路） ===== */
+function generateResumeFromFacts(){
+  var confirmed=facts.filter(function(f){return f.confirmed;});
+  var factsText=confirmed.map(function(f){return '['+f.category+'] '+f.statement+(f.sourceQuote?('（来源原话：'+f.sourceQuote+'）'):'');}).join('\n');
+  var hasInternship=confirmed.some(function(f){return f.category==='internship';});
+  var expandHint='';
+  if(!hasInternship){
+    expandHint='\n\n【⚠️ 应届生扩充指令】\n候选人目前没有正式实习经验。你必须主动通过以下方式把简历做到信息充实、专业饱满：\n'+
+      '① 把【课程作业/毕业设计/课程项目/大作业】包装成 2-3 个"项目经验"，写出商业价值\n'+
+      '② 把【社团/学生会/志愿者/班级职务/比赛/兼职】包装成"实践经历"，体现组织/协作/领导力\n'+
+      '③ 补充【专业技能/工具/语言】时，只能基于候选人事实中提到的内容或其课程/项目的合理延伸；禁止虚构证书、获奖、竞赛名次\n'+
+      '④ 每个项目/经历必须用 STAR 方法描述，并尽量量化（数据/比例/排名/规模/用户数）\n'+
+      '⑤ 自我评价避免空洞词（不要"我积极乐观"），写真实体现岗位匹配的具体素质\n';
+  }
+  var resumeSys='你是资深简历生成专家，擅长为应届毕业生撰写专业简历。根据用户确认的事实（部分可能很简短），生成一份【信息充实、结构完整、专业饱满】的应届生简历 JSON。'+
+    '【真实性红线·最高优先级】\n'+
+    '0) 严禁虚构事实：公司名、学校名、专业、学位、职位、时间、GPA、主修课程必须 100% 来自用户提供的事实；候选人没提过的雇主（尤其是知名企业，如腾讯、阿里巴巴、字节跳动等）绝不允许出现在简历里；不得编造候选人没做过的项目或没获得过的奖项证书；教育背景(education)必须来自事实中 education 类别的条目，若用户未提供学校/专业/时间，education 必须设为空数组 []，绝不允许编造"XX大学·计算机专业·本科·2021-2025·GPA 3.5"这类内容\n'+
+    '核心要求：\n'+
+    '1) 不要局限于事实字面，每个事实都要【扩展、量化、提炼】成 1-3 个专业表达（"扩展"仅指对真实经历的专业化表达，绝不虚构新事实）\n'+
+    '2) 用 STAR 方法（情境/任务/行动/结果）描述项目/经历，结果尽量量化\n'+
+    '3) 动词开头，条理清晰，专业术语准确\n'+
+    '4) 技能要【分类】（专业技能/工具/语言/软技能），并标注熟练程度（熟练/掌握/了解）\n'+
+    '5) 自我评价避免空洞词，体现岗位匹配的具体素质'+
+    expandHint+
+    '\n\n【输出 JSON 结构】（只输出 JSON，不要任何解释文字、Markdown、代码块标记）：\n{\n'+
+    '  "title": "简历标题（如：短视频运营与内容创作专家）",\n'+
+    '  "name": "姓名",\n'+
+    '  "summary": [{"text":"个人概述","evidenceIds":[]}, ...至少 2 条],\n'+
+    '  "education": [{"text":"学校·专业·学位·时间·GPA·主修课程","evidenceIds":[]}]（仅来自事实 education 类别,若用户未提供教育信息则设为空数组 []）,\n'+
+    '  "experiences": [{"name":"项目/经历名","role":"你的角色","period":"时间","bullets":[{"text":"...","evidenceIds":[]}, ...3-5 条]}, ...至少 4-5 段],\n'+
+    '  "projects": [{"name":"项目名","role":"你的角色","period":"时间","desc":"一句话项目描述","tech":"技术栈","highlights":["亮点1","亮点2"]}, ...可选, 建议 1-3 个],\n'+
+    '  "skills": [{"text":"技能名（熟练程度）","evidenceIds":[]}, ...至少 6-10 条],\n'+
+    '  "awards": [{"text":"奖项/证书","evidenceIds":[]}, ...可选, 建议 1-3 条],\n'+
+    '  "certifications": [{"text":"证书名","evidenceIds":[]}, ...可选],\n'+
+    '  "languages": [{"text":"语言(等级)","evidenceIds":[]}, ...可选, 至少 1 条],\n'+
+    '  "selfEvaluation": "2-3 句话的自我评价，体现岗位匹配和个人优势，避免空洞词"\n'+
+    '}';
+  return callAI(factsText, resumeSys, 'resume_expert')
+    .then(function(reply){
+      generatedResume=extractJSON(reply);
+      document.getElementById('loading-text').textContent='AI正在分析简历的缺失信息与面试风险...';
+      var checkSys='你是求职辅导专家。基于生成的简历内容，分析：\n1) 简历中【缺失但应该补充】的信息（如起止时间、GPA、作品链接、数据量化等）\n2) 面试官看到这份简历后可能的【追问风险】（如对某个项目细节、某个数据、某个能力的怀疑）\n3) 必须基于这份简历的实际内容，不要输出无关的通用建议\n\n输出 JSON（只输出 JSON）：\n{\n  "missingInfo":["缺失信息1","缺失信息2", ...至少 3 条],\n  "interviewRisks":[{"risk":"追问风险描述","relatedFact":"简历中对应的内容点"}, ...至少 2 条]\n}';
+      return callAI('目标岗位：'+(jobProfile&&jobProfile.jobTitle?jobProfile.jobTitle:'')+'\n\n简历内容：\n'+JSON.stringify(generatedResume), checkSys, 'career_advisor');
+    })
+    .then(function(checkReply){
+      var ck=extractJSON(checkReply);
+      missingInfo=Array.isArray(ck.missingInfo)?ck.missingInfo:[];
+      interviewRisks=Array.isArray(ck.interviewRisks)?ck.interviewRisks:[];
+      document.getElementById('step-loading').classList.add('hidden');setStep(3);renderResume();
+      document.getElementById('step3').classList.remove('hidden');
+      document.getElementById('step3').scrollIntoView({behavior:'smooth',block:'start'});
     });
 }
 
@@ -1003,7 +1062,7 @@ function copyToEditor(){
 
 function resetAll(){
   jobProfile=null;questions=[];facts=[];generatedResume=null;missingInfo=[];interviewRisks=[];
-  ['step2','step3','step-loading','step1-analysis'].forEach(function(id){document.getElementById(id).classList.add('hidden');});
+  ['step2','step2-facts','step3','step-loading','step1-analysis'].forEach(function(id){document.getElementById(id).classList.add('hidden');});
   document.getElementById('step1').classList.remove('hidden');
   document.getElementById('jd-title').value='';document.getElementById('jd-text').value='';document.getElementById('jd-old-resume').value='';
   setStep(1);window.scrollTo(0,0);

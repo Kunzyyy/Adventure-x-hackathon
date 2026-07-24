@@ -267,3 +267,81 @@ seekerRouter.post("/analyze", (req: Request, res: Response) => {
   const data = deriveJobProfile(jdText) || FALLBACK_DATA;
   res.json({ ok: true, data, mode });
 });
+
+// ─── 契约类型：事实（§3）───
+type FactCategory = "education" | "project" | "internship" | "skill" | "activity" | "other";
+
+interface Fact {
+  id: string;
+  category: FactCategory;
+  statement: string;
+  sourceQuestionId: string;
+  sourceQuote: string;
+  confirmed: boolean;
+}
+
+interface AnswerItem {
+  id: string;
+  text?: string;
+  answer: string;
+}
+
+// ─── MOCK：从用户回答派生事实（只用候选人原话，不虚构）───
+function deriveCategory(hay: string): FactCategory {
+  if (/学校|大学|学院|专业|课程|毕业|学位|GPA|绩点/.test(hay)) return "education";
+  if (/实习|入职|公司|在职|工作经历/.test(hay)) return "internship";
+  if (/项目|作品|开发|做过|搭建|实现|系统|网站|小程序|页面|app/i.test(hay)) return "project";
+  if (/社团|学生会|志愿|比赛|活动|组织|团队|班长/.test(hay)) return "activity";
+  if (/SQL|Excel|Python|剪辑|工具|技能|掌握|熟练|会用|了解/i.test(hay)) return "skill";
+  return "other";
+}
+
+function deriveFacts(answers: AnswerItem[]): Fact[] {
+  const out: Fact[] = [];
+  let n = 0;
+  for (const a of answers) {
+    const ans = typeof a.answer === "string" ? a.answer.trim() : "";
+    if (!ans) continue;
+    n += 1;
+    const qText = typeof a.text === "string" ? a.text : "";
+    out.push({
+      id: "f" + n,
+      category: deriveCategory(ans + " " + qText),
+      statement: ans.length > 120 ? ans.slice(0, 120) : ans,
+      sourceQuestionId: typeof a.id === "string" ? a.id : "",
+      sourceQuote: ans.length > 60 ? ans.slice(0, 60) : ans,
+      confirmed: false,
+    });
+  }
+  return out;
+}
+
+// ─── POST /api/seeker/facts ───
+seekerRouter.post("/facts", (req: Request, res: Response) => {
+  const mode: APIMode = "mock";
+  const body = req.body || {};
+  const fieldErrors: Record<string, string[]> = {};
+
+  const answers = Array.isArray(body.answers) ? body.answers : null;
+  if (!answers || answers.length === 0) {
+    fieldErrors.answers = ["请至少提交一道问题的回答"];
+  } else {
+    answers.forEach((a: any, i: number) => {
+      if (!a || typeof a.id !== "string" || !a.id.trim()) {
+        fieldErrors["answers[" + i + "].id"] = ["回答缺少对应的问题 id"];
+      }
+    });
+  }
+
+  if (Object.keys(fieldErrors).length > 0) {
+    res.status(400).json({
+      ok: false,
+      error: { code: "INVALID_INPUT", message: "请求内容不完整", fieldErrors },
+      mode,
+    });
+    return;
+  }
+
+  const facts = deriveFacts(answers as AnswerItem[]);
+  res.json({ ok: true, data: { facts }, mode });
+});
