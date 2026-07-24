@@ -6,11 +6,11 @@ services:
     name: ai-career-copilot
     runtime: node
     plan: free
-    branch: main
+    branch: Jin-Ziyao
     buildCommand: npm install -g pnpm@9 && pnpm install --config.strict-peer-dependencies=false && pnpm --filter backend build
     startCommand: node backend/dist/server.js
     healthCheckPath: /api/health
-    autoDeploy: true
+    autoDeploy: false
     envVars:
       - key: LLM_MODE
         value: mock
