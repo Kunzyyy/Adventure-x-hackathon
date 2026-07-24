@@ -44,6 +44,31 @@ const ANALYZE_SYSTEM = `你是岗位分析助手。任务：把目标JD解析为
 - 不诱导用户编造数字、奖项、公司、技能和经历。
 - 所有JobProfile数组字段必须存在，没有内容用空数组[]。`;
 
+const ANALYZE_OUTPUT_SHAPE = `{
+  "jobProfile": {
+    "jobTitle": "string",
+    "employmentType": "string",
+    "seniority": "string",
+    "responsibilities": ["string"],
+    "coreCompetencies": ["string"],
+    "mustHaves": ["string"],
+    "niceToHaves": ["string"],
+    "expectedOutcomes": ["string"],
+    "constraints": ["string"],
+    "keywords": ["string"],
+    "uncertainties": ["string"]
+  },
+  "questions": [
+    {
+      "id": "sq_1",
+      "text": "string",
+      "reason": "string",
+      "answerType": "text",
+      "required": true
+    }
+  ]
+}`;
+
 export async function seekerAnalyze(req: SeekerAnalyzeRequest): Promise<ServiceOutcome<SeekerAnalyzeData>> {
   const blocks = [
     "目标岗位JD：\n" + req.jdText,
@@ -52,6 +77,7 @@ export async function seekerAnalyze(req: SeekerAnalyzeRequest): Promise<ServiceO
   const result = await callStructured({
     schema: SeekerAnalyzeDataSchema,
     system: ANALYZE_SYSTEM,
+    outputShape: ANALYZE_OUTPUT_SHAPE,
     userBlocks: blocks,
     maxTokens: 2000,
     mockFn: () => seekerAnalyzeMock(req.jdText),
@@ -74,6 +100,20 @@ const FACTS_SYSTEM = `你是事实整理助手。任务：把用户回答整理�
 - 与岗位相比仍缺少的重要证据放入missingInformation，不能生成虚假事实补齐。
 - 一个原话含多条独立事实可拆分，但每条仍引用真实sourceQuote。`;
 
+const FACTS_OUTPUT_SHAPE = `{
+  "facts": [
+    {
+      "id": "fact_1",
+      "category": "other",
+      "statement": "string",
+      "sourceQuestionId": "sq_1",
+      "sourceQuote": "string",
+      "confirmed": false
+    }
+  ],
+  "missingInformation": ["string"]
+}`;
+
 export async function seekerFacts(req: SeekerFactsRequest): Promise<ServiceOutcome<SeekerFactsData>> {
   const blocks = [
     "岗位画像：\n" + JSON.stringify(req.jobProfile),
@@ -84,6 +124,7 @@ export async function seekerFacts(req: SeekerFactsRequest): Promise<ServiceOutco
   const result = await callStructured({
     schema: SeekerFactsDataSchema,
     system: FACTS_SYSTEM,
+    outputShape: FACTS_OUTPUT_SHAPE,
     userBlocks: blocks,
     maxTokens: 2500,
     mockFn: () => seekerFactsMock(req.jobProfile, req.answers),
@@ -139,6 +180,23 @@ const GENERATE_SYSTEM = `你是简历生成助手。任务：只用用户确认�
 - 容易被追问/证据较弱/熟练度有限的内容进入interviewRisks(字符串数组)，但风险描述也不能增加新事实。
 - resume只含title/summary/education/experiences/skills；missingInformation与interviewRisks在resume外层同级返回。`;
 
+const GENERATE_OUTPUT_SHAPE = `{
+  "resume": {
+    "title": "string",
+    "summary": [{ "text": "string", "evidenceIds": ["fact_1"] }],
+    "education": [{ "text": "string", "evidenceIds": ["fact_1"] }],
+    "experiences": [
+      {
+        "name": "string",
+        "bullets": [{ "text": "string", "evidenceIds": ["fact_1"] }]
+      }
+    ],
+    "skills": [{ "text": "string", "evidenceIds": ["fact_1"] }]
+  },
+  "missingInformation": ["string"],
+  "interviewRisks": ["string"]
+}`;
+
 export async function seekerGenerate(req: SeekerGenerateRequest): Promise<ServiceOutcome<SeekerGenerateData>> {
   const blocks = [
     "岗位画像：\n" + JSON.stringify(req.jobProfile),
@@ -147,6 +205,7 @@ export async function seekerGenerate(req: SeekerGenerateRequest): Promise<Servic
   const result = await callStructured({
     schema: SeekerGenerateDataSchema,
     system: GENERATE_SYSTEM,
+    outputShape: GENERATE_OUTPUT_SHAPE,
     userBlocks: blocks,
     maxTokens: 2500,
     mockFn: () => seekerGenerateMock(req.jobProfile, req.confirmedFacts),

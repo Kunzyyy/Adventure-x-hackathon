@@ -19,6 +19,7 @@ function opts(over: Partial<CallOptions<{ word: string }>>): CallOptions<{ word:
   return {
     schema: Schema,
     system: "test system",
+    outputShape: '{"word":"string"}',
     userBlocks: ["data"],
     maxTokens: 100,
     label: "test",
@@ -90,6 +91,15 @@ describe("live happy path", () => {
     const user = (createArgs!.messages as any[])[1].content as string;
     expect(user).toContain("<user_data");
     expect(user).toContain("MYSECRET");
+  });
+
+  it("system message includes the exact JSON output contract", async () => {
+    createImpl = async () => ({ choices: [{ message: { content: '{"word":"x"}' } }] });
+    await callStructured(opts({ mockFn: () => ({ word: "x" }) }));
+    const sys = (createArgs!.messages as any[])[0].content as string;
+    expect(sys).toContain("[输出契约]");
+    expect(sys).toContain("<output_shape>");
+    expect(sys).toContain('{"word":"string"}');
   });
 });
 

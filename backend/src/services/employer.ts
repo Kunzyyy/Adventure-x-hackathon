@@ -26,6 +26,31 @@ const ANALYZE_SYSTEM = `你是企业招聘需求解析助手。任务：把模�
 - 不生成性别、年龄、婚育、籍贯、外貌等歧视性条件或问题。
 - 所有JobProfile数组必须存在，没有内容用[]。`;
 
+const ANALYZE_OUTPUT_SHAPE = `{
+  "jobProfile": {
+    "jobTitle": "string",
+    "employmentType": "string",
+    "seniority": "string",
+    "responsibilities": ["string"],
+    "coreCompetencies": ["string"],
+    "mustHaves": ["string"],
+    "niceToHaves": ["string"],
+    "expectedOutcomes": ["string"],
+    "constraints": ["string"],
+    "keywords": ["string"],
+    "uncertainties": ["string"]
+  },
+  "questions": [
+    {
+      "id": "eq_1",
+      "text": "string",
+      "reason": "string",
+      "answerType": "text",
+      "required": true
+    }
+  ]
+}`;
+
 export async function employerAnalyze(req: EmployerAnalyzeRequest): Promise<ServiceOutcome<EmployerAnalyzeData>> {
   const blocks = [
     "岗位名称：\n" + req.jobTitle,
@@ -34,6 +59,7 @@ export async function employerAnalyze(req: EmployerAnalyzeRequest): Promise<Serv
   const result = await callStructured({
     schema: EmployerAnalyzeDataSchema,
     system: ANALYZE_SYSTEM,
+    outputShape: ANALYZE_OUTPUT_SHAPE,
     userBlocks: blocks,
     maxTokens: 1800,
     mockFn: () => employerAnalyzeMock(req),
@@ -53,6 +79,47 @@ const GENERATE_SYSTEM = `你是企业招聘材料生成助手。任务：把原�
 - 围绕岗位工作和可验证证据，不询问隐私或无关个人特征。
 - 不生成性别、年龄、婚育、籍贯、外貌等歧视性标准。
 - 不输出自动录用、淘汰、候选人排名或匹配分数。筛选维度只是人工参考。`;
+
+const GENERATE_OUTPUT_SHAPE = `{
+  "jobProfile": {
+    "jobTitle": "string",
+    "employmentType": "string",
+    "seniority": "string",
+    "responsibilities": ["string"],
+    "coreCompetencies": ["string"],
+    "mustHaves": ["string"],
+    "niceToHaves": ["string"],
+    "expectedOutcomes": ["string"],
+    "constraints": ["string"],
+    "keywords": ["string"],
+    "uncertainties": ["string"]
+  },
+  "standardizedJD": {
+    "title": "string",
+    "summary": "string",
+    "responsibilities": ["string"],
+    "requirements": ["string"],
+    "niceToHaves": ["string"],
+    "workingConditions": ["string"]
+  },
+  "screeningDimensions": [
+    {
+      "name": "string",
+      "weight": 100,
+      "description": "string",
+      "evidenceToLookFor": ["string"]
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "question": "string",
+      "competency": "string",
+      "purpose": "string",
+      "strongAnswerSignals": ["string"],
+      "followUpQuestion": "string"
+    }
+  ]
+}`;
 
 // Discriminatory terms that must never appear in employer material.
 const DISCRIMINATION_TERMS = [
@@ -85,6 +152,7 @@ export async function employerGenerate(req: EmployerGenerateRequest): Promise<Se
   const result = await callStructured({
     schema: RecruitmentKitSchema,
     system: GENERATE_SYSTEM,
+    outputShape: GENERATE_OUTPUT_SHAPE,
     userBlocks: blocks,
     maxTokens: 3500,
     mockFn: () => employerGenerateMock(req),
