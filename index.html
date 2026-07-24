@@ -1,272 +1,156 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Keal · 双端 AI 求职助手 — 同一个引擎,两种用法</title>
-<link rel="stylesheet" href="css/style.css">
-<style>
-  /* 首页专属:飞轮图 + 卖点卡。基线走 style.css 的变量。 */
-  .home { padding-top: var(--header-height); }
-
-  .home-hero {
-    max-width: var(--max-width);
-    margin: 0 auto;
-    padding: 64px var(--content-padding) 40px;
-    text-align: center;
-  }
-  .home-eyebrow {
-    display: inline-flex; align-items: center; gap: 8px;
-    font-size: 12px; font-weight: 600; letter-spacing: 0.6px;
-    text-transform: uppercase;
-    color: var(--accent-600);
-    background: rgba(37, 99, 235, 0.08);
-    padding: 5px 14px; border-radius: var(--radius-full);
-    margin-bottom: 22px;
-  }
-  .home-eyebrow .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-500); }
-  .home-hero h1 {
-    font-size: 40px; font-weight: 700; letter-spacing: -0.8px;
-    line-height: 1.15; color: var(--text-primary); margin-bottom: 18px;
-  }
-  .home-hero h1 .accent { color: var(--accent-600); }
-  .home-hero p {
-    font-size: 16px; color: var(--text-secondary); line-height: 1.7;
-    max-width: 620px; margin: 0 auto 30px;
-  }
-  .home-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-
-  /* ---------- 飞轮图 ---------- */
-  .flywheel-wrap {
-    max-width: var(--max-width);
-    margin: 0 auto;
-    padding: 24px var(--content-padding) 64px;
-  }
-  .flywheel-title { text-align: center; margin-bottom: 28px; }
-  .flywheel-title h2 {
-    font-size: 22px; font-weight: 700; letter-spacing: -0.3px;
-    color: var(--text-primary); margin-bottom: 6px;
-  }
-  .flywheel-title p { font-size: 13px; color: var(--text-tertiary); }
-
-  .flywheel {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    gap: 0;
-    align-items: center;
-    background: var(--bg-white);
-    border: 1px solid var(--border-glass);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-sm);
-    padding: 32px 24px;
-  }
-  .fw-side { display: flex; flex-direction: column; gap: 10px; padding: 0 18px; }
-  .fw-role {
-    font-size: 13px; font-weight: 600; color: var(--text-secondary);
-    margin-bottom: 4px; display: flex; align-items: center; gap: 6px;
-  }
-  .fw-step {
-    background: var(--bg-subtle);
-    border: 1px solid var(--border-glass);
-    border-radius: var(--radius-md);
-    padding: 11px 14px;
-    font-size: 13px; color: var(--text-primary); line-height: 1.5;
-  }
-  .fw-step .fw-tag {
-    display: block; font-size: 11px; color: var(--text-tertiary);
-    margin-bottom: 2px; font-weight: 500;
-  }
-  .fw-step.fw-out {
-    background: rgba(37, 99, 235, 0.05);
-    border-color: rgba(37, 99, 235, 0.20);
-  }
-  .fw-step.fw-out .fw-tag { color: var(--accent-600); font-weight: 600; }
-
-  /* 中间引擎盒 */
-  .fw-engine {
-    display: flex; flex-direction: column; align-items: center;
-    padding: 0 8px; position: relative;
-  }
-  .fw-line {
-    width: 28px; height: 2px; background: var(--accent-400);
-    flex-shrink: 0;
-  }
-  .fw-engine-box {
-    background: var(--bg-white);
-    border: 2px solid var(--accent-500);
-    border-radius: var(--radius-lg);
-    padding: 22px 18px;
-    text-align: center;
-    box-shadow: var(--shadow-accent);
-    min-width: 150px;
-  }
-  .fw-engine-eyebrow {
-    font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
-    color: var(--accent-600); margin-bottom: 6px;
-  }
-  .fw-engine-name {
-    font-size: 16px; font-weight: 700; color: var(--text-primary);
-    line-height: 1.3; margin-bottom: 6px;
-  }
-  .fw-engine-note { font-size: 11px; color: var(--text-tertiary); line-height: 1.4; }
-
-  .flywheel-foot {
-    text-align: center; margin-top: 18px;
-    font-size: 12px; color: var(--text-tertiary);
-  }
-  .flywheel-foot strong { color: var(--accent-600); font-weight: 600; }
-
-  /* ---------- 卖点三卡(替代假统计数)---------- */
-  .pillars {
-    max-width: var(--max-width);
-    margin: 0 auto;
-    padding: 0 var(--content-padding) 72px;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-  }
-  .pillar {
-    background: var(--bg-white);
-    border: 1px solid var(--border-glass);
-    border-radius: var(--radius-lg);
-    padding: 24px;
-    box-shadow: var(--shadow-sm);
-    transition: box-shadow var(--duration-fast) var(--ease-out);
-  }
-  .pillar:hover { box-shadow: var(--shadow-md); }
-  .pillar-icon {
-    width: 36px; height: 36px; border-radius: var(--radius-sm);
-    background: rgba(37, 99, 235, 0.08); color: var(--accent-500);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px; margin-bottom: 14px;
-  }
-  .pillar h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
-  .pillar p { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
-  .pillar .pillar-evidence {
-    margin-top: 12px; padding-top: 12px;
-    border-top: 1px solid var(--border-glass);
-    font-size: 12px; color: var(--text-tertiary);
-  }
-
-  @media (max-width: 860px) {
-    .flywheel { grid-template-columns: 1fr; gap: 16px; }
-    .fw-side { padding: 0; }
-    .fw-line { width: 2px; height: 20px; margin: 0 auto; }
-    .pillars { grid-template-columns: 1fr; }
-  }
-</style>
-</head>
-<body>
-
-<!-- Navigation -->
-<header class="header">
-  <div class="header-inner">
-    <a href="index.html" class="logo-link">
-      <div class="logo-mark">K</div>
-      <span>Keal</span>
-    </a>
-    <nav class="header-nav">
-      <a href="student-resume.html" class="nav-link">求职者端</a>
-      <a href="enterprise.html" class="nav-link">企业端</a>
-    </nav>
-    <div class="header-right">
-      <a href="student-resume.html" class="btn-primary">开始体验</a>
-    </div>
-  </div>
-</header>
-
-<main class="home">
-
-  <!-- Hero -->
-  <section class="home-hero">
-    <span class="home-eyebrow"><span class="dot"></span>诚实 · 可溯源 · 双端同引擎</span>
-    <h1>别人给你一个 <span class="accent">"78 分"</span>,<br>我们告诉你 <span class="accent">"这两句没有证据"</span>。</h1>
-    <p>
-      双端 AI 求职助手。求职者贴 JD 生成简历,企业贴需求生成面试题——
-      背后是同一个「岗位理解引擎」。每句简历都能点开看原话,不编造、不夸大。
-    </p>
-    <div class="home-cta">
-      <a href="student-resume.html" class="btn-primary">我是求职者 →</a>
-      <a href="enterprise.html" class="btn-secondary">我是招聘方 →</a>
-    </div>
-  </section>
-
-  <!-- 飞轮图(主角)-->
-  <section class="flywheel-wrap">
-    <div class="flywheel-title">
-      <h2>同一个引擎,翻面是两种用法</h2>
-      <p>左边求职者、右边企业 HR,都流经中间同一个岗位理解引擎</p>
-    </div>
-
-    <div class="flywheel">
-      <!-- 求职者列 -->
-      <div class="fw-side">
-        <div class="fw-role">🎓 求职者</div>
-        <div class="fw-step"><span class="fw-tag">输入</span>贴 JD(+旧简历可选)</div>
-        <div class="fw-step"><span class="fw-tag">引擎产出</span>岗位画像 + 追问你的真实素材</div>
-        <div class="fw-step"><span class="fw-tag">确认</span>事实卡片:每条带原话 sourceQuote</div>
-        <div class="fw-step fw-out"><span class="fw-tag">输出</span>简历(每句话可点开溯源)</div>
+<!doctype html>
+<html lang="zh-CN" data-design-system="warm-paper-clay">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="产品与 UI 设计作品集：从真实问题、用户事实和工程边界出发，完成可验证的产品体验。"
+    />
+    <meta name="theme-color" content="#f4f0e7" />
+    <title>产品与 UI 设计｜个人作品集</title>
+    <link rel="stylesheet" href="/css/approved-ui.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">跳到主要内容</a>
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="brand" href="#hero" aria-label="回到首页">
+          <span class="brand-mark">N</span>
+          <span class="brand-name">YOUR NAME</span>
+        </a>
+        <nav class="site-nav" aria-label="主导航">
+          <a href="#projects">项目</a>
+          <a href="#method">方法</a>
+          <a href="#about">关于</a>
+          <a href="/student.html">学生端</a>
+          <a href="/enterprise.html">企业端</a>
+        </nav>
+        <a class="header-action" href="/student.html">体验产品 →</a>
       </div>
+    </header>
 
-      <!-- 中间引擎 -->
-      <div class="fw-engine">
-        <span class="fw-line"></span>
-        <div class="fw-engine-box">
-          <div class="fw-engine-eyebrow">SAME ENGINE</div>
-          <div class="fw-engine-name">岗位理解引擎</div>
-          <div class="fw-engine-note">同一个东西<br>翻了个面</div>
+    <main id="main">
+      <section class="hero" id="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">PRODUCT &amp; UI DESIGN · OPEN TO WORK</p>
+          <h1>
+            <span>好产品，</span>
+            <span>从真实问题开始。</span>
+          </h1>
+          <p class="hero-intro">
+            我把复杂功能做成清楚、可用、能被验证的体验；先确认问题和工程边界，再把关键细节交付完整。
+          </p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="/student.html">进入学生端</a>
+            <a class="button" href="/enterprise.html">进入企业端</a>
+          </div>
+          <dl class="hero-proof" aria-label="项目证据">
+            <div><dt>TEAM</dt><dd>3 人协作</dd></div>
+            <div><dt>PRODUCT</dt><dd>5 个正式接口</dd></div>
+            <div><dt>SYSTEM</dt><dd>20 个设计维度</dd></div>
+          </dl>
         </div>
-        <span class="fw-line"></span>
-      </div>
 
-      <!-- 企业列 -->
-      <div class="fw-side">
-        <div class="fw-role">🏢 企业 HR</div>
-        <div class="fw-step"><span class="fw-tag">输入</span>贴 模糊招聘需求</div>
-        <div class="fw-step"><span class="fw-tag">引擎产出</span>岗位画像 + 追问(同引擎)</div>
-        <div class="fw-step"><span class="fw-tag">标准化</span>标准 JD + 筛选维度(权重和=100)</div>
-        <div class="fw-step fw-out"><span class="fw-tag">输出</span>5 道面试题(同引擎算出)</div>
-      </div>
-    </div>
+        <aside class="evidence-note" aria-label="项目中的关键判断">
+          <span class="paper-tape" aria-hidden="true"></span>
+          <p class="note-label">本周做对的一件事</p>
+          <strong>先确认真实事实，再让 AI 生成表达。</strong>
+          <span class="note-rule" aria-hidden="true"></span>
+          <p>AI 求职助手 / UI 设计、需求拆解、协作交付</p>
+          <a href="#method">查看完整判断过程 →</a>
+        </aside>
+      </section>
 
-    <p class="flywheel-foot">
-      <strong>诊断报告:缺什么、哪弱</strong> ← 同一个引擎 → <strong>面试题</strong>
-    </p>
-  </section>
+      <section class="home-section" id="projects">
+        <header class="section-heading">
+          <div>
+            <p class="eyebrow">01 · SELECTED WORK</p>
+            <h2>不是展示页面，<br />而是展示判断。</h2>
+          </div>
+          <p>
+            同一套设计语言覆盖学生端和企业端。每个结果都能回到用户输入、确认状态和正式接口返回的数据。
+          </p>
+        </header>
 
-  <!-- 卖点三卡(替代假统计数)-->
-  <section class="pillars">
-    <div class="pillar">
-      <div class="pillar-icon">🔗</div>
-      <h3>每句话可溯源</h3>
-      <p>简历里每一条都能点开,看到你当时说的原话。不是 AI 凭空编的,是你说的。</p>
-      <div class="pillar-evidence">数据字段:每条 bullet 带 evidenceIds → sourceQuote</div>
-    </div>
-    <div class="pillar">
-      <div class="pillar-icon">🛡️</div>
-      <h3>反 AI 编造</h3>
-      <p>不把"参与"显示成"负责"、不把"了解"显示成"精通"。旧简历里没有的,绝不偷偷塞进新简历。</p>
-      <div class="pillar-evidence">缺失项进 missingInformation,证据弱进 interviewRisks</div>
-    </div>
-    <div class="pillar">
-      <div class="pillar-icon">🔄</div>
-      <h3>双端同引擎</h3>
-      <p>求职者被追问的题、企业 HR 拿到的面试题,是同一个岗位理解引擎算出来的——不是两套拼凑。</p>
-      <div class="pillar-evidence">seeker/generate 与 employer/generate 共享岗位画像</div>
-    </div>
-  </section>
+        <div class="project-list">
+          <a class="project-row" href="/student.html">
+            <div class="project-copy">
+              <div class="project-index">01 / SEEKER</div>
+              <h3>可信简历生成流程</h3>
+              <p class="project-role">岗位理解 · 动态追问 · 事实确认 · 简历生成</p>
+              <p class="project-result">每条简历内容都能回到用户确认的事实来源。</p>
+              <span class="project-link">体验学生端 →</span>
+            </div>
+            <div class="project-visual" aria-hidden="true">
+              <div class="project-flow">
+                <span>目标 JD</span><b>→</b><span>真实事实</span><b>→</b><span>可溯源简历</span>
+              </div>
+            </div>
+          </a>
 
-  <!-- Footer -->
-  <footer class="footer">
-    <h2>选一个身份开始</h2>
-    <p>两边都走同一个引擎,先从哪边进都行</p>
-    <div class="home-cta">
-      <a href="student-resume.html" class="btn-primary">🎓 我是求职者</a>
-      <a href="enterprise.html" class="btn-secondary">🏢 我是招聘方</a>
-    </div>
-  </footer>
+          <a class="project-row" href="/enterprise.html">
+            <div class="project-copy">
+              <div class="project-index">02 / EMPLOYER</div>
+              <h3>招聘需求澄清工作台</h3>
+              <p class="project-role">模糊要求 · 岗位画像 · 招聘包 · 面试问题</p>
+              <p class="project-result">未经企业确认的信息不会被写成正式硬性要求。</p>
+              <span class="project-link">体验企业端 →</span>
+            </div>
+            <div class="project-visual" aria-hidden="true">
+              <div class="project-flow">
+                <span>模糊要求</span><b>→</b><span>确认问题</span><b>→</b><span>标准招聘包</span>
+              </div>
+            </div>
+          </a>
 
-</main>
+          <div class="project-row">
+            <div class="project-copy">
+              <div class="project-index">03 / DELIVERY</div>
+              <h3>三人协作交付流程</h3>
+              <p class="project-role">需求对齐 · 接口契约 · 关键路径验收</p>
+              <p class="project-result">设计、前端和后端围绕同一份数据结构逐步交付。</p>
+              <span class="project-link">已完成 111 项自动化测试</span>
+            </div>
+            <div class="project-visual" aria-hidden="true">
+              <strong>设计 × 前端 × 后端</strong>
+            </div>
+          </div>
+        </div>
+      </section>
 
-</body>
+      <section class="home-section" id="method">
+        <header class="method-heading">
+          <div>
+            <p class="eyebrow">02 · HOW I WORK</p>
+            <h2>从问题，<br />到可交付。</h2>
+          </div>
+          <p>每轮只改变一个关键维度，把“喜欢”变成前端能实现、团队能验收的规则。</p>
+        </header>
+        <ol class="method-list">
+          <li><span>01</span><h3>写清问题</h3><p>确认目标、用户、限制和完成标准。</p></li>
+          <li><span>02</span><h3>拆解流程</h3><p>把页面、状态和前后端边界逐项说清。</p></li>
+          <li><span>03</span><h3>确认事实</h3><p>让 AI 输出始终能回到用户提供的证据。</p></li>
+          <li><span>04</span><h3>关键验收</h3><p>在桌面、手机和异常状态下走完真实路径。</p></li>
+        </ol>
+      </section>
+
+      <section class="home-section" id="about">
+        <header class="section-heading">
+          <div>
+            <p class="eyebrow">03 · ABOUT</p>
+            <h2>功能优先，<br />细节说话。</h2>
+          </div>
+          <p>
+            我不追求粒子、炫光或为了展示而存在的动效。这个网站使用高对比文字、克制的纸张质感和内容优先的移动端重排。
+          </p>
+        </header>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>个人作品集 · AI 求职助手项目</span>
+      <span>当前运行模式：Mock · 不需要 AI Key</span>
+    </footer>
+  </body>
 </html>

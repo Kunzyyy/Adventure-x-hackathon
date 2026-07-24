@@ -36,6 +36,14 @@ describe("employer analyze (mock)", () => {
     // uncertainties should be present
     expect(d.jobProfile.uncertainties.length).toBeGreaterThan(0);
   });
+  it("uses the requested role instead of returning a fixed fixture role", async () => {
+    const { data: d } = await employerAnalyze({
+      jobTitle: "前端开发实习生",
+      roughRequirement: "参与 React 页面和组件开发，具体到岗时间待确认",
+    });
+    expect(d.jobProfile.jobTitle).toBe("前端开发实习生");
+    expect(JSON.stringify(d.jobProfile)).not.toContain("新媒体运营实习生");
+  });
 });
 
 describe("employer generate (mock)", () => {
@@ -63,6 +71,24 @@ describe("employer generate (mock)", () => {
     });
     expect(JSON.stringify(d)).not.toContain("薪资");
     expect(JSON.stringify(d)).not.toContain("salary");
+  });
+  it("uses confirmed answers instead of fixed attendance fixture values", async () => {
+    const { data: d } = await employerGenerate({
+      jobTitle: "新媒体运营实习生",
+      roughRequirement: "会剪视频，发发小红书，最好长期实习",
+      jobProfile: EMPLOYER_JOB_PROFILE,
+      questions: EMPLOYER_QUESTIONS,
+      answers: [
+        { questionId: "eq_1", answer: "3" },
+        { questionId: "eq_2", answer: "3个月" },
+        { questionId: "eq_3", answer: "每周完成 3 条内容并复盘" },
+      ],
+    });
+    const blob = JSON.stringify(d);
+    expect(blob).toContain("每周到岗3天");
+    expect(blob).toContain("3个月");
+    expect(blob).toContain("每周完成 3 条内容并复盘");
+    expect(blob).not.toContain("每周到岗4天");
   });
 });
 

@@ -1,0 +1,65 @@
+import fs from "node:fs";
+import path from "node:path";
+import { describe, expect, test } from "vitest";
+
+const repoRoot = path.resolve(process.cwd(), "..");
+
+function readRepoFile(relativePath: string): string {
+  return fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
+}
+
+describe("approved UI integration", () => {
+  test("all public entry pages use the approved warm-paper design system", () => {
+    for (const page of ["index.html", "student.html", "enterprise.html"]) {
+      const html = readRepoFile(page);
+      expect(html).toContain('data-design-system="warm-paper-clay"');
+      expect(html).toContain('/css/approved-ui.css');
+      expect(html).not.toMatch(/cdn\.tailwindcss|three\.js|gsap/i);
+    }
+  });
+
+  test("homepage routes users into both functional product flows", () => {
+    const html = readRepoFile("index.html");
+    expect(html).toContain('href="/student.html"');
+    expect(html).toContain('href="/enterprise.html"');
+  });
+
+  test("student UI contains the approved four-step shell and all seeker endpoints", () => {
+    const html = readRepoFile("student.html");
+    for (const step of ["job", "questions", "facts", "resume"]) {
+      expect(html).toContain(`data-seeker-step="${step}"`);
+    }
+    for (const endpoint of [
+      "/api/seeker/analyze",
+      "/api/seeker/facts",
+      "/api/seeker/generate",
+    ]) {
+      expect(html).toContain(endpoint);
+    }
+    expect(html).toContain('data-role="job-profile"');
+    expect(html).toContain('data-role="facts-list"');
+    expect(html).toContain('data-role="resume-result"');
+  });
+
+  test("enterprise UI contains the approved two-step shell and employer endpoints", () => {
+    const html = readRepoFile("enterprise.html");
+    expect(html).toContain('data-employer-step="analyze"');
+    expect(html).toContain('data-employer-step="generate"');
+    expect(html).toContain("/api/employer/analyze");
+    expect(html).toContain("/api/employer/generate");
+    expect(html).toContain('data-role="employer-profile"');
+    expect(html).toContain('data-role="recruitment-kit"');
+  });
+
+  test("dynamic questions expose their question text as an accessible input label", () => {
+    const studentScript = readRepoFile("js/approved-student.js");
+    const employerScript = readRepoFile("js/approved-employer.js");
+    expect(studentScript).toContain('aria-label="${escapeHtml(question.text)}"');
+    expect(employerScript).toContain('aria-label="${escapeHtml(question.text)}"');
+  });
+
+  test("employer profile renders confirmed expected outcomes", () => {
+    const employerScript = readRepoFile("js/approved-employer.js");
+    expect(employerScript).toContain('["预期成果", profile.expectedOutcomes]');
+  });
+});

@@ -36,7 +36,7 @@ export async function employerAnalyze(req: EmployerAnalyzeRequest): Promise<Serv
     system: ANALYZE_SYSTEM,
     userBlocks: blocks,
     maxTokens: 1800,
-    mockFn: employerAnalyzeMock,
+    mockFn: () => employerAnalyzeMock(req),
     label: "employer.analyze",
     onLiveFailure: "fallback",
   });
@@ -87,7 +87,7 @@ export async function employerGenerate(req: EmployerGenerateRequest): Promise<Se
     system: GENERATE_SYSTEM,
     userBlocks: blocks,
     maxTokens: 3500,
-    mockFn: employerGenerateMock,
+    mockFn: () => employerGenerateMock(req),
     label: "employer.generate",
     onLiveFailure: "fallback",
   });

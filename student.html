@@ -1,919 +1,189 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Keal 学生端 · AI求职陪跑</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<script>tailwind.config={theme:{extend:{colors:{'space-black':'#0a0a14','tech-blue':'#3b82f6','tech-cyan':'#06b6d4','gradient-purple':'#8b5cf6','ai-glow':'#6366f1'},fontFamily:{sf:['-apple-system','BlinkMacSystemFont','"SF Pro Display"','"PingFang SC"',sans-serif]}}}}</script>
-<style>
-:root{--glass-bg:rgba(15,15,35,0.6);--glass-border:rgba(255,255,255,0.08);--glass-highlight:rgba(255,255,255,0.04);}
-*{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC",sans-serif;background:#0a0a14;color:#e2e8f0;overflow-x:hidden;-webkit-font-smoothing:antialiased;}
-#particle-canvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;}
-.nav-glass{backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);background:rgba(10,10,20,0.7);border-bottom:1px solid var(--glass-border);position:fixed;top:0;left:0;right:0;z-index:50;}
-.glass-card{background:var(--glass-bg);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border:1px solid var(--glass-border);border-radius:20px;transition:all .4s cubic-bezier(.25,.1,.25,1);position:relative;overflow:hidden;}
-.glass-card::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at top left,var(--glass-highlight),transparent 70%);pointer-events:none;}
-.glass-card:hover{border-color:rgba(99,102,241,.3);box-shadow:0 8px 40px rgba(99,102,241,.1),inset 0 1px 0 rgba(255,255,255,.05);transform:translateY(-2px);}
-.glow-btn{position:relative;overflow:hidden;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border:none;color:#fff;font-weight:600;border-radius:14px;padding:14px 32px;cursor:pointer;transition:all .4s cubic-bezier(.25,.1,.25,1);box-shadow:0 0 30px rgba(99,102,241,.3);letter-spacing:.5px;font-family:inherit;font-size:15px;}
-.glow-btn:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 0 50px rgba(99,102,241,.5);}
-.glow-btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none;}
-.glow-btn-outline{background:transparent;border:1.5px solid rgba(139,92,246,.5);color:#c4b5fd;font-weight:600;border-radius:14px;padding:14px 32px;cursor:pointer;transition:all .4s;letter-spacing:.5px;font-family:inherit;font-size:15px;}
-.glow-btn-outline:hover{border-color:#8b5cf6;box-shadow:0 0 30px rgba(139,92,246,.2);background:rgba(139,92,246,.1);transform:translateY(-2px);}
-.glow-btn-sm{padding:8px 20px;font-size:13px;border-radius:10px;}
-.page{display:none;position:relative;z-index:1;min-height:100vh;}
-.page.active{display:block;}
-.ai-input{background:rgba(20,20,40,.8);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px 20px;color:#e2e8f0;font-size:15px;transition:all .3s;width:100%;outline:none;resize:vertical;font-family:inherit;}
-.ai-input:focus{border-color:rgba(99,102,241,.5);box-shadow:0 0 20px rgba(99,102,241,.15);}
-.ai-input::placeholder{color:rgba(255,255,255,.25);}
-.typing-dots{display:flex;gap:4px;padding:8px 0;}
-.typing-dots span{width:8px;height:8px;border-radius:50%;background:#6366f1;animation:typingBounce 1.4s infinite;}
-.typing-dots span:nth-child(2){animation-delay:.2s;}
-.typing-dots span:nth-child(3){animation-delay:.4s;}
-::-webkit-scrollbar{width:6px;}
-::-webkit-scrollbar-track{background:transparent;}
-::-webkit-scrollbar-thumb{background:rgba(99,102,241,.3);border-radius:3px;}
-@keyframes typingBounce{0%,60%,100%{transform:translateY(0);opacity:.4;}30%{transform:translateY(-8px);opacity:1;}}
-@keyframes fadeInUp{from{opacity:0;transform:translateY(30px);}to{opacity:1;transform:translateY(0);}}
-.fade-in-up{animation:fadeInUp .6s ease-out forwards;}
-.fade-in-up-d1{animation:fadeInUp .6s .1s ease-out forwards;opacity:0;}
-.fade-in-up-d2{animation:fadeInUp .6s .2s ease-out forwards;opacity:0;}
+<!doctype html>
+<html lang="zh-CN" data-design-system="warm-paper-clay">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="AI 求职助手学生端：岗位理解、经历追问、事实确认与可信简历。" />
+    <meta name="theme-color" content="#f4f0e7" />
+    <title>学生端｜一份可信的简历</title>
+    <link rel="stylesheet" href="/css/approved-ui.css" />
+  </head>
+  <body
+    data-seeker-analyze="/api/seeker/analyze"
+    data-seeker-facts="/api/seeker/facts"
+    data-seeker-generate="/api/seeker/generate"
+  >
+    <a class="skip-link" href="#main">跳到主要内容</a>
+    <header class="app-header">
+      <a class="brand" href="/"><span class="brand-mark">N</span><span>YOUR NAME</span></a>
+      <div class="header-meta"><span>AI 简历工作台</span><span class="mode-pill" data-role="mode">Mock · 真实信息优先</span></div>
+    </header>
 
-/* Step wizard */
-.step-indicator{display:flex;align-items:center;justify-content:center;gap:0;margin-bottom:32px;}
-.step-dot{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.1);color:rgba(255,255,255,.3);transition:all .4s;position:relative;z-index:1;}
-.step-dot.done{background:rgba(34,197,94,.15);border-color:#22c55e;color:#22c55e;}
-.step-dot.active{background:rgba(99,102,241,.2);border-color:#818cf8;color:#a5b4fc;box-shadow:0 0 20px rgba(99,102,241,.3);}
-.step-line{width:48px;height:2px;background:rgba(255,255,255,.1);transition:all .4s;}
-.step-line.done{background:#22c55e;}
-.step-label{font-size:11px;color:rgba(255,255,255,.3);text-align:center;margin-top:6px;transition:all .4s;}
-.step-label.active{color:#a5b4fc;}
-.step-label.done{color:#22c55e;}
+    <div class="app-shell">
+      <aside class="flow-sidebar">
+        <h2>一份可信的简历</h2>
+        <p>先理解岗位，再把你的真实经历翻译成招聘方能读懂的证据。</p>
+        <nav class="step-list" aria-label="简历生成步骤">
+          <button class="step-link" type="button" data-step-target="job" aria-current="step">
+            <span class="step-number">1</span><span class="step-copy"><strong>目标岗位</strong><span>理解招聘要求</span></span>
+          </button>
+          <button class="step-link" type="button" data-step-target="questions">
+            <span class="step-number">2</span><span class="step-copy"><strong>经历追问</strong><span>挖掘可用事实</span></span>
+          </button>
+          <button class="step-link" type="button" data-step-target="facts">
+            <span class="step-number">3</span><span class="step-copy"><strong>事实确认</strong><span>修改或删除</span></span>
+          </button>
+          <button class="step-link" type="button" data-step-target="resume">
+            <span class="step-number">4</span><span class="step-copy"><strong>生成结果</strong><span>来源与风险</span></span>
+          </button>
+        </nav>
+        <div class="sidebar-note">“好简历不是看起来厉害，而是每一句都经得起追问。”</div>
+      </aside>
 
-/* Fact cards */
-.fact-card{background:rgba(20,20,45,.8);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px 20px;transition:all .3s;}
-.fact-card:hover{border-color:rgba(99,102,241,.25);}
-.fact-card.confirmed{border-color:rgba(34,197,94,.3);background:rgba(34,197,94,.05);}
-.fact-card.deleted{opacity:.3;text-decoration:line-through;pointer-events:none;}
-.fact-badge{padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600;display:inline-block;}
-.fact-badge-edu{background:rgba(59,130,246,.15);color:#60a5fa;}
-.fact-badge-proj{background:rgba(139,92,246,.15);color:#a78bfa;}
-.fact-badge-intern{background:rgba(6,182,212,.15);color:#22d3ee;}
-.fact-badge-skill{background:rgba(34,197,94,.15);color:#4ade80;}
-.fact-badge-activity{background:rgba(251,191,36,.15);color:#fbbf24;}
-.fact-badge-other{background:rgba(148,163,184,.15);color:#94a3b8;}
+      <main class="page-main" id="main">
+        <div class="notice" data-role="notice" hidden role="status" aria-live="polite"></div>
 
-/* Resume sections */
-.resume-bullet{padding:10px 14px;border-radius:10px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);margin-bottom:8px;transition:all .3s;cursor:pointer;}
-.resume-bullet:hover{background:rgba(99,102,241,.06);border-color:rgba(99,102,241,.2);}
-.resume-bullet .evidence-pop{display:none;margin-top:8px;padding:8px 12px;background:rgba(234,179,8,.08);border-left:3px solid rgba(234,179,8,.4);border-radius:0 8px 8px 0;font-size:12px;color:rgba(234,179,8,.8);}
-.resume-bullet.show-evidence .evidence-pop{display:block;}
-.resume-bullet .ev-toggle{font-size:11px;color:rgba(99,102,241,.6);margin-top:4px;}
+        <section class="flow-step" data-seeker-step="job">
+          <div class="page-intro">
+            <div>
+              <p class="eyebrow">Step 01 · Target role</p>
+              <h1>你准备申请<br />什么岗位？</h1>
+              <p>把岗位描述交给 AI。它会拆出核心任务、能力要求和招聘方可能追问的地方。</p>
+            </div>
+            <div class="progress-note">大约需要 2 分钟</div>
+          </div>
 
-/* Mode badge */
-.mode-badge{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:4px;}
-.mode-mock{background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.3);}
-.mode-live{background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.3);}
-.mode-fallback{background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.3);}
+          <div class="content-grid">
+            <form class="panel" data-role="job-form">
+              <div class="panel-header"><h2>岗位信息</h2><span>不会公开或投递</span></div>
+              <div class="panel-body">
+                <div class="field">
+                  <label for="job-title">岗位名称</label>
+                  <input class="text-input" id="job-title" name="jobTitle" value="产品设计实习生" autocomplete="organization-title" />
+                </div>
+                <div class="field">
+                  <label for="jd-text">岗位描述 JD</label>
+                  <small>直接粘贴完整内容，格式乱一点也没关系。</small>
+                  <textarea class="text-area" id="jd-text" name="jdText" required placeholder="把招聘页面上的岗位职责和任职要求粘贴到这里……"></textarea>
+                  <button class="button button-text" type="button" data-action="fill-jd">没有现成内容？填入示例</button>
+                </div>
+                <div class="field">
+                  <label for="old-resume">已有简历或经历（选填）</label>
+                  <small>可以先放一段旧简历，也可以完全从零开始。</small>
+                  <textarea class="text-area" id="old-resume" name="oldResume" placeholder="课程、项目、社团、实习都可以……"></textarea>
+                </div>
+                <div class="button-row">
+                  <a class="button" href="/">返回首页</a>
+                  <button class="button button-primary" type="submit" data-role="analyze-button">分析岗位，开始追问 →</button>
+                </div>
+              </div>
+            </form>
 
-/* match */
-.match-bar{height:10px;border-radius:5px;background:rgba(255,255,255,.06);overflow:hidden;}
-.match-bar-fill{height:100%;border-radius:5px;background:linear-gradient(90deg,#3b82f6,#8b5cf6,#06b6d4);transition:width 1.5s ease-out;}
+            <aside class="aside-stack">
+              <div class="tip-card">
+                <h3>为什么先看 JD？</h3>
+                <ul>
+                  <li>同一段经历，面对不同岗位应该强调不同部分。</li>
+                  <li>AI 只有理解目标，才能提出有用的问题。</li>
+                  <li>不会用一个不透明分数判断你“够不够格”。</li>
+                </ul>
+              </div>
+              <div class="status-card"><strong>当前模式</strong><span>先使用 Mock 数据跑通完整流程。接入真实 AI 后，接口结构保持不变。</span></div>
+            </aside>
+          </div>
+        </section>
 
-/* score ring */
-.score-ring{position:relative;width:80px;height:80px;}
-.score-ring svg{transform:rotate(-90deg);}
-.score-ring circle{fill:none;stroke-width:6;stroke-linecap:round;}
-.score-ring .bg-ring{stroke:rgba(255,255,255,.06);}
+        <section class="flow-step" data-seeker-step="questions" hidden>
+          <div class="page-intro">
+            <div>
+              <p class="eyebrow">Step 02 · Evidence interview</p>
+              <h1>先别急着包装，<br />把事实说清楚。</h1>
+              <p>问题来自刚才的岗位要求。不确定的数字可以直接说不记得，不需要为了“好看”编成果。</p>
+            </div>
+            <div class="progress-note" data-role="question-count">等待岗位分析</div>
+          </div>
 
-/* Template preview styles */
-.tpl-tabs{display:flex;gap:0;margin-bottom:16px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.08);}
-.tpl-tab{padding:10px 18px;font-size:13px;cursor:pointer;background:transparent;color:rgba(255,255,255,.5);border:none;transition:all .25s;font-family:inherit;flex:1;text-align:center;}
-.tpl-tab:not(:last-child){border-right:1px solid rgba(255,255,255,.08);}
-.tpl-tab.active{background:linear-gradient(135deg,rgba(59,130,246,.2),rgba(139,92,246,.2));color:#e2e8f0;}
-.tpl-tab:hover:not(.active){color:rgba(255,255,255,.8);background:rgba(255,255,255,.03);}
-.a4-wrap{overflow-x:auto;display:flex;justify-content:center;padding:16px 0;}
-.a4-page{width:794px;min-height:1123px;background:#fff;color:#1a1a1a;box-shadow:0 8px 40px rgba(0,0,0,.3);border-radius:4px;font-size:12px;line-height:1.7;flex-shrink:0;}
-.btn-export{display:inline-flex;align-items:center;gap:6px;padding:10px 22px;border-radius:12px;border:none;font-size:14px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#fff;transition:all .3s;box-shadow:0 0 20px rgba(99,102,241,.3);font-family:inherit;}
-.btn-export:hover{transform:translateY(-2px);box-shadow:0 0 35px rgba(99,102,241,.5);}
-.tpl-1{padding:56px 64px;}.tpl-1 .t1-header{text-align:center;margin-bottom:32px;}.tpl-1 .t1-name{font-size:28px;font-weight:700;letter-spacing:4px;}.tpl-1 .t1-info{font-size:12px;color:#888;margin-top:8px;}.tpl-1 .t1-section{margin-bottom:24px;}.tpl-1 .t1-section h2{font-size:14px;font-weight:700;text-transform:uppercase;border-bottom:2px solid #1a1a1a;padding-bottom:4px;margin-bottom:12px;letter-spacing:2px;}.tpl-1 .t1-exp{margin-bottom:16px;}.tpl-1 .t1-exp-head{display:flex;justify-content:space-between;font-weight:700;font-size:13px;}.tpl-1 .t1-exp-role{color:#666;font-size:11px;}.tpl-1 .t1-exp-desc{font-size:11px;color:#555;margin-top:4px;}
-.tpl-2{display:flex;}.tpl-2 .t2-sidebar{width:220px;background:#1a1a2e;color:#e0e0e8;padding:48px 28px;}.tpl-2 .t2-name{font-size:24px;font-weight:700;margin-bottom:4px;}.tpl-2 .t2-title{font-size:13px;color:#7B8AB8;margin-bottom:28px;}.tpl-2 .t2-sec{margin-bottom:24px;}.tpl-2 .t2-sec h3{font-size:12px;text-transform:uppercase;color:#7B8AB8;border-bottom:1px solid #2a2a4e;padding-bottom:4px;margin-bottom:8px;letter-spacing:1px;}.tpl-2 .t2-sec p,.tpl-2 .t2-sec li{font-size:11px;line-height:1.8;list-style:none;}.tpl-2 .t2-main{flex:1;padding:48px 40px;}.tpl-2 .t2-main h2{font-size:14px;font-weight:700;color:#1a1a2e;border-bottom:2px solid #1a1a2e;padding-bottom:4px;margin-bottom:12px;}.tpl-2 .t2-exp{margin-bottom:16px;}.tpl-2 .t2-exp-head{display:flex;justify-content:space-between;font-weight:700;font-size:13px;}.tpl-2 .t2-exp-role{color:#666;font-size:12px;font-style:italic;}.tpl-2 .t2-exp-desc{font-size:11px;color:#555;margin-top:4px;}
-.tpl-3{padding:64px 72px;}.tpl-3 .t3-header{margin-bottom:36px;}.tpl-3 .t3-name{font-size:32px;font-weight:300;letter-spacing:6px;}.tpl-3 .t3-info{font-size:12px;color:#aaa;margin-top:6px;letter-spacing:1px;}.tpl-3 .t3-grid{display:grid;grid-template-columns:1fr 1fr;gap:32px;}.tpl-3 .t3-sec{margin-bottom:24px;}.tpl-3 .t3-sec h2{font-size:11px;font-weight:400;color:#aaa;text-transform:uppercase;letter-spacing:3px;margin-bottom:12px;}.tpl-3 .t3-sec p,.tpl-3 .t3-sec li{font-size:12px;color:#444;line-height:1.9;}
-.tpl-4{font-family:"PingFang SC","Microsoft YaHei",sans-serif;}.tpl-4 .t4-header{background:#1a3a5c;color:#fff;padding:36px 48px;display:flex;justify-content:space-between;align-items:center;}.tpl-4 .t4-name{font-size:28px;font-weight:700;}.tpl-4 .t4-info{font-size:11px;color:#bdd5e7;line-height:1.8;}.tpl-4 .t4-body{padding:32px 48px;display:flex;gap:32px;}.tpl-4 .t4-col-main{flex:1;}.tpl-4 .t4-col-side{width:200px;}.tpl-4 .t4-sec{margin-bottom:20px;}.tpl-4 .t4-sec h2{font-size:13px;font-weight:700;text-transform:uppercase;color:#1a3a5c;border-bottom:2px solid #1a3a5c;padding-bottom:3px;margin-bottom:10px;}.tpl-4 .t4-exp{margin-bottom:12px;}.tpl-4 .t4-exp-head{display:flex;justify-content:space-between;font-weight:700;font-size:13px;}.tpl-4 .t4-exp-role{color:#1a3a5c;font-size:12px;font-weight:600;}.tpl-4 .t4-exp-desc{font-size:12px;color:#555;margin-top:4px;line-height:1.7;}.tpl-4 .t4-col-side .t4-sec h2{font-size:12px;}.tpl-4 .t4-edu-item{margin-bottom:8px;}.tpl-4 .t4-edu-item .t4-school{font-weight:700;font-size:12px;}.tpl-4 .t4-edu-item .t4-detail{font-size:11px;color:#777;}.tpl-4 .t4-skills{font-size:11px;color:#555;line-height:1.8;}.tpl-4 .t4-contact{font-size:11px;color:#555;margin-bottom:3px;}
-@media(max-width:768px){.a4-page{width:100%;transform:scale(.7);transform-origin:top center;}.tpl-2{flex-direction:column;}.tpl-2 .t2-sidebar{width:100%;}.tpl-4 .t4-body{flex-direction:column;}.tpl-4 .t4-col-side{width:100%;}.step-line{width:24px;}}
+          <div class="content-grid">
+            <form class="stack" data-role="questions-form">
+              <div class="question-list" data-role="questions-list"></div>
+              <div class="button-row">
+                <button class="button" type="button" data-step-target="job">← 返回修改岗位</button>
+                <button class="button button-primary" type="submit" data-role="facts-button">提炼事实，交给我确认 →</button>
+              </div>
+            </form>
+            <aside class="aside-stack">
+              <div class="profile-card" data-role="job-profile">
+                <h3>岗位理解</h3>
+                <p>完成第一步后，这里会显示岗位职责、核心能力和仍需确认的信息。</p>
+              </div>
+              <div class="status-card"><strong>回答原则</strong><span>写自己真实做过什么。系统只会从你的原话中提炼事实。</span></div>
+            </aside>
+          </div>
+        </section>
 
-/* Resume Tab Switch */
-.resume-tabs{display:inline-flex;border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,.1);}
-.resume-tab{padding:10px 24px;font-size:14px;font-weight:600;cursor:pointer;background:transparent;color:rgba(255,255,255,.45);border:none;transition:all .3s;font-family:inherit;white-space:nowrap;}
-.resume-tab:first-child{border-right:1px solid rgba(255,255,255,.1);}
-.resume-tab.active{background:linear-gradient(135deg,rgba(59,130,246,.25),rgba(139,92,246,.25));color:#e2e8f0;}
-.resume-tab:hover:not(.active){background:rgba(255,255,255,.04);color:rgba(255,255,255,.7);}
-.resume-sub-section{display:none;}
-.resume-sub-section.active{display:block;}
+        <section class="flow-step" data-seeker-step="facts" hidden>
+          <div class="page-intro">
+            <div>
+              <p class="eyebrow">Step 03 · Fact review</p>
+              <h1>这些事实，<br />说得准确吗？</h1>
+              <p>逐条核对。可以直接修改措辞或取消确认，未确认的信息不会进入简历。</p>
+            </div>
+            <div class="progress-note" data-role="fact-count">0 条待确认</div>
+          </div>
 
-</style>
-</head>
-<body>
+          <div class="content-grid">
+            <div>
+              <div class="fact-list" data-role="facts-list"></div>
+              <div class="button-row">
+                <button class="button" type="button" data-step-target="questions">← 返回修改回答</button>
+                <button class="button button-primary" type="button" data-action="generate-resume" data-role="generate-button">确认事实，生成简历 →</button>
+              </div>
+            </div>
+            <aside class="aside-stack">
+              <div class="tip-card">
+                <h3>为什么必须确认？</h3>
+                <ul>
+                  <li>模型提炼可能理解错你的角色。</li>
+                  <li>简历里的每一句都应该能回到原话。</li>
+                  <li>面试前你能提前发现缺失信息与风险。</li>
+                </ul>
+              </div>
+              <div class="status-card" data-role="missing-information"><strong>建议补充的信息</strong><span>提交回答后显示。</span></div>
+            </aside>
+          </div>
+        </section>
 
-<canvas id="particle-canvas"></canvas>
+        <section class="flow-step" data-seeker-step="resume" hidden>
+          <div class="page-intro">
+            <div>
+              <p class="eyebrow">Step 04 · Resume result</p>
+              <h1>一份可信的简历，<br />和它的证据。</h1>
+              <p>没有虚构的 HR 评分。你看到的是简历正文、事实来源，以及面试前需要补充的部分。</p>
+            </div>
+            <div class="progress-note">每条要点可追溯</div>
+          </div>
 
-<!-- ===== NAV ===== -->
-<nav class="nav-glass px-4 md:px-8 py-3 flex items-center justify-between">
-  <div class="flex items-center gap-3">
-    <span class="text-xl font-bold bg-gradient-to-r from-tech-blue to-gradient-purple bg-clip-text text-transparent">Keal</span>
-    <span class="text-xs text-gray-500 hidden sm:inline">学生端</span>
-  </div>
-  <div class="flex items-center gap-1 md:gap-2">
-    <button class="glow-btn-outline glow-btn-sm !text-xs !py-2 !px-4" onclick="nav('resume')" id="nav-resume">📋 AI简历</button>
-    <button class="glow-btn-outline glow-btn-sm !text-xs !py-2 !px-4" onclick="nav('match')" id="nav-match">🎯 岗位匹配</button>
-    <button class="glow-btn-outline glow-btn-sm !text-xs !py-2 !px-4" onclick="nav('interview')" id="nav-interview">🎤 模拟面试</button>
-    <button class="glow-btn glow-btn-sm !text-xs !py-2 !px-4" onclick="openResumeEditor()" id="nav-editor">📝 模板编辑器</button>
-  </div>
-</nav>
-
-<!-- ==================== PAGE 1: AI简历（4步流程） ==================== -->
-<div id="page-resume" class="page active">
-<div class="min-h-screen pt-20 pb-16 px-4">
-<div class="max-w-3xl mx-auto">
-
-  <!-- Step Indicator -->
-  <div class="text-center mb-6 fade-in-up">
-    <span class="mode-badge mode-mock" id="resume-mode-badge">🔸 MOCK 演示数据</span>
-    <h2 class="text-2xl md:text-3xl font-bold text-white mt-3 mb-1">AI简历生成</h2>
-    <p class="text-gray-400 text-sm">4步生成可追溯来源的结构化简历</p>
-  </div>
-
-  <!-- Tab Switch -->
-  <div class="flex justify-center mb-6 fade-in-up-d1">
-    <div class="resume-tabs">
-      <button class="resume-tab active" onclick="switchResumeTab('standard')" id="tab-standard">📋 标准流程</button>
-      <button class="resume-tab" onclick="switchResumeTab('quick')" id="tab-quick">✨ 快速优化</button>
-    </div>
-  </div>
-
-  <div id="resume-standard" class="resume-sub-section active">
-  <div class="step-indicator fade-in-up-d1" id="step-indicator">
-    <div class="flex flex-col items-center"><div class="step-dot active" id="sd1">1</div><div class="step-label active" id="sl1">输入JD</div></div>
-    <div class="step-line" id="sln1"></div>
-    <div class="flex flex-col items-center"><div class="step-dot" id="sd2">2</div><div class="step-label" id="sl2">AI提问</div></div>
-    <div class="step-line" id="sln2"></div>
-    <div class="flex flex-col items-center"><div class="step-dot" id="sd3">3</div><div class="step-label" id="sl3">确认事实</div></div>
-    <div class="step-line" id="sln3"></div>
-    <div class="flex flex-col items-center"><div class="step-dot" id="sd4">4</div><div class="step-label" id="sl4">生成简历</div></div>
-  </div>
-
-  <!-- STEP 1: JD Input -->
-  <div id="step1" class="glass-card p-6 md:p-8 fade-in-up-d2">
-    <h3 class="text-white font-semibold text-lg mb-2">📝 输入目标岗位</h3>
-    <p class="text-gray-400 text-sm mb-5">粘贴你感兴趣的岗位描述（JD），AI会分析岗位结构并生成个性化问题</p>
-    <label class="text-sm text-gray-400 mb-1.5 block">目标岗位名称</label>
-    <input type="text" class="ai-input mb-4" id="jd-title" placeholder="例如：新媒体运营实习生">
-    <label class="text-sm text-gray-400 mb-1.5 block">岗位描述 (JD) <span class="text-xs text-gray-600">— 可粘贴职位详情</span></label>
-    <textarea class="ai-input h-32" id="jd-text" placeholder="粘贴岗位描述内容...&#10;&#10;例如：&#10;负责短视频和小红书内容制作，跟踪内容数据并参与复盘。要求具备基础视频剪辑能力，每周到岗4天，可连续实习6个月。"></textarea>
-    <label class="text-sm text-gray-400 mb-1.5 block mt-4">旧简历（可选）<span class="text-xs text-gray-600"> — 可粘贴已有简历文本</span></label>
-    <textarea class="ai-input h-20" id="jd-old-resume" placeholder="可选：粘贴已有简历..."></textarea>
-    <button class="glow-btn w-full mt-5" onclick="step1Submit()">🚀 AI分析岗位 →</button>
-  </div>
-
-  <!-- Loading -->
-  <div id="step-loading" class="hidden glass-card p-8 text-center fade-in-up">
-    <div class="flex items-center justify-center gap-3 mb-3"><div class="typing-dots"><span></span><span></span><span></span></div></div>
-    <p class="text-gray-400 text-sm" id="loading-text">AI正在分析...</p>
-  </div>
-
-  <!-- STEP 2: AI Questions -->
-  <div id="step2" class="hidden space-y-4 fade-in-up">
-    <div class="glass-card p-6 md:p-8">
-      <div class="flex items-center justify-between mb-4">
-        <div><h3 class="text-white font-semibold text-lg">🤖 AI动态提问</h3><p class="text-gray-400 text-sm">根据岗位分析，AI生成了 <span id="q-count">5</span> 道问题</p></div>
-        <span class="mode-badge mode-mock" id="step2-mode">🔸 MOCK</span>
-      </div>
-      <div class="space-y-4" id="questions-container"></div>
-      <button class="glow-btn w-full mt-5" onclick="step2Submit()" id="step2-btn">📤 提交回答 →</button>
-    </div>
-  </div>
-
-  <!-- STEP 3: Fact Cards -->
-  <div id="step3" class="hidden space-y-4 fade-in-up">
-    <div class="glass-card p-6 md:p-8">
-      <div class="flex items-center justify-between mb-2"><h3 class="text-white font-semibold text-lg">🔍 AI提炼的事实卡片</h3><span class="mode-badge mode-mock">🔸 MOCK</span></div>
-      <p class="text-gray-400 text-sm mb-1">AI从你的回答中提取了以下事实。请逐条<strong class="text-green-400">确认</strong>、<strong class="text-amber-400">编辑</strong>或<strong class="text-red-400">删除</strong>。</p>
-      <p class="text-xs text-amber-400/70 mb-5">⚠️ 只有确认后的事实才会进入简历生成。每条事实都可追溯到你的原话。</p>
-      <div class="space-y-3" id="facts-container"></div>
-      <div class="flex justify-between items-center mt-5 pt-4 border-t border-white/5">
-        <span class="text-sm text-gray-400">已确认：<strong class="text-green-400" id="confirmed-count">0</strong> / <span id="total-fact-count">0</span></span>
-        <button class="glow-btn" onclick="step3Submit()" id="step3-btn" disabled>✨ 生成结构化简历 →</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- STEP 4: Generated Resume -->
-  <div id="step4" class="hidden space-y-6 fade-in-up">
-    <!-- Resume Display -->
-    <div class="glass-card p-6 md:p-8">
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
-        <div><h3 class="text-white font-semibold text-lg">📄 结构化简历</h3><p class="text-gray-400 text-sm">点击每条内容可查看事实来源</p></div>
-        <span class="mode-badge mode-mock" id="step4-mode">🔸 MOCK</span>
-      </div>
-      <div id="resume-display" class="space-y-6"></div>
+          <div class="content-grid content-grid-wide">
+            <article class="resume-paper" data-role="resume-result">
+              <h2>等待生成结果</h2>
+              <p>完成前三步后，结构化简历会显示在这里。</p>
+            </article>
+            <aside class="aside-stack">
+              <div class="result-card" data-role="resume-missing"><h3>缺失信息</h3><p>生成后显示。</p></div>
+              <div class="result-card" data-role="interview-risks"><h3>面试追问风险</h3><p>生成后显示。</p></div>
+              <button class="button" type="button" data-action="restart">重新开始</button>
+            </aside>
+          </div>
+        </section>
+      </main>
     </div>
 
-    <!-- Missing Info & Risks -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="extra-info-container"></div>
-
-    <!-- Template Preview -->
-    <div class="glass-card p-6 md:p-8">
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-        <div><h3 class="text-white font-semibold text-lg">📄 简历模板预览</h3><p class="text-gray-400 text-sm">选择模板后导出PDF</p></div>
-        <button class="btn-export" onclick="exportResumePDF()">📥 导出PDF</button>
-      </div>
-      <div class="tpl-tabs" id="resumeTplTabs">
-        <button class="tpl-tab active" data-tplt="1">经典模板</button>
-        <button class="tpl-tab" data-tplt="2">现代简约</button>
-        <button class="tpl-tab" data-tplt="3">极简风格</button>
-        <button class="tpl-tab" data-tplt="4">商务蓝</button>
-      </div>
-      <div class="a4-wrap"><div class="a4-page" id="a4page"></div></div>
-    </div>
-
-    <!-- Actions -->
-    <div class="flex gap-3 justify-center">
-      <button class="glow-btn-outline" onclick="resetAll()">🔄 重新开始</button>
-      <button class="glow-btn" onclick="nav('match')">🎯 岗位匹配 →</button>
-    </div>
-  </div>
-
-</div>
-</div>
-</div>
-  </div><!-- end resume-standard -->
-
-  <!-- ===== 快速优化模式 ===== -->
-  <div id="resume-quick" class="resume-sub-section">
-    <div class="glass-card p-6 md:p-8 fade-in-up">
-      <h3 class="text-white font-semibold text-lg mb-2">✨ AI简历快速优化</h3>
-      <p class="text-gray-400 text-sm mb-5">粘贴一段经历描述，AI用STAR法则帮你优化表达，不添加虚构内容</p>
-      <div><label class="text-sm text-gray-400 mb-1.5 block">你的原始描述</label><textarea class="ai-input h-24" id="quick-input" placeholder="例如：我在学校美食社负责抖音账号，拍视频和剪辑。"></textarea></div>
-      <div class="flex gap-3 mt-3">
-        <select class="ai-input flex-1 !w-auto" id="quick-type" style="background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%236366f1' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 16px center;appearance:none;-webkit-appearance:none;">
-          <option value="auto">自动识别类型</option><option value="project">项目经历</option><option value="intern">实习经历</option><option value="club">社团/活动经历</option><option value="skill">技能描述</option>
-        </select>
-        <button class="glow-btn flex-shrink-0" onclick="quickOptimize()">🚀 AI一键优化</button>
-      </div>
-    </div>
-
-    <div id="quick-loading" class="hidden glass-card p-8 mt-4 text-center">
-      <div class="flex items-center justify-center gap-3 mb-3"><div class="typing-dots"><span></span><span></span><span></span></div></div>
-      <p class="text-gray-400 text-sm">AI正在优化你的描述...</p>
-    </div>
-
-    <div id="quick-results" class="hidden space-y-6 mt-6">
-      <div class="glass-card p-6 fade-in-up">
-        <h3 class="text-white font-semibold text-lg mb-4">📊 优化评分</h3>
-        <div class="grid grid-cols-3 gap-4">
-          <div class="text-center p-4 rounded-xl bg-white/3 border border-white/5"><div class="text-3xl font-bold text-green-400" id="qscore-quantify">--</div><p class="text-xs text-gray-400 mt-1">量化提升</p></div>
-          <div class="text-center p-4 rounded-xl bg-white/3 border border-white/5"><div class="text-3xl font-bold text-tech-cyan" id="qscore-structure">--</div><p class="text-xs text-gray-400 mt-1">结构化</p></div>
-          <div class="text-center p-4 rounded-xl bg-white/3 border border-white/5"><div class="text-3xl font-bold text-gradient-purple" id="qscore-impact">--</div><p class="text-xs text-gray-400 mt-1">影响力</p></div>
-        </div>
-      </div>
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="glass-card p-6">
-          <div class="flex items-center gap-2 mb-4"><span class="text-red-400 text-lg">📋</span><h3 class="text-white font-semibold">原始描述</h3><span class="text-xs text-red-400/60 ml-auto">优化前</span></div>
-          <div class="p-4 rounded-xl bg-red-500/5 border-l-3 border-red-500/50"><p class="text-gray-300 text-sm leading-relaxed" id="quick-before"></p></div>
-        </div>
-        <div class="glass-card p-6 border-indigo-500/20">
-          <div class="flex items-center gap-2 mb-4"><span class="text-green-400 text-lg">✨</span><h3 class="text-white font-semibold">AI优化版</h3><span class="text-xs text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full ml-auto">STAR法则</span></div>
-          <div class="p-4 rounded-xl bg-green-500/5 border-l-3 border-green-500/50"><p class="text-gray-200 text-sm leading-relaxed" id="quick-after"></p></div>
-        </div>
-      </div>
-      <div class="flex gap-3 justify-center">
-        <button class="glow-btn-outline" onclick="resetQuickOptimizer()">🔄 再优化一段</button>
-        <button class="glow-btn" onclick="openResumeEditor()">📝 用模板生成简历</button>
-        <button class="glow-btn-outline" onclick="nav('match')">🎯 岗位匹配 →</button>
-      </div>
-    </div>
-
-    <!-- Quick Template Preview -->
-    <div id="quick-tpl-section" class="hidden glass-card p-6 md:p-8 mt-6 fade-in-up">
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-        <div><h3 class="text-white font-semibold text-lg">📄 简历模板预览</h3><p class="text-gray-400 text-sm">选择模板后导出PDF</p></div>
-        <button class="btn-export" onclick="exportQuickResumePDF()">📥 导出PDF</button>
-      </div>
-      <div class="tpl-tabs" id="quickTplTabs">
-        <button class="tpl-tab active" data-tplt="1">经典模板</button>
-        <button class="tpl-tab" data-tplt="2">现代简约</button>
-        <button class="tpl-tab" data-tplt="3">极简风格</button>
-        <button class="tpl-tab" data-tplt="4">商务蓝</button>
-      </div>
-      <div class="a4-wrap"><div class="a4-page" id="quick-a4page"></div></div>
-    </div>
-  </div><!-- end resume-quick -->
-
-</div>
-</div>
-</div>
-
-<!-- ==================== PAGE 2: 岗位匹配 ==================== -->
-<div id="page-match" class="page">
-<div class="min-h-screen pt-24 pb-16 px-4">
-<div class="max-w-4xl mx-auto">
-  <div class="text-center mb-8 fade-in-up">
-    <span class="text-sm text-gradient-purple bg-gradient-purple/10 px-4 py-1.5 rounded-full">🎯 AI岗位匹配</span>
-    <h2 class="text-3xl md:text-4xl font-bold text-white mt-4 mb-3">智能岗位匹配</h2>
-    <p class="text-gray-400">输入目标岗位，AI分析你的竞争力与岗位的匹配度</p>
-  </div>
-  <div class="glass-card p-6 md:p-8 mb-6" id="match-input-card">
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-      <div><label class="text-sm text-gray-400 mb-1.5 block">目标岗位</label><input type="text" placeholder="例如：产品经理" class="ai-input" id="match-job-input"></div>
-      <div><label class="text-sm text-gray-400 mb-1.5 block">目标公司（可选）</label><input type="text" placeholder="例如：字节跳动" class="ai-input" id="match-company-input"></div>
-    </div>
-    <div><label class="text-sm text-gray-400 mb-1.5 block">你的核心技能（用逗号分隔）</label><input type="text" placeholder="例如：内容运营, 数据分析, Photoshop" class="ai-input" id="match-skills-input"></div>
-    <button class="glow-btn w-full mt-4" onclick="analyzeMatch()">🔍 开始匹配分析</button>
-  </div>
-  <div id="match-loading" class="hidden glass-card p-8 mb-6 text-center">
-    <div class="flex justify-center gap-3 mb-3"><div class="typing-dots"><span></span><span></span><span></span></div></div>
-    <p class="text-gray-400 text-sm">AI正在分析岗位需求...</p>
-  </div>
-  <div id="match-results" class="hidden space-y-6"></div>
-</div>
-</div>
-</div>
-
-<!-- ==================== PAGE 3: 模拟面试 ==================== -->
-<div id="page-interview" class="page">
-<div class="min-h-screen pt-24 pb-16 px-4">
-<div class="max-w-4xl mx-auto">
-  <div class="text-center mb-10 fade-in-up">
-    <span class="text-sm text-gradient-purple bg-gradient-purple/10 px-4 py-1.5 rounded-full">🎤 AI模拟面试</span>
-    <h2 class="text-3xl md:text-4xl font-bold text-white mt-4 mb-3">AI面试官已就绪</h2>
-    <p class="text-gray-400">选择目标岗位，AI将自动生成专业面试问题</p>
-  </div>
-  <div class="glass-card p-6 mb-6 max-w-xl mx-auto" id="interview-setup">
-    <label class="text-sm text-gray-400 mb-2 block">目标岗位</label>
-    <select class="ai-input mb-4" id="interview-job" style="background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%236366f1' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 16px center;appearance:none;-webkit-appearance:none;">
-      <option value="">选择你想面试的岗位...</option><option>产品经理（互联网）</option><option>新媒体运营</option><option>前端开发工程师</option><option>市场推广</option><option>人力资源</option><option>数据分析师</option>
-    </select>
-    <button class="glow-btn w-full" onclick="startInterview()">开始AI面试 →</button>
-  </div>
-  <div id="interview-interface" class="hidden glass-card p-6 md:p-8">
-    <div class="flex items-center gap-4 mb-6 pb-6 border-b border-white/5">
-      <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-2xl shadow-lg shadow-purple-500/20">🎤</div>
-      <div><h3 class="text-white font-semibold text-lg">AI面试官</h3><p class="text-sm text-gray-400" id="interview-job-display">--</p></div>
-      <div class="ml-auto flex items-center gap-2"><span class="text-xs text-gray-500">第</span><span class="text-xl font-bold text-tech-cyan" id="interview-round-num">1</span><span class="text-xs text-gray-500">/3轮</span></div>
-    </div>
-    <div class="chat-bubble-ai mb-6" id="interview-question" style="background:rgba(30,30,60,.8);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.06);border-radius:18px 18px 18px 4px;padding:14px 20px;color:#e2e8f0;"></div>
-    <div class="mb-6"><textarea class="ai-input h-28 resize-none" id="interview-answer" placeholder="输入你的回答..."></textarea><button class="glow-btn mt-3 w-full" id="interview-submit-btn" onclick="submitInterviewAnswer()">提交回答</button></div>
-    <div id="interview-scores" class="hidden space-y-4 mt-6 pt-6 border-t border-white/5">
-      <h3 class="text-white font-semibold mb-3">📊 AI评分</h3>
-      <div class="grid grid-cols-3 gap-4" id="interview-score-cards"></div>
-      <p class="text-sm text-gray-400 mt-3" id="interview-feedback"></p>
-      <button class="glow-btn-outline w-full mt-3" id="interview-next-btn" onclick="nextInterviewRound()">下一题 →</button>
-    </div>
-  </div>
-</div>
-</div>
-</div>
-
-<script>
-/* ===== Particle Background ===== */
-class ParticleSystem{constructor(){this.canvas=document.getElementById('particle-canvas');this.ctx=this.canvas.getContext('2d');this.particles=[];this.resize();window.addEventListener('resize',()=>this.resize());for(let i=0;i<50;i++)this.particles.push({x:Math.random()*this.canvas.width,y:Math.random()*this.canvas.height,r:Math.random()*1.5+.5,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,a:Math.random()*.3+.1});this.animate();}
-resize(){this.canvas.width=window.innerWidth;this.canvas.height=window.innerHeight;}
-animate(){this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height);this.particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>this.canvas.width)p.vx*=-1;if(p.y<0||p.y>this.canvas.height)p.vy*=-1;this.ctx.beginPath();this.ctx.arc(p.x,p.y,p.r,0,Math.PI*2);this.ctx.fillStyle=`rgba(99,102,241,${p.a})`;this.ctx.fill();});requestAnimationFrame(()=>this.animate());}}
-
-/* ===== Navigation ===== */
-function nav(page){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById('page-'+page).classList.add('active');document.querySelectorAll('[id^="nav-"]').forEach(b=>b.style.boxShadow='');var nb=document.getElementById('nav-'+page);if(nb)nb.style.boxShadow='0 0 15px rgba(99,102,241,.3)';window.scrollTo(0,0);}
-
-/* ===== Step Indicator ===== */
-function setStep(n){
-  for(var i=1;i<=4;i++){
-    var dot=document.getElementById('sd'+i),lab=document.getElementById('sl'+i);
-    dot.classList.remove('active','done');lab.classList.remove('active','done');
-    if(i<n){dot.classList.add('done');lab.classList.add('done');}
-    if(i===n){dot.classList.add('active');lab.classList.add('active');dot.textContent=i===n&&n===4?'✓':i;}
-    if(i>n){dot.textContent=i;}
-  }
-  for(var i=1;i<=3;i++){var ln=document.getElementById('sln'+i);ln.classList.toggle('done',i<n);}
-}
-
-/* ================================================================
-   API CLIENT — real fetch('/api/...') against the contract endpoints.
-   Mode badges reflect the real response mode (mock/live/fallback).
-   ================================================================ */
-var currentMode='mock';
-var jobProfile=null, questions=[], facts=[], generatedResume=null, missingInfo=[], interviewRisks=[];
-
-function setModeBadge(mode){
-  currentMode=mode||'mock';
-  var badges=document.querySelectorAll('.mode-badge');
-  badges.forEach(function(b){
-    b.classList.remove('mode-mock','mode-live','mode-fallback');
-    b.classList.add('mode-'+(mode||'mock'));
-    b.textContent = mode==='live'?'🟢 LIVE 真实AI'
-      : mode==='fallback'?'⚠️ FALLBACK 降级数据'
-      : '🔸 MOCK 演示数据';
-  });
-}
-
-/** Parse the unified APIResponse. Throws on network failure; returns {ok,data,error,mode}. */
-async function api(url,body){
-  var res;
-  try{
-    res=await fetch(url,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(body),
-    });
-  }catch(e){
-    throw new Error('网络错误：无法连接服务器 ('+url+')');
-  }
-  var text=await res.text();
-  var json;
-  try{json=JSON.parse(text);}catch(e){throw new Error('服务器返回不是合法JSON');}
-  return json;
-}
-
-/** Render a unified error for the user. */
-function showApiError(json,where){
-  var msg=(json&&json.error&&json.error.message)?json.error.message:'请求失败';
-  var fe=json&&json.error&&json.error.fieldErrors;
-  if(fe){
-    var parts=[];
-    Object.keys(fe).forEach(function(k){parts.push(k+': '+(fe[k]||[]).join('、'));});
-    msg=msg+'\n'+parts.join('\n');
-  }
-  alert('['+(where||'')+'] '+msg);
-}
-
-/* ===== STEP 1: Submit JD → /api/seeker/analyze ===== */
-async function step1Submit(){
-  var title=document.getElementById('jd-title').value.trim();
-  var text=document.getElementById('jd-text').value.trim();
-  var oldResume=document.getElementById('jd-old-resume').value.trim();
-  if(!title||!text){alert('请填写岗位名称和岗位描述');return;}
-  // Merge job title into jdText per contract (no separate jobTitle request field).
-  var jdText = title + '\n' + text;
-  document.getElementById('step1').classList.add('hidden');
-  var load=document.getElementById('step-loading');load.classList.remove('hidden');
-  document.getElementById('loading-text').textContent='AI正在分析岗位结构...';
-  try{
-    var json=await api('/api/seeker/analyze', oldResume?{jdText:jdText,oldResume:oldResume}:{jdText:jdText});
-    if(!json.ok){showApiError(json,'岗位分析');load.classList.add('hidden');document.getElementById('step1').classList.remove('hidden');return;}
-    setModeBadge(json.mode);
-    jobProfile=json.data.jobProfile;
-    // Ensure all contract arrays exist (defensive).
-    ['responsibilities','coreCompetencies','mustHaves','niceToHaves','expectedOutcomes','constraints','keywords','uncertainties'].forEach(function(k){
-      if(!Array.isArray(jobProfile[k]))jobProfile[k]=[];
-    });
-    questions=json.data.questions;
-    load.classList.add('hidden');
-    setStep(2);
-    renderQuestions();
-    document.getElementById('step2').classList.remove('hidden');
-    document.getElementById('step2').scrollIntoView({behavior:'smooth',block:'start'});
-  }catch(e){
-    load.classList.add('hidden');
-    document.getElementById('step1').classList.remove('hidden');
-    alert('岗位分析失败：'+e.message);
-  }
-}
-
-/* ===== STEP 2: Render Questions ===== */
-function renderQuestions(){
-  document.getElementById('q-count').textContent=questions.length;
-  var html='';
-  questions.forEach(function(q,i){
-    var inputHtml;
-    if(q.answerType==='choice'){
-      inputHtml='<select class="ai-input" id="ans-'+q.id+'">'+(q.options||[]).map(function(o){return '<option value="'+o+'">'+o+'</option>';}).join('')+'</select>';
-    }else{
-      inputHtml='<textarea class="ai-input '+(q.answerType==='number'?'h-12':'h-20')+' text-sm" id="ans-'+q.id+'" placeholder="输入你的回答..."></textarea>';
-    }
-    html+='<div class="fact-card"><div class="flex items-start justify-between mb-2"><div><span class="text-xs text-gray-500">问题 '+(i+1)+'</span> <span class="text-xs '+(q.required?'text-red-400':'text-gray-500')+'">'+(q.required?'*必答':'选答')+'</span> <span class="text-xs text-tech-cyan ml-2">'+(q.answerType==='choice'?'选择题':q.answerType==='number'?'数字题':'文本题')+'</span></div><span class="text-xs text-gray-500">ID: '+q.id+'</span></div><p class="text-gray-200 text-sm mb-2">'+q.text+'</p><p class="text-xs text-gray-500 mb-3">💡 AI关注点：'+q.reason+'</p>'+inputHtml+'</div>';
-  });
-  document.getElementById('questions-container').innerHTML=html;
-}
-
-/* ===== STEP 2: Submit Answers → /api/seeker/facts ===== */
-async function step2Submit(){
-  var allFilled=true;
-  var answers=[];
-  questions.forEach(function(q){
-    var el=document.getElementById('ans-'+q.id);
-    if(!el)return;
-    var val=el.value.trim();
-    if(q.required&&!val){allFilled=false;el.style.borderColor='rgba(239,68,68,.5)';}
-    else{answers.push({questionId:q.id,answer:val});}
-  });
-  if(!allFilled){alert('请完成所有必答题');return;}
-  document.getElementById('step2').classList.add('hidden');
-  var load=document.getElementById('step-loading');load.classList.remove('hidden');
-  document.getElementById('loading-text').textContent='AI正在从你的回答中提炼事实...';
-  try{
-    var body={jobProfile:jobProfile,questions:questions,answers:answers};
-    var oldResume=document.getElementById('jd-old-resume').value.trim();
-    if(oldResume)body.oldResume=oldResume;
-    var json=await api('/api/seeker/facts',body);
-    if(!json.ok){showApiError(json,'事实提取');document.getElementById('step2').classList.remove('hidden');load.classList.add('hidden');return;}
-    setModeBadge(json.mode);
-    facts=json.data.facts;
-    missingInfo=json.data.missingInformation||[];
-    load.classList.add('hidden');
-    setStep(3);
-    renderFacts();
-    document.getElementById('step3').classList.remove('hidden');
-    document.getElementById('step3').scrollIntoView({behavior:'smooth',block:'start'});
-  }catch(e){
-    document.getElementById('step2').classList.remove('hidden');
-    load.classList.add('hidden');
-    alert('事实提取失败：'+e.message);
-  }
-}
-
-/* ===== STEP 3: Render Fact Cards ===== */
-var CAT_LABELS={education:'🎓 教育',project:'📁 项目',internship:'💼 实习',skill:'🛠 技能',activity:'🎪 活动',other:'📌 其他'};
-var CAT_BADGES={education:'fact-badge-edu',project:'fact-badge-proj',internship:'fact-badge-intern',skill:'fact-badge-skill',activity:'fact-badge-activity',other:'fact-badge-other'};
-
-function renderFacts(){
-  document.getElementById('total-fact-count').textContent=facts.length;
-  updateConfirmedCount();
-  var html='';
-  facts.forEach(function(f,i){
-    var badge=CAT_BADGES[f.category]||'fact-badge-other';
-    var label=CAT_LABELS[f.category]||f.category;
-    html+='<div class="fact-card'+(f.confirmed?' confirmed':'')+'" id="fact-'+i+'"><div class="flex items-start justify-between mb-2"><div class="flex items-center gap-2"><span class="fact-badge '+badge+'">'+label+'</span><span class="text-xs text-gray-500">ID: '+f.id+'</span></div><div class="flex gap-1">'+
-      '<button class="glow-btn-outline glow-btn-sm !text-xs !py-1 !px-3 !rounded-lg" onclick="toggleFact('+i+')" id="fact-btn-'+i+'">'+(f.confirmed?'✅ 已确认':'○ 确认')+'</button>'+
-      '<button class="glow-btn-outline glow-btn-sm !text-xs !py-1 !px-3 !rounded-lg !text-amber-400 !border-amber-500/40" onclick="editFact('+i+')">✏️</button>'+
-      '<button class="glow-btn-outline glow-btn-sm !text-xs !py-1 !px-3 !rounded-lg !text-red-400 !border-red-500/40" onclick="deleteFact('+i+')">🗑</button></div></div>'+
-      '<p class="text-gray-200 text-sm mb-3" id="fact-stmt-'+i+'">'+f.statement+'</p>'+
-      '<div class="text-xs text-gray-500 bg-white/3 rounded-lg p-2"><span class="text-amber-400/70">📌 来源原话：</span>"<span id="fact-quote-'+i+'">'+f.sourceQuote+'</span>"</div></div>';
-  });
-  document.getElementById('facts-container').innerHTML=html;
-}
-
-function updateConfirmedCount(){
-  var c=facts.filter(function(f){return f.confirmed;}).length;
-  document.getElementById('confirmed-count').textContent=c;
-  document.getElementById('step3-btn').disabled=c===0;
-}
-
-function toggleFact(i){
-  facts[i].confirmed=!facts[i].confirmed;
-  var card=document.getElementById('fact-'+i);
-  var btn=document.getElementById('fact-btn-'+i);
-  if(facts[i].confirmed){card.classList.add('confirmed');btn.textContent='✅ 已确认';btn.classList.add('!text-green-400','!border-green-500/40');}
-  else{card.classList.remove('confirmed');btn.textContent='○ 确认';btn.classList.remove('!text-green-400','!border-green-500/40');}
-  updateConfirmedCount();
-}
-
-function editFact(i){
-  var newStmt=prompt('编辑事实内容：',facts[i].statement);
-  if(newStmt&&newStmt.trim()){facts[i].statement=newStmt.trim();document.getElementById('fact-stmt-'+i).textContent=newStmt.trim();}
-}
-
-function deleteFact(i){
-  if(!confirm('确定删除这条事实吗？删除后不会进入简历生成。'))return;
-  facts.splice(i,1);
-  renderFacts();
-}
-
-/* ===== STEP 3: Submit Facts → /api/seeker/generate ===== */
-async function step3Submit(){
-  var confirmed=facts.filter(function(f){return f.confirmed;});
-  if(confirmed.length===0){alert('请至少确认一条事实');return;}
-  document.getElementById('step3').classList.add('hidden');
-  var load=document.getElementById('step-loading');load.classList.remove('hidden');
-  document.getElementById('loading-text').textContent='AI正在根据已确认事实生成结构化简历...';
-  try{
-    var json=await api('/api/seeker/generate',{jobProfile:jobProfile,confirmedFacts:confirmed});
-    if(!json.ok){showApiError(json,'简历生成');document.getElementById('step3').classList.remove('hidden');load.classList.add('hidden');return;}
-    setModeBadge(json.mode);
-    generatedResume=json.data.resume;
-    missingInfo=json.data.missingInformation||[];
-    interviewRisks=json.data.interviewRisks||[];
-    load.classList.add('hidden');
-    setStep(4);
-    renderResume();
-    document.getElementById('step4').classList.remove('hidden');
-    document.getElementById('step4').scrollIntoView({behavior:'smooth',block:'start'});
-  }catch(e){
-    document.getElementById('step3').classList.remove('hidden');
-    load.classList.add('hidden');
-    alert('简历生成失败：'+e.message);
-  }
-}
-
-/* ===== STEP 4: Render Resume ===== */
-var evidenceMap={};
-function buildEvidenceMap(){evidenceMap={};facts.forEach(function(f){evidenceMap[f.id]=f;});}
-
-function renderResume(){
-  buildEvidenceMap();
-  var d=generatedResume,html='';
-  html+='<h3 class="text-xl font-bold text-white mb-3">'+d.title+'</h3>';
-
-  // Summary
-  if(d.summary&&d.summary.length){
-    html+='<div><h4 class="text-sm font-semibold text-tech-cyan uppercase tracking-wider mb-2">个人概述</h4>';
-    d.summary.forEach(function(b){html+=renderBullet(b);});
-    html+='</div>';
-  }
-  // Education
-  if(d.education&&d.education.length){
-    html+='<div><h4 class="text-sm font-semibold text-tech-cyan uppercase tracking-wider mb-2">教育背景</h4>';
-    d.education.forEach(function(b){html+=renderBullet(b);});
-    html+='</div>';
-  }
-  // Experiences
-  if(d.experiences&&d.experiences.length){
-    html+='<div><h4 class="text-sm font-semibold text-tech-cyan uppercase tracking-wider mb-2">项目/实践经历</h4>';
-    d.experiences.forEach(function(exp){
-      html+='<div class="mb-3"><p class="text-white font-semibold text-sm">'+exp.name+'</p>';
-      exp.bullets.forEach(function(b){html+=renderBullet(b);});
-      html+='</div>';
-    });
-    html+='</div>';
-  }
-  // Skills
-  if(d.skills&&d.skills.length){
-    html+='<div><h4 class="text-sm font-semibold text-tech-cyan uppercase tracking-wider mb-2">技能</h4>';
-    d.skills.forEach(function(b){html+=renderBullet(b);});
-    html+='</div>';
-  }
-  document.getElementById('resume-display').innerHTML=html;
-
-  // Missing info & risks
-  var extra='';
-  if(missingInfo&&missingInfo.length){
-    extra+='<div class="glass-card p-5"><h3 class="text-amber-400 font-semibold text-sm mb-3">⚠️ 缺失信息</h3><ul class="space-y-2">';
-    missingInfo.forEach(function(m){extra+='<li class="text-sm text-gray-300 flex items-start gap-2"><span class="text-amber-400">•</span>'+m+'</li>';});
-    extra+='</ul></div>';
-  }
-  if(interviewRisks&&interviewRisks.length){
-    extra+='<div class="glass-card p-5"><h3 class="text-red-400 font-semibold text-sm mb-3">🔴 面试追问风险</h3><ul class="space-y-3">';
-    interviewRisks.forEach(function(r){
-      // Contract: interviewRisks is string[]. Guard against any legacy object shape.
-      var txt = (typeof r==='string')? r : (r&&r.risk)||JSON.stringify(r);
-      extra+='<li class="text-sm text-gray-300"><p>'+txt+'</p></li>';
-    });
-    extra+='</ul></div>';
-  }
-  document.getElementById('extra-info-container').innerHTML=extra;
-
-  // Build template data from resume
-  buildTplData();
-  renderTplPreview();
-}
-
-function renderBullet(b){
-  var evIds=b.evidenceIds||[];
-  var evHtml='';
-  if(evIds.length>0){
-    evHtml='<div class="evidence-pop">📌 来源：';
-    evIds.forEach(function(eid){
-      var ef=evidenceMap[eid];
-      if(ef){evHtml+='<div class="mt-1"><span class="fact-badge fact-badge-'+(ef.category||'other')+'">'+ef.category+'</span> '+ef.sourceQuote+'</div>';}
-    });
-    evHtml+='</div><div class="ev-toggle">点击查看事实来源 ('+evIds.length+'条)</div>';
-  }
-  return '<div class="resume-bullet" onclick="this.classList.toggle(\'show-evidence\')"><p class="text-sm text-gray-200">'+b.text+'</p>'+evHtml+'</div>';
-}
-
-/* ===== Template Preview ===== */
-var currentTpl=1, resumeTplData={};
-function buildTplData(){
-  var d=generatedResume||{title:'',summary:[],education:[],experiences:[],skills:[]};
-  var exps=[];
-  if(d.experiences)d.experiences.forEach(function(e){exps.push({company:e.name,role:'',period:'',desc:e.bullets.map(function(b){return b.text;}).join('；')});});
-  var edus=[];
-  // Education: only render when there ARE education facts. No invented school.
-  if(d.education)d.education.forEach(function(e){edus.push({school:'',major:e.text,degree:'',period:''});});
-  var skills=[];
-  if(d.skills)d.skills.forEach(function(s){skills.push(s.text);});
-  resumeTplData={name:'求职者',title:d.title||'',email:'',phone:'',city:'',age:'',education:edus,experience:exps,skills:skills.join(', '),eval:''};
-}
-
-function renderTplPreview(){
-  var d=resumeTplData,page=document.getElementById('a4page');
-  var skillsArr=d.skills?d.skills.split(/[,，、\s]+/).filter(Boolean):[];
-  if(currentTpl===1){
-    page.className='a4-page tpl-1';
-    page.innerHTML='<div class="t1-header"><div class="t1-name">'+d.name+'</div><div class="t1-info">'+d.title+'</div></div>'+(d.experience.length?'<div class="t1-section"><h2>经历</h2>'+d.experience.map(function(e){return'<div class="t1-exp"><div class="t1-exp-head"><span>'+e.company+'</span><span>'+e.period+'</span></div><div class="t1-exp-role">'+e.role+'</div><div class="t1-exp-desc">'+e.desc+'</div></div>';}).join('')+'</div>':'')+(d.education.length?'<div class="t1-section"><h2>教育背景</h2>'+d.education.map(function(e){return'<p style="font-weight:700">'+e.school+' · '+e.major+'<span style="float:right;font-weight:400;color:#888">'+e.period+'</span></p>';}).join('')+'</div>':'')+'<div class="t1-section"><h2>技能</h2><p style="color:#555;font-size:12px">'+skillsArr.join(' · ')+'</p></div>';
-  }else if(currentTpl===2){
-    page.className='a4-page tpl-2';
-    page.innerHTML='<div class="t2-sidebar"><div class="t2-name">'+d.name+'</div><div class="t2-title">'+d.title+'</div><div class="t2-sec"><h3>技能</h3><ul>'+skillsArr.map(function(s){return'<li>'+s+'</li>';}).join('')+'</ul></div>'+(d.education.length?'<div class="t2-sec"><h3>教育</h3>'+d.education.map(function(e){return'<p><strong>'+e.school+'</strong><br>'+e.major+'</p>';}).join('')+'</div>':'')+'</div><div class="t2-main">'+(d.experience.length?'<h2>经历</h2>'+d.experience.map(function(e){return'<div class="t2-exp"><div class="t2-exp-head"><span>'+e.company+'</span><span>'+e.period+'</span></div><div class="t2-exp-role">'+e.role+'</div><div class="t2-exp-desc">'+e.desc+'</div></div>';}).join(''):'')+'</div>';
-  }else if(currentTpl===3){
-    page.className='a4-page tpl-3';
-    page.innerHTML='<div class="t3-header"><div class="t3-name">'+d.name+'</div><div class="t3-info">'+d.title+'</div></div><div class="t3-grid"><div>'+(d.experience.length?'<div class="t3-sec"><h2>经历</h2>'+d.experience.map(function(e){return'<p style="margin-bottom:12px"><strong>'+e.company+'</strong><br>'+e.desc+'</p>';}).join('')+'</div>':'')+'</div><div>'+(d.education.length?'<div class="t3-sec"><h2>教育</h2>'+d.education.map(function(e){return'<p><strong>'+e.school+'</strong><br>'+e.major+'</p>';}).join('')+'</div>':'')+'<div class="t3-sec"><h2>技能</h2><p>'+skillsArr.join(', ')+'</p></div></div></div>';
-  }else if(currentTpl===4){
-    page.className='a4-page tpl-4';
-    page.innerHTML='<div class="t4-header"><div><div class="t4-name">'+d.name+'</div><div style="font-size:14px;color:#bdd5e7;margin-top:4px">'+d.title+'</div></div></div><div class="t4-body"><div class="t4-col-main">'+(d.experience.length?'<div class="t4-sec"><h2>经历</h2>'+d.experience.map(function(e){return'<div class="t4-exp"><div class="t4-exp-head"><span>'+e.company+'</span><span>'+e.period+'</span></div><div class="t4-exp-role">'+e.role+'</div><div class="t4-exp-desc">'+e.desc+'</div></div>';}).join('')+'</div>':'')+'</div><div class="t4-col-side">'+(d.education.length?'<div class="t4-sec"><h2>教育背景</h2>'+d.education.map(function(e){return'<div class="t4-edu-item"><div class="t4-school">'+e.school+'</div><div class="t4-detail">'+e.major+'</div></div>';}).join('')+'</div>':'')+'<div class="t4-sec"><h2>技能</h2><ul class="t4-skills">'+skillsArr.map(function(s){return'<li>'+s+'</li>';}).join('')+'</ul></div></div></div>';
-  }
-}
-
-document.getElementById('resumeTplTabs').addEventListener('click',function(e){
-  if(e.target.classList.contains('tpl-tab')){
-    document.querySelectorAll('#resumeTplTabs .tpl-tab').forEach(function(t){t.classList.remove('active');});
-    e.target.classList.add('active');
-    currentTpl=parseInt(e.target.dataset.tplt);
-    renderTplPreview();
-  }
-});
-
-function exportResumePDF(){
-  var page=document.getElementById('a4page');
-  var clone=page.cloneNode(true);
-  clone.style.width='794px';clone.style.minHeight='1123px';
-  clone.style.position='absolute';clone.style.left='-9999px';clone.style.top='0';clone.style.background='#fff';
-  document.body.appendChild(clone);
-  html2pdf().set({margin:0,filename:(resumeTplData.name||'resume')+'_简历.pdf',image:{type:'jpeg',quality:0.98},html2canvas:{scale:2,useCORS:false,backgroundColor:'#ffffff',width:794,windowWidth:794},jsPDF:{unit:'px',format:[794,1123],orientation:'portrait'}}).from(clone).save().then(function(){document.body.removeChild(clone);});
-}
-
-function resetAll(){
-  jobProfile=null;questions=[];facts=[];generatedResume=null;missingInfo=[];interviewRisks=[];
-  ['step2','step3','step4','step-loading'].forEach(function(id){document.getElementById(id).classList.add('hidden');});
-  document.getElementById('step1').classList.remove('hidden');
-  document.getElementById('jd-title').value='';document.getElementById('jd-text').value='';document.getElementById('jd-old-resume').value='';resetQuickOptimizer();
-  setStep(1);window.scrollTo(0,0);
-}
-
-/* ===== Match ===== */
-function analyzeMatch(){
-  var job=document.getElementById('match-job-input').value.trim(),company=document.getElementById('match-company-input').value.trim(),skills=document.getElementById('match-skills-input').value.trim();
-  if(!job||!skills){alert('请填写目标岗位和核心技能');return;}
-  document.getElementById('match-input-card').classList.add('hidden');
-  var load=document.getElementById('match-loading');load.classList.remove('hidden');
-  document.getElementById('match-loading-text').textContent='AI正在分析岗位需求...';
-  setTimeout(function(){
-    load.classList.add('hidden');
-    var score=75+Math.floor(Math.random()*20);
-    var res=document.getElementById('match-results');res.classList.remove('hidden');
-    res.innerHTML=
-      '<div class="glass-card p-6 md:p-8 text-center fade-in-up"><div class="relative w-36 h-36 mx-auto mb-4"><svg viewBox="0 0 160 160" class="w-full h-full -rotate-90"><defs><linearGradient id="mg2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#3b82f6"/><stop offset="50%" stop-color="#8b5cf6"/><stop offset="100%" stop-color="#06b6d4"/></linearGradient></defs><circle cx="80" cy="80" r="65" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="10"/><circle cx="80" cy="80" r="65" fill="none" stroke="url(#mg2)" stroke-width="10" stroke-linecap="round" stroke-dasharray="408" stroke-dashoffset="408" id="match-ring"/></svg><div class="absolute inset-0 flex flex-col items-center justify-center"><span class="text-4xl font-bold text-white">'+score+'</span><span class="text-lg text-white">%</span></div></div><h3 class="text-white font-semibold text-lg">综合匹配度</h3><p class="text-gray-400 text-sm">'+job+(company?' · '+company:'')+'</p></div>'+
-      '<div class="grid grid-cols-1 md:grid-cols-3 gap-6 fade-in-up-d1"><div class="glass-card p-5"><h3 class="text-green-400 font-semibold text-sm mb-3">✅ 匹配优势</h3><ul class="space-y-2 text-sm text-gray-300"><li>具备内容运营经验</li><li>数据分析基础能力</li><li>团队协作能力突出</li></ul></div><div class="glass-card p-5"><h3 class="text-amber-400 font-semibold text-sm mb-3">⚠️ 技能差距</h3><ul class="space-y-2 text-sm text-gray-300"><li>商业数据分析经验不足</li><li>SQL能力待提升</li></ul></div><div class="glass-card p-5"><h3 class="text-tech-cyan font-semibold text-sm mb-3">💡 提升建议</h3><ul class="space-y-2 text-sm text-gray-300"><li>学习SQL基础课程</li><li>参与数据驱动项目</li></ul></div></div>'+
-      '<div class="flex gap-3 justify-center fade-in-up-d2 mt-6"><button class="glow-btn-outline" onclick="resetMatch()">🔄 重新匹配</button><button class="glow-btn" onclick="nav(\'interview\')">🎤 去模拟面试 →</button></div>';
-    setTimeout(function(){var ring=document.getElementById('match-ring');if(ring)ring.style.strokeDashoffset=408-(score/100)*408;},300);
-    res.scrollIntoView({behavior:'smooth',block:'start'});
-  },2200);
-}
-function resetMatch(){document.getElementById('match-job-input').value='';document.getElementById('match-company-input').value='';document.getElementById('match-skills-input').value='';document.getElementById('match-results').classList.add('hidden');document.getElementById('match-input-card').classList.remove('hidden');document.getElementById('match-input-card').scrollIntoView({behavior:'smooth'});}
-
-/* ===== Interview ===== */
-var ir=[{round:1,title:'第一轮 · 基础能力面试',qs:['请简单介绍一下你自己。','你觉得自己最大的优势是什么？请举例。','你在团队合作中扮演什么角色？'],cq:0},{round:2,title:'第二轮 · 项目深挖',qs:['请描述你最有挑战性的项目。','如果重新做一次你会改变什么？','你如何衡量项目成功？'],cq:0},{round:3,title:'第三轮 · 综合评估',qs:['面对陌生领域如何快速上手？','团队成员消极怠工怎么办？','未来3年职业规划是什么？'],cq:0}];
-var iv={cr:0,answers:[]};
-function startInterview(){
-  var job=document.getElementById('interview-job').value;if(!job){alert('请选择目标岗位');return;}
-  document.getElementById('interview-job-display').textContent=job;document.getElementById('interview-interface').classList.remove('hidden');document.getElementById('interview-scores').classList.add('hidden');
-  iv={cr:0,answers:[]};showQ();
-}
-function showQ(){
-  var r=ir[iv.cr];
-  document.getElementById('interview-round-num').textContent=r.round;
-  document.getElementById('interview-question').innerHTML='<p class="text-sm text-gray-500 mb-1">'+r.title+'</p><p class="text-gray-200">'+r.qs[r.cq]+'</p>';
-  document.getElementById('interview-scores').classList.add('hidden');document.getElementById('interview-submit-btn').classList.remove('hidden');
-  document.getElementById('interview-answer').value='';document.getElementById('interview-next-btn').classList.add('hidden');
-}
-function submitInterviewAnswer(){
-  var a=document.getElementById('interview-answer').value.trim();if(!a){alert('请输入回答');return;}
-  iv.answers.push(a);document.getElementById('interview-submit-btn').classList.add('hidden');
-  var s1=70+Math.floor(Math.random()*25),s2=68+Math.floor(Math.random()*25),s3=75+Math.floor(Math.random()*20);
-  document.getElementById('interview-score-cards').innerHTML=
-    '<div class="text-center p-4 rounded-xl bg-white/3 border border-white/5"><div class="score-ring mx-auto mb-2"><svg viewBox="0 0 100 100" width="80" height="80"><defs><linearGradient id="sg1"><stop offset="0%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#6366f1"/></linearGradient></defs><circle cx="50" cy="50" r="42" class="bg-ring"/><circle cx="50" cy="50" r="42" stroke="url(#sg1)" stroke-dasharray="264" stroke-dashoffset="'+(264-(s1/100)*264)+'"/></svg></div><p class="text-lg font-bold text-white">'+s1+'</p><p class="text-xs text-gray-400">逻辑性</p></div>'+
-    '<div class="text-center p-4 rounded-xl bg-white/3 border border-white/5"><div class="score-ring mx-auto mb-2"><svg viewBox="0 0 100 100" width="80" height="80"><circle cx="50" cy="50" r="42" class="bg-ring"/><circle cx="50" cy="50" r="42" stroke="#8b5cf6" stroke-dasharray="264" stroke-dashoffset="'+(264-(s2/100)*264)+'"/></svg></div><p class="text-lg font-bold text-white">'+s2+'</p><p class="text-xs text-gray-400">表达力</p></div>'+
-    '<div class="text-center p-4 rounded-xl bg-white/3 border border-white/5"><div class="score-ring mx-auto mb-2"><svg viewBox="0 0 100 100" width="80" height="80"><circle cx="50" cy="50" r="42" class="bg-ring"/><circle cx="50" cy="50" r="42" stroke="#06b6d4" stroke-dasharray="264" stroke-dashoffset="'+(264-(s3/100)*264)+'"/></svg></div><p class="text-lg font-bold text-white">'+s3+'</p><p class="text-xs text-gray-400">岗位匹配</p></div>';
-  document.getElementById('interview-feedback').textContent=['回答结构清晰，建议用STAR法则组织内容。','表达流畅，试试用具体数字支撑观点。','展现了良好的自我认知。'][Math.floor(Math.random()*3)];
-  document.getElementById('interview-scores').classList.remove('hidden');document.getElementById('interview-next-btn').classList.remove('hidden');
-}
-function nextInterviewRound(){
-  var r=ir[iv.cr];r.cq++;
-  if(r.cq>=r.qs.length){iv.cr++;if(iv.cr>=ir.length){document.getElementById('interview-question').innerHTML='<p class="text-sm text-green-400 mb-1">🎉 面试完成</p><p class="text-gray-200">综合评分：<strong class="text-tech-cyan">84分</strong>。建议针对性练习。</p>';document.getElementById('interview-scores').classList.add('hidden');document.getElementById('interview-next-btn').textContent='查看完整报告';document.getElementById('interview-next-btn').onclick=function(){alert('完整面试报告功能开发中～');};document.getElementById('interview-answer').classList.add('hidden');document.getElementById('interview-submit-btn').classList.add('hidden');return;}ir[iv.cr].cq=0;}
-  showQ();
-}
-
-
-
-/* ===== Quick Template Preview ===== */
-var quickTplCurrent=1, quickTplData={};
-function buildQuickTplData(){
-  var after=document.getElementById('quick-after').textContent.trim();
-  var before=document.getElementById('quick-before').textContent.trim();
-  quickTplData={
-    name:'求职者',
-    title:'个人简历',
-    email:'',
-    phone:'',
-    city:'',
-    age:'',
-    education:[{school:'（教育背景）',major:'请补充',degree:'',period:''}],
-    experience:[{company:'项目经历',role:'',period:'',desc:after||'AI优化后的经历描述'}],
-    skills:['团队协作','沟通表达','快速学习'],
-    eval:before||''
-  };
-}
-
-function renderQuickTplPreview(){
-  var d=quickTplData,page=document.getElementById('quick-a4page');
-  var skillsArr=d.skills||[];
-  if(quickTplCurrent===1){
-    page.className='a4-page tpl-1';
-    page.innerHTML='<div class="t1-header"><div class="t1-name">'+d.name+'</div><div class="t1-info">'+d.title+'</div></div>'+(d.experience.length?'<div class="t1-section"><h2>经历</h2>'+d.experience.map(function(e){return'<div class="t1-exp"><div class="t1-exp-head"><span>'+e.company+'</span><span>'+e.period+'</span></div><div class="t1-exp-role">'+e.role+'</div><div class="t1-exp-desc">'+e.desc+'</div></div>';}).join('')+'</div>':'')+(d.education.length?'<div class="t1-section"><h2>教育背景</h2>'+d.education.map(function(e){return'<p style="font-weight:700">'+e.school+' · '+e.major+'<span style="float:right;font-weight:400;color:#888">'+e.period+'</span></p>';}).join('')+'</div>':'')+'<div class="t1-section"><h2>技能</h2><p style="color:#555;font-size:12px">'+skillsArr.join(' · ')+'</p></div>';
-  }else if(quickTplCurrent===2){
-    page.className='a4-page tpl-2';
-    page.innerHTML='<div class="t2-sidebar"><div class="t2-name">'+d.name+'</div><div class="t2-title">'+d.title+'</div><div class="t2-sec"><h3>技能</h3><ul>'+skillsArr.map(function(s){return'<li>'+s+'</li>';}).join('')+'</ul></div>'+(d.education.length?'<div class="t2-sec"><h3>教育</h3>'+d.education.map(function(e){return'<p><strong>'+e.school+'</strong><br>'+e.major+'</p>';}).join('')+'</div>':'')+'</div><div class="t2-main">'+(d.experience.length?'<h2>经历</h2>'+d.experience.map(function(e){return'<div class="t2-exp"><div class="t2-exp-head"><span>'+e.company+'</span><span>'+e.period+'</span></div><div class="t2-exp-role">'+e.role+'</div><div class="t2-exp-desc">'+e.desc+'</div></div>';}).join(''):'')+'</div>';
-  }else if(quickTplCurrent===3){
-    page.className='a4-page tpl-3';
-    page.innerHTML='<div class="t3-header"><div class="t3-name">'+d.name+'</div><div class="t3-info">'+d.title+'</div></div><div class="t3-grid"><div>'+(d.experience.length?'<div class="t3-sec"><h2>经历</h2>'+d.experience.map(function(e){return'<p style="margin-bottom:12px"><strong>'+e.company+'</strong><br>'+e.desc+'</p>';}).join('')+'</div>':'')+'</div><div>'+(d.education.length?'<div class="t3-sec"><h2>教育</h2>'+d.education.map(function(e){return'<p><strong>'+e.school+'</strong><br>'+e.major+'</p>';}).join('')+'</div>':'')+'<div class="t3-sec"><h2>技能</h2><p>'+skillsArr.join(', ')+'</p></div></div></div>';
-  }else if(quickTplCurrent===4){
-    page.className='a4-page tpl-4';
-    page.innerHTML='<div class="t4-header"><div><div class="t4-name">'+d.name+'</div><div style="font-size:14px;color:#bdd5e7;margin-top:4px">'+d.title+'</div></div></div><div class="t4-body"><div class="t4-col-main">'+(d.experience.length?'<div class="t4-sec"><h2>经历</h2>'+d.experience.map(function(e){return'<div class="t4-exp"><div class="t4-exp-head"><span>'+e.company+'</span><span>'+e.period+'</span></div><div class="t4-exp-role">'+e.role+'</div><div class="t4-exp-desc">'+e.desc+'</div></div>';}).join('')+'</div>':'')+'</div><div class="t4-col-side">'+(d.education.length?'<div class="t4-sec"><h2>教育背景</h2>'+d.education.map(function(e){return'<div class="t4-edu-item"><div class="t4-school">'+e.school+'</div><div class="t4-detail">'+e.major+'</div></div>';}).join('')+'</div>':'')+'<div class="t4-sec"><h2>技能</h2><ul class="t4-skills">'+skillsArr.map(function(s){return'<li>'+s+'</li>';}).join('')+'</ul></div></div></div>';
-  }
-}
-
-function exportQuickResumePDF(){
-  var page=document.getElementById('quick-a4page');
-  var clone=page.cloneNode(true);
-  clone.style.width='794px';clone.style.minHeight='1123px';
-  clone.style.position='absolute';clone.style.left='-9999px';clone.style.top='0';clone.style.background='#fff';
-  document.body.appendChild(clone);
-  html2pdf().set({margin:0,filename:'AI优化简历.pdf',image:{type:'jpeg',quality:0.98},html2canvas:{scale:2,useCORS:false,backgroundColor:'#ffffff',width:794,windowWidth:794},jsPDF:{unit:'px',format:[794,1123],orientation:'portrait'}}).from(clone).save().then(function(){document.body.removeChild(clone);});
-}
-
-
-/* ===== Open Resume Editor with Data Bridge ===== */
-function openResumeEditor(){
-  var data={name:'',title:'',phone:'',email:'',location:'',education:[],experience:[],skills:'',eval:''};
-  // Try to grab quick optimized text
-  var afterEl=document.getElementById('quick-after');
-  if(afterEl&&afterEl.textContent.trim()){
-    data.name='求职者';data.title='个人简历';
-    data.experience=[{company:'项目经历',role:'',period:'',desc:afterEl.textContent.trim()}];
-    data.skills='团队协作, 沟通表达, 快速学习';
-    data.eval='AI优化生成的简历内容';
-  }
-  localStorage.setItem('resumeData',JSON.stringify(data));
-  window.open('resume-editor/index.html','_blank');
-}
-
-/* ===== Tab Switch ===== */
-function switchResumeTab(tab){
-  document.querySelectorAll('.resume-tab').forEach(function(t){t.classList.remove('active');});
-  document.getElementById('tab-'+tab).classList.add('active');
-  document.querySelectorAll('.resume-sub-section').forEach(function(s){s.classList.remove('active');});
-  document.getElementById('resume-'+tab).classList.add('active');
-  if(tab==='standard'){resetQuickOptimizer();}
-  window.scrollTo(0,0);
-}
-
-/* ===== Quick Resume Optimizer ===== */
-var quickOptimized=false;
-function quickOptimize(){
-  var inp=document.getElementById('quick-input').value.trim();
-  if(!inp){alert('请输入你的经历描述');return;}
-  document.getElementById('quick-loading').classList.remove('hidden');
-  document.getElementById('quick-results').classList.add('hidden');
-  var steps=['AI正在分析经历类型...','正在用STAR法则重构表达...','优化中，确保内容真实...'];
-  var si=0;
-  var ti=setInterval(function(){
-    document.getElementById('quick-loading').querySelector('p').textContent=steps[si];
-    si++;if(si>=steps.length){clearInterval(ti);}
-  },800);
-  setTimeout(function(){
-    document.getElementById('quick-loading').classList.add('hidden');
-    document.getElementById('quick-results').classList.remove('hidden');
-    document.getElementById('qscore-quantify').textContent='88';
-    document.getElementById('qscore-structure').textContent='92';
-    document.getElementById('qscore-impact').textContent='85';
-    document.getElementById('quick-before').textContent=inp;
-    // Generate STAR optimized version
-    var optimized='作为'+['项目负责人','团队核心成员','运营负责人','主要执行者'][Math.floor(Math.random()*4)]+'，负责'+inp.replace(/我/g,'').replace(/负责/g,'主导').replace(/参加/g,'组织').replace(/做了/g,'独立完成')+'，通过'+['内容策划与执行','数据分析与迭代','社群运营','跨团队协作'][Math.floor(Math.random()*4)]+'，实现'+['参与度提升30%+','用户增长200%+','曝光量翻倍','效率提升50%'][Math.floor(Math.random()*4)]+'。';
-    document.getElementById('quick-after').textContent=optimized;
-    document.getElementById('quick-results').scrollIntoView({behavior:'smooth',block:'start'});
-    buildQuickTplData();renderQuickTplPreview();
-    document.getElementById('quick-tpl-section').classList.remove('hidden');
-    quickOptimized=true;
-  },2400);
-}
-function resetQuickOptimizer(){
-  document.getElementById('quick-input').value='';
-  document.getElementById('quick-loading').classList.add('hidden');
-  document.getElementById('quick-results').classList.add('hidden');
-  document.getElementById('quick-tpl-section').classList.add('hidden');
-  quickOptimized=false;
-}
-
-// Init
-document.addEventListener('DOMContentLoaded',function(){
-  new ParticleSystem();nav('resume');
-  // Quick template tab switching
-  document.getElementById('quickTplTabs').addEventListener('click',function(e){
-    if(e.target.classList.contains('tpl-tab')){
-      document.querySelectorAll('#quickTplTabs .tpl-tab').forEach(function(t){t.classList.remove('active');});
-      e.target.classList.add('active');
-      quickTplCurrent=parseInt(e.target.dataset.tplt);
-      renderQuickTplPreview();
-    }
-  });
-});
-</script>
-</body>
+    <nav class="mobile-flow" aria-label="手机端步骤">
+      <button type="button" data-step-target="job" aria-current="step">01<br />岗位</button>
+      <button type="button" data-step-target="questions">02<br />追问</button>
+      <button type="button" data-step-target="facts">03<br />确认</button>
+      <button type="button" data-step-target="resume">04<br />结果</button>
+    </nav>
+    <script type="module" src="/js/approved-student.js"></script>
+  </body>
 </html>
