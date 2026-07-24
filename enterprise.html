@@ -3,15 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Keal 企业端 - 岗位智能建模</title>
+<title>Keal 企业端 · AI岗位招聘助手</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
 tailwind.config = {
   theme: { extend: {
     colors: {
-      'space-black':'#0a0a14','deep-space':'#0d0d1f','tech-blue':'#3b82f6','tech-cyan':'#06b6d4',
-      'gradient-purple':'#8b5cf6','ai-glow':'#6366f1','glass-white':'rgba(255,255,255,0.06)',
-      'glass-border':'rgba(255,255,255,0.1)',
+      'space-black':'#0a0a14','tech-blue':'#3b82f6','tech-cyan':'#06b6d4',
+      'gradient-purple':'#8b5cf6','ai-glow':'#6366f1',
     },
     fontFamily: { 'sf':['-apple-system','BlinkMacSystemFont','"SF Pro Display"','"PingFang SC"', 'sans-serif'] },
   }}
@@ -25,313 +24,821 @@ tailwind.config = {
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC",sans-serif;background:#0a0a14;color:#e2e8f0;overflow-x:hidden;-webkit-font-smoothing:antialiased;}
 #particle-canvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;}
-.nav-glass{backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);background:rgba(10,10,20,0.7);border-bottom:1px solid var(--glass-border);}
+
+/* Nav */
+.nav-glass{backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);background:rgba(10,10,20,0.7);border-bottom:1px solid var(--glass-border);position:fixed;top:0;left:0;right:0;z-index:50;}
+
+/* Cards */
 .glass-card{background:var(--glass-bg);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border:1px solid var(--glass-border);border-radius:20px;transition:all .4s cubic-bezier(.25,.1,.25,1);position:relative;overflow:hidden;}
-.glass-card::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at top left, var(--glass-highlight), transparent 70%);pointer-events:none;}
-.glass-card:hover{border-color:rgba(99,102,241,.3);box-shadow:0 8px 40px rgba(99,102,241,.1),inset 0 1px 0 rgba(255,255,255,.05);transform:translateY(-2px);}
-.glass-card-flat{background:var(--glass-bg);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border:1px solid var(--glass-border);border-radius:20px;}
-.glow-btn{position:relative;overflow:hidden;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border:none;color:#fff;font-weight:600;border-radius:14px;padding:14px 32px;cursor:pointer;transition:all .4s cubic-bezier(.25,.1,.25,1);box-shadow:0 0 30px rgba(99,102,241,.3);letter-spacing:.5px;}
+.glass-card::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at top left,var(--glass-highlight),transparent 70%);pointer-events:none;}
+.glass-card:hover{border-color:rgba(99,102,241,.3);box-shadow:0 8px 40px rgba(99,102,241,.1);}
+
+/* Buttons */
+.glow-btn{position:relative;overflow:hidden;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border:none;color:#fff;font-weight:600;border-radius:14px;padding:14px 32px;cursor:pointer;transition:all .4s cubic-bezier(.25,.1,.25,1);box-shadow:0 0 30px rgba(99,102,241,.3);letter-spacing:.5px;font-family:inherit;font-size:15px;}
 .glow-btn:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 0 50px rgba(99,102,241,.5);}
-.glow-btn-outline{position:relative;background:transparent;border:1.5px solid rgba(139,92,246,.5);color:#c4b5fd;font-weight:600;border-radius:14px;padding:14px 32px;cursor:pointer;transition:all .4s cubic-bezier(.25,.1,.25,1);letter-spacing:.5px;}
-.glow-btn-outline:hover{border-color:#8b5cf6;box-shadow:0 0 30px rgba(139,92,246,.2);background:rgba(139,92,246,.1);transform:translateY(-2px);}
-.page{display:none;position:relative;z-index:1;min-height:100vh;}
-.page.active{display:block;}
-.skill-tag{background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.3);border-radius:20px;padding:6px 16px;font-size:14px;color:#a5b4fc;transition:all .3s;cursor:default;}
-.skill-tag:hover{background:rgba(99,102,241,.25);border-color:rgba(99,102,241,.5);transform:translateY(-1px);box-shadow:0 4px 16px rgba(99,102,241,.2);}
-.match-bar{height:10px;border-radius:5px;background:rgba(255,255,255,.06);overflow:hidden;}
-.match-bar-fill{height:100%;border-radius:5px;background:linear-gradient(90deg,#3b82f6,#8b5cf6,#06b6d4);transition:width 1.5s ease-out;}
-::-webkit-scrollbar{width:6px;}
-::-webkit-scrollbar-track{background:transparent;}
-::-webkit-scrollbar-thumb{background:rgba(99,102,241,.3);border-radius:3px;}
-.ai-input{background:rgba(20,20,40,.8);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px 20px;color:#e2e8f0;font-size:16px;transition:all .3s;width:100%;outline:none;}
+.glow-btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none;}
+.glow-btn-outline{background:transparent;border:1.5px solid rgba(139,92,246,.5);color:#c4b5fd;font-weight:600;border-radius:14px;padding:12px 28px;cursor:pointer;transition:all .4s;font-family:inherit;font-size:14px;}
+.glow-btn-outline:hover{border-color:#8b5cf6;box-shadow:0 0 30px rgba(139,92,246,.2);background:rgba(139,92,246,.1);}
+.btn-sm{padding:8px 20px;font-size:13px;border-radius:10px;}
+
+/* Input */
+.ai-input{background:rgba(20,20,40,.8);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px 20px;color:#e2e8f0;font-size:16px;transition:all .3s;width:100%;outline:none;font-family:inherit;}
 .ai-input:focus{border-color:rgba(99,102,241,.5);box-shadow:0 0 20px rgba(99,102,241,.15);}
 .ai-input::placeholder{color:rgba(255,255,255,.25);}
-.ai-select{background:rgba(20,20,40,.8);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px 20px;color:#e2e8f0;font-size:16px;width:100%;outline:none;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%236366f1' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 16px center;}
-.ai-select:focus{border-color:rgba(99,102,241,.5);box-shadow:0 0 20px rgba(99,102,241,.15);}
-.mode-badge{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:4px;}
-.mode-mock{background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.3);}
-.mode-live{background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.3);}
-.mode-fallback{background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.3);}
+
+/* Salary pills */
+.salary-pill{display:inline-flex;align-items:center;justify-content:center;padding:10px 20px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:rgba(20,20,40,.5);color:rgba(255,255,255,.6);cursor:pointer;transition:all .25s;font-size:14px;font-family:inherit;white-space:nowrap;}
+.salary-pill:hover{border-color:rgba(139,92,246,.4);color:#c4b5fd;background:rgba(139,92,246,.08);}
+.salary-pill.selected{border-color:#8b5cf6;background:rgba(139,92,246,.15);color:#c4b5fd;box-shadow:0 0 14px rgba(139,92,246,.2);}
+
+/* Skill chips */
+.skill-chip{display:inline-flex;align-items:center;gap:4px;padding:8px 16px;border-radius:20px;border:1px solid rgba(255,255,255,.08);background:rgba(20,20,40,.5);color:rgba(255,255,255,.5);cursor:pointer;transition:all .25s;font-size:13px;font-family:inherit;}
+.skill-chip:hover{border-color:rgba(6,182,212,.4);color:#67e8f9;}
+.skill-chip.selected{border-color:#06b6d4;background:rgba(6,182,212,.12);color:#67e8f9;box-shadow:0 0 12px rgba(6,182,212,.15);}
+
+/* Tags */
+.tag{display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;}
+.tag-must{background:rgba(239,68,68,.12);color:#f87171;border:1px solid rgba(239,68,68,.25);}
+.tag-nice{background:rgba(34,197,94,.12);color:#4ade80;border:1px solid rgba(34,197,94,.25);}
+
+/* Progress bar */
+.progress-bar{height:8px;border-radius:4px;background:rgba(255,255,255,.06);overflow:hidden;}
+.progress-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#3b82f6,#8b5cf6);transition:width 1.2s ease-out;}
+
+/* Section cards */
+.section-card{border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:24px;background:rgba(20,20,45,.4);transition:all .3s;}
+.section-card:hover{border-color:rgba(99,102,241,.2);}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(99,102,241,.3);border-radius:3px;}
+
 @keyframes fadeInUp{from{opacity:0;transform:translateY(30px);}to{opacity:1;transform:translateY(0);}}
 .fade-in-up{animation:fadeInUp .6s ease-out forwards;}
-.fade-in-up-delay-1{animation:fadeInUp .6s .1s ease-out forwards;opacity:0;}
-.fade-in-up-delay-2{animation:fadeInUp .6s .2s ease-out forwards;opacity:0;}
-@media(max-width:768px){.glass-card{border-radius:16px;}.glow-btn{padding:12px 24px;font-size:14px;border-radius:12px;}}
+
+/* Toast */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:100;background:rgba(34,197,94,.9);color:#fff;padding:12px 24px;border-radius:12px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .3s;}
+#toast.show{opacity:1;pointer-events:auto;}
+#toast.error{background:rgba(239,68,68,.9);}
+
+@media(max-width:768px){
+  .glass-card{border-radius:16px;}
+  .glow-btn{padding:12px 24px;font-size:14px;border-radius:12px;}
+  .salary-pill{padding:8px 14px;font-size:13px;}
+  .skill-chip{padding:6px 12px;font-size:12px;}
+}
 </style>
 </head>
 <body class="font-sf">
 
 <canvas id="particle-canvas"></canvas>
 
-<!-- Navigation -->
-<nav class="nav-glass fixed top-0 left-0 w-full z-50 px-4 md:px-8 py-3 flex items-center justify-between">
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- Nav -->
+<nav class="nav-glass px-4 md:px-8 py-3 flex items-center justify-between">
   <a href="index.html" class="flex items-center gap-3 cursor-pointer no-underline">
     <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-amber-500/25">K</div>
     <span class="text-white font-semibold text-lg tracking-tight hidden sm:inline">Keal · 企业端</span>
   </a>
-  <div class="flex items-center gap-2 md:gap-4">
-    <button onclick="nav('jd')" class="text-sm text-gray-300 hover:text-white transition px-3 py-2 rounded-lg hover:bg-white/5 hidden md:block">岗位建模</button>
-    <button onclick="nav('match')" class="text-sm text-gray-300 hover:text-white transition px-3 py-2 rounded-lg hover:bg-white/5 hidden md:block">AI匹配引擎</button>
+  <div class="flex items-center gap-3">
+    <a href="student.html" class="text-sm text-gray-400 hover:text-white transition no-underline">切换到学生端 →</a>
   </div>
 </nav>
 
-<!-- ===== PAGE: 岗位智能建模 ===== -->
-<div id="page-jd" class="page active">
-  <div class="min-h-screen pt-24 pb-16 px-4">
-    <div class="max-w-4xl mx-auto">
-      <div class="text-center mb-10 fade-in-up">
-        <span class="text-sm text-amber-400 bg-amber-400/10 px-4 py-1.5 rounded-full">🏢 企业端 · 岗位智能建模</span>
-        <span class="mode-badge mode-mock ml-2" id="ent-mode-badge">🔸 MOCK 演示数据</span>
-        <h2 class="text-3xl md:text-4xl font-bold text-white mt-4 mb-3">创建岗位智能模型</h2>
-        <p class="text-gray-400">AI帮你明确真实需求，生成可编辑的标准JD与人工筛选参考维度（非AI自动录用）</p>
-      </div>
+<!-- ===== MAIN CONTENT ===== -->
+<div class="relative z-10 min-h-screen pt-24 pb-16 px-4">
+  <div class="max-w-4xl mx-auto">
 
-      <!-- Step indicator -->
-      <div class="flex items-center justify-center gap-2 mb-8 fade-in-up-d1 text-sm">
-        <span id="estep1" class="px-3 py-1 rounded-full bg-tech-blue/20 text-tech-cyan">① 模糊需求</span>
-        <span class="text-gray-600">→</span>
-        <span id="estep2" class="px-3 py-1 rounded-full bg-white/5 text-gray-500">② 补充问题</span>
-        <span class="text-gray-600">→</span>
-        <span id="estep3" class="px-3 py-1 rounded-full bg-white/5 text-gray-500">③ 生成招聘材料</span>
-      </div>
+    <!-- Hero -->
+    <div class="text-center mb-10 fade-in-up">
+      <span class="text-sm text-amber-400 bg-amber-400/10 px-4 py-1.5 rounded-full">🏢 AI岗位招聘助手</span>
+      <h2 class="text-3xl md:text-4xl font-bold text-white mt-4 mb-3">三步生成专业岗位说明</h2>
+      <p class="text-gray-400 max-w-2xl mx-auto">输入岗位 → 选择薪资 → 勾选技能 → AI 一键生成完整 JD</p>
+    </div>
 
-      <!-- STEP 1: Input Form -->
-      <div class="glass-card p-6 md:p-8 mb-8" id="jd-form">
-        <div class="mb-4">
-          <label class="text-sm text-gray-400 mb-1.5 block">岗位名称 <span class="text-red-400">*</span></label>
-          <input type="text" placeholder="例如：新媒体运营实习生" class="ai-input" id="ent-job-title">
+    <!-- ===== STEP-BY-STEP INPUT CARD ===== -->
+    <div class="glass-card p-6 md:p-8 mb-6 fade-in-up" style="animation-delay:0.1s;opacity:0;">
+
+      <!-- Step 1: Role -->
+      <div class="mb-6">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="w-7 h-7 rounded-full bg-gradient-to-br from-tech-blue to-tech-cyan flex items-center justify-center text-white text-xs font-bold shrink-0">1</span>
+          <label class="text-sm text-gray-300 font-medium">招什么岗位？<span class="text-red-400">*</span></label>
         </div>
-        <div class="mb-4">
-          <label class="text-sm text-gray-400 mb-1.5 block">模糊招聘需求 <span class="text-red-400">*</span></label>
-          <textarea class="ai-input h-32 resize-none" id="ent-jd-raw" placeholder="用一句话描述你的招聘需求，AI会追问补充...&#10;例如：会剪视频，平时发发小红书，最好长期实习"></textarea>
-          <p class="text-xs text-gray-500 mt-1">提示：薪资、地点、年限等你尚未确认的条件，AI只会列为"待确认"，不会替你补写。</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs text-gray-500 mb-1 block">公司名称 <span class="text-gray-600">(选填)</span></label>
+            <input type="text" id="ent-company" placeholder="例如：字节跳动" class="ai-input !py-3 !text-sm">
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 mb-1 block">岗位名称 <span class="text-red-400">*</span></label>
+            <input type="text" id="ent-role" placeholder="例如：新媒体运营" class="ai-input !py-3 !text-sm" oninput="onRoleChange()">
+          </div>
         </div>
-        <button class="glow-btn w-full" onclick="entAnalyze()">AI解析需求并追问 →</button>
+        <p id="role-hint" class="text-xs text-gray-600 mt-2 hidden"></p>
+        <div class="mt-3">
+          <label class="text-xs text-gray-500 mb-1 block">模糊招聘要求 <span class="text-red-400">*</span></label>
+          <textarea id="ent-rough" rows="4" placeholder="用一段话描述招聘需求，例如：招一个会做短视频和数据分析的运营，最好有小红书经验，每周到岗3天以上" class="ai-input !py-3 !text-sm w-full"></textarea>
+          <p class="text-xs text-gray-600 mt-2">未确认的薪资/福利/地点/到岗天数/硬性条件会归入「不确定项」，待澄清问题确认。</p>
+        </div>
       </div>
 
-      <!-- Loading -->
-      <div id="ent-loading" class="hidden glass-card p-8 text-center">
-        <div class="flex items-center justify-center gap-3 mb-3"><div class="typing-dots inline-flex gap-1"><span class="w-2 h-2 rounded-full bg-tech-cyan animate-bounce"></span><span class="w-2 h-2 rounded-full bg-tech-cyan animate-bounce" style="animation-delay:.1s"></span><span class="w-2 h-2 rounded-full bg-tech-cyan animate-bounce" style="animation-delay:.2s"></span></div></div>
-        <p class="text-gray-400 text-sm" id="ent-loading-text">AI正在解析需求...</p>
+      <!-- Step 2: Salary Range -->
+      <div class="mb-6">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="w-7 h-7 rounded-full bg-gradient-to-br from-gradient-purple to-pink-400 flex items-center justify-center text-white text-xs font-bold shrink-0">2</span>
+          <label class="text-sm text-gray-300 font-medium">月薪范围？</label>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button class="salary-pill" data-salary="3k-6k" onclick="toggleSalary(this)">3k-6k</button>
+          <button class="salary-pill" data-salary="6k-10k" onclick="toggleSalary(this)">6k-10k</button>
+          <button class="salary-pill" data-salary="10k-15k" onclick="toggleSalary(this)">10k-15k</button>
+          <button class="salary-pill" data-salary="15k-25k" onclick="toggleSalary(this)">15k-25k</button>
+          <button class="salary-pill" data-salary="25k-40k" onclick="toggleSalary(this)">25k-40k</button>
+          <button class="salary-pill" data-salary="40k+" onclick="toggleSalary(this)">40k+</button>
+          <button class="salary-pill" data-salary="面议" onclick="toggleSalary(this)">💰 面议</button>
+        </div>
       </div>
 
-      <!-- STEP 2: Questions -->
-      <div id="ent-questions-card" class="hidden glass-card p-6 md:p-8 mb-8">
+      <!-- Step 3: Skills Selection -->
+      <div class="mb-6">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="w-7 h-7 rounded-full bg-gradient-to-br from-tech-cyan to-green-400 flex items-center justify-center text-white text-xs font-bold shrink-0">3</span>
+          <label class="text-sm text-gray-300 font-medium">需要哪些技能？<span class="text-red-400">*</span> <span class="text-xs text-gray-500 font-normal">（可多选）</span></label>
+        </div>
+        <div class="mb-3">
+          <span class="text-xs text-gray-500">行业：</span>
+          <span class="text-sm text-tech-cyan font-medium" id="current-industry">互联网/科技</span>
+        </div>
+        <div id="skills-container" class="flex flex-wrap gap-2 mb-3">
+          <!-- Populated by JS -->
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="text" id="custom-skill" placeholder="✏️ 补充其他技能（回车添加）" class="ai-input !py-2.5 !text-sm !flex-1" onkeydown="if(event.key==='Enter'){addCustomSkill();event.preventDefault();}">
+          <span id="selected-count" class="text-xs text-tech-cyan whitespace-nowrap">已选 0 项</span>
+        </div>
+      </div>
+
+      <!-- Industry auto-detected hint -->
+      <div id="industry-tag" class="mb-4 hidden">
+        <span class="text-xs text-gray-500">🏭 系统已自动识别行业为：</span>
+        <span class="text-sm text-amber-400 font-medium" id="industry-label"></span>
+      </div>
+
+      <!-- Generate Button -->
+      <button class="glow-btn w-full" id="generate-btn" onclick="generate()">🤖 AI 生成岗位说明</button>
+      <p id="gen-error" class="text-red-400 text-sm mt-3 hidden"></p>
+    </div>
+
+    <!-- LOADING -->
+    <div id="loading" class="glass-card p-8 text-center hidden">
+      <div class="flex items-center justify-center gap-3 text-tech-cyan">
+        <span class="text-2xl animate-pulse">⏳</span>
+        <span>AI 正在生成专业岗位说明...</span>
+      </div>
+    </div>
+
+    <!-- ANALYZE RESULTS（/api/employer/analyze）-->
+    <div id="analyze-results" class="hidden space-y-6">
+      <div class="glass-card p-6 md:p-8 fade-in-up">
         <div class="flex items-center justify-between mb-4">
-          <div><h3 class="text-white font-semibold text-lg">🤖 AI补充问题</h3><p class="text-gray-400 text-sm">根据需求，AI生成了 <span id="ent-q-count">0</span> 道补充问题</p></div>
+          <div class="flex items-center gap-2"><span class="text-green-400 text-lg">📋</span><h3 class="text-white font-semibold text-lg">岗位画像（草稿）</h3></div>
+          <span id="analyze-mode" class="text-xs px-2 py-1 rounded-full bg-amber-400/10 text-amber-300 border border-amber-400/30"></span>
         </div>
-        <div class="space-y-4" id="ent-questions-container"></div>
-        <button class="glow-btn w-full mt-5" onclick="entGenerate()">生成招聘材料 →</button>
+        <p class="text-xs text-gray-500 mb-4">未经确认的薪资/福利/地点/到岗/硬性条件已归入「不确定项」</p>
+        <div id="analyze-profile-body"></div>
       </div>
-
-      <!-- STEP 3: Results -->
-      <div id="ent-results" class="hidden space-y-6">
-        <!-- Standardized JD -->
-        <div class="glass-card p-6 md:p-8 fade-in-up">
-          <div class="flex items-center gap-2 mb-4"><span class="text-green-400 text-lg">✨</span><h3 class="text-white font-semibold text-lg">标准化JD（可编辑复制）</h3></div>
-          <div class="bg-white/[0.02] rounded-xl p-6 border border-white/5 space-y-4" id="ent-jd-display"></div>
-        </div>
-
-        <!-- Screening Dimensions (人工筛选参考维度) -->
-        <div class="glass-card p-6 md:p-8 fade-in-up-delay-1">
-          <h3 class="text-white font-semibold text-lg mb-1">📊 人工筛选参考维度</h3>
-          <p class="text-gray-400 text-xs mb-4">仅供人工筛选与面试参考，<strong class="text-amber-400">不是AI自动录用或淘汰决定</strong>。权重总和为100。</p>
-          <div class="space-y-4" id="ent-dimensions"></div>
-        </div>
-
-        <!-- Interview Questions (5) -->
-        <div class="glass-card p-6 md:p-8 fade-in-up-delay-2">
-          <h3 class="text-white font-semibold text-lg mb-4">🎤 面试题（固定5道）</h3>
-          <div class="space-y-4" id="ent-interview-questions"></div>
-        </div>
-
-        <!-- Actions -->
-        <div class="flex gap-3 justify-center">
-          <button class="glow-btn-outline" onclick="entReset()">🔄 重新生成</button>
-          <a href="student.html" class="glow-btn-outline inline-flex items-center">切换到学生端 →</a>
-        </div>
+      <div class="glass-card p-6 md:p-8 fade-in-up">
+        <div class="flex items-center gap-2 mb-4"><span class="text-amber-400 text-lg">❓</span><h3 class="text-white font-semibold text-lg">澄清问题（待企业确认）</h3></div>
+        <div id="analyze-questions" class="space-y-3"></div>
+      </div>
+      <div class="flex flex-wrap gap-3 justify-center pb-6">
+        <button class="glow-btn-outline" onclick="window.scrollTo({top:0,behavior:'smooth'})">🔄 重新分析</button>
       </div>
     </div>
-  </div>
-</div>
 
-<!-- ===== PAGE: AI匹配引擎（候选人匹配/评分不在MVP范围，已隐藏）===== -->
-<div id="page-match" class="page hidden">
-  <div class="min-h-screen pt-24 pb-16 px-4">
-    <div class="max-w-3xl mx-auto text-center">
-      <div class="glass-card p-8 fade-in-up">
-        <h2 class="text-2xl font-bold text-white mb-3">该功能不在当前MVP范围</h2>
-        <p class="text-gray-400 text-sm mb-6">第一版不提供AI候选人匹配、评分、排名或自动录用。当前企业端聚焦：模糊需求 → 标准JD → 人工筛选参考维度 → 5道面试题。</p>
-        <button class="glow-btn-outline" onclick="nav('jd')">返回岗位建模 →</button>
+    <!-- GENERATE RESULTS（/api/employer/generate）-->
+    <div id="generate-results" class="hidden space-y-6">
+      <div class="glass-card p-6 md:p-8 fade-in-up">
+        <div class="flex items-center gap-2 mb-4"><span class="text-green-400 text-lg">✅</span><h3 class="text-white font-semibold text-lg">确认后的岗位画像</h3></div>
+        <div id="gen-profile-body"></div>
+      </div>
+      <div class="glass-card p-6 md:p-8 fade-in-up">
+        <div class="flex items-center gap-2 mb-4"><span class="text-tech-cyan text-lg">📄</span><h3 class="text-white font-semibold text-lg">标准化岗位 JD</h3></div>
+        <div id="gen-jd-body"></div>
+      </div>
+      <div class="glass-card p-6 md:p-8 fade-in-up">
+        <div class="flex items-center gap-2 mb-4"><span class="text-amber-400 text-lg">📊</span><h3 class="text-white font-semibold text-lg">筛选维度及权重</h3></div>
+        <div id="gen-screening-body"></div>
+      </div>
+      <div class="glass-card p-6 md:p-8 fade-in-up">
+        <div class="flex items-center gap-2 mb-4"><span class="text-purple-400 text-lg">🎤</span><h3 class="text-white font-semibold text-lg">面试题（5 道）</h3></div>
+        <div id="gen-interview-body"></div>
+      </div>
+      <div class="flex flex-wrap gap-3 justify-center pb-6">
+        <button class="glow-btn-outline" onclick="window.scrollTo({top:0,behavior:'smooth'})">🔄 重新开始</button>
       </div>
     </div>
+
+    <!-- RESULTS -->
+    <div id="results" class="hidden space-y-6">
+
+      <!-- 1. Standard JD -->
+      <div class="glass-card p-6 md:p-8 fade-in-up" id="section-jd">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2"><span class="text-green-400 text-lg">📋</span><h3 class="text-white font-semibold text-lg">标准化岗位 JD</h3></div>
+          <button class="glow-btn-outline btn-sm" onclick="copySection('section-jd')">📋 复制</button>
+        </div>
+        <div class="section-card space-y-4">
+          <div><span class="text-xs text-gray-500 uppercase tracking-wider">公司</span><p id="jd-company" class="text-white font-semibold mt-1"></p></div>
+          <div><span class="text-xs text-gray-500 uppercase tracking-wider">岗位</span><p id="jd-role" class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-tech-blue to-tech-cyan mt-1"></p></div>
+          <div><span class="text-xs text-gray-500 uppercase tracking-wider">岗位概述</span><p id="jd-overview" class="text-gray-300 leading-relaxed mt-1"></p></div>
+          <div><span class="text-xs text-gray-500 uppercase tracking-wider">岗位职责</span><ul id="jd-responsibilities" class="space-y-2 mt-2"></ul></div>
+          <div><span class="text-xs text-gray-500 uppercase tracking-wider">任职要求</span><ul id="jd-requirements" class="space-y-2 mt-2"></ul></div>
+          <div><span class="text-xs text-gray-500 uppercase tracking-wider">加分项</span><ul id="jd-nice" class="space-y-2 mt-2"></ul></div>
+        </div>
+      </div>
+
+      <!-- 2. Core Competencies -->
+      <div class="glass-card p-6 md:p-8 fade-in-up" id="section-comp" style="animation-delay:0.1s;opacity:0;">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2"><span class="text-tech-cyan text-lg">📊</span><h3 class="text-white font-semibold text-lg">岗位核心能力要求</h3></div>
+          <button class="glow-btn-outline btn-sm" onclick="copySection('section-comp')">📋 复制</button>
+        </div>
+        <div id="competencies" class="space-y-4"></div>
+      </div>
+
+      <!-- 3. Must-have vs Preferred -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 fade-in-up" style="animation-delay:0.2s;opacity:0;" id="section-reqs">
+        <div class="glass-card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-red-400 font-semibold">🔴 必须条件</h3>
+            <button class="glow-btn-outline btn-sm" onclick="copySection('section-reqs')">📋 复制</button>
+          </div>
+          <ul id="must-have-list" class="space-y-2"></ul>
+        </div>
+        <div class="glass-card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-green-400 font-semibold">🟢 加分条件</h3>
+          </div>
+          <ul id="preferred-list" class="space-y-2"></ul>
+        </div>
+      </div>
+
+      <!-- 4. Candidate Profile -->
+      <div class="glass-card p-6 md:p-8 fade-in-up" id="section-profile" style="animation-delay:0.25s;opacity:0;">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2"><span class="text-purple-400 text-lg">👤</span><h3 class="text-white font-semibold text-lg">理想候选人画像</h3></div>
+          <button class="glow-btn-outline btn-sm" onclick="copySection('section-profile')">📋 复制</button>
+        </div>
+        <p id="candidate-profile" class="text-gray-300 text-lg leading-relaxed text-center py-4"></p>
+      </div>
+
+      <!-- 5. Interview Questions -->
+      <div class="glass-card p-6 md:p-8 fade-in-up" id="section-interview" style="animation-delay:0.3s;opacity:0;">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2"><span class="text-amber-400 text-lg">🎤</span><h3 class="text-white font-semibold text-lg">针对性面试题（5道）</h3></div>
+          <button class="glow-btn-outline btn-sm" onclick="copySection('section-interview')">📋 复制</button>
+        </div>
+        <div id="interview-qs" class="space-y-4"></div>
+      </div>
+
+      <!-- 6. Salary Reference -->
+      <div class="glass-card p-6 md:p-8 text-center fade-in-up" style="animation-delay:0.35s;opacity:0;" id="section-salary">
+        <span class="text-2xl">💰</span>
+        <p id="salary-ref" class="text-gray-300 mt-2"></p>
+      </div>
+
+      <!-- Export -->
+      <div class="flex flex-wrap gap-3 justify-center pb-12">
+        <button class="glow-btn" onclick="exportFullJD()">📄 导出完整岗位说明</button>
+        <button class="glow-btn-outline" onclick="window.scrollTo({top:0,behavior:'smooth'})">🔄 生成新的</button>
+      </div>
+    </div>
+
   </div>
 </div>
 
 <!-- ===== SCRIPTS ===== -->
 <script>
-// Particle System
-class ParticleSystem {
-  constructor(){this.canvas=document.getElementById('particle-canvas');this.ctx=this.canvas.getContext('2d');this.particles=[];this.resize();window.addEventListener('resize',()=>this.resize());this.init();this.animate();}
-  resize(){this.canvas.width=window.innerWidth;this.canvas.height=window.innerHeight;}
-  init(){for(let i=0;i<80;i++)this.particles.push({x:Math.random()*this.canvas.width,y:Math.random()*this.canvas.height,size:Math.random()*2+.5,speedY:Math.random()*.5+.1,speedX:(Math.random()-.5)*.3,opacity:Math.random()*.4+.1,pulse:Math.random()*Math.PI*2});}
-  animate(){this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height);this.particles.forEach(p=>{p.y-=p.speedY;p.x+=p.speedX;p.pulse+=.02;if(p.y<-10){p.y=this.canvas.height+10;p.x=Math.random()*this.canvas.width;}if(p.x<-10)p.x=this.canvas.width+10;if(p.x>this.canvas.width+10)p.x=-10;const a=p.opacity+Math.sin(p.pulse)*.15;this.ctx.beginPath();this.ctx.arc(p.x,p.y,p.size,0,Math.PI*2);this.ctx.fillStyle=`rgba(99,102,241,${Math.max(.05,a)})`;this.ctx.fill();this.ctx.beginPath();this.ctx.arc(p.x,p.y,p.size*3,0,Math.PI*2);this.ctx.fillStyle=`rgba(99,102,241,${Math.max(.01,a*.3)})`;this.ctx.fill();});requestAnimationFrame(()=>this.animate());}
-}
-
-// Router
-function nav(pageId){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  const t=document.getElementById('page-'+pageId);
-  if(t){t.classList.add('active');window.scrollTo({top:0,behavior:'smooth'});}
-}
-
-/* ================================================================
-   API CLIENT — real fetch('/api/employer/...') against the contract.
-   Two-step backend flow: analyze (rough need → 3-5 questions) then
-   generate (answers → standardizedJD + screening dimensions + 5 Qs).
-   ================================================================ */
-var entJobTitle='', entRoughRequirement='', entJobProfile=null, entQuestions=[];
-
-function setEntMode(mode){
-  var m = mode||'mock';
-  var b=document.getElementById('ent-mode-badge');
-  if(b){b.classList.remove('mode-mock','mode-live','mode-fallback');b.classList.add('mode-'+m);
-    b.textContent = m==='live'?'🟢 LIVE 真实AI':m==='fallback'?'⚠️ FALLBACK 降级数据':'🔸 MOCK 演示数据';}
-}
-function setEntStep(n){
-  for(var i=1;i<=3;i++){var el=document.getElementById('estep'+i);if(!el)continue;
-    if(i<n){el.className='px-3 py-1 rounded-full bg-green-500/20 text-green-300';}
-    else if(i===n){el.className='px-3 py-1 rounded-full bg-tech-blue/20 text-tech-cyan';}
-    else{el.className='px-3 py-1 rounded-full bg-white/5 text-gray-500';}
-  }
-}
-function showEntError(json,where){
-  var msg=(json&&json.error&&json.error.message)?json.error.message:'请求失败';
-  alert('['+where+'] '+msg);
-}
-
-async function entApi(url,body){
-  var res;
-  try{res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});}
-  catch(e){throw new Error('网络错误：无法连接服务器');}
-  var txt=await res.text();var json;try{json=JSON.parse(txt);}catch(e){throw new Error('服务器返回不是合法JSON');}
-  return json;
-}
-
-/* STEP 1 → POST /api/employer/analyze */
-async function entAnalyze(){
-  var jobTitle=document.getElementById('ent-job-title').value.trim();
-  var rough=document.getElementById('ent-jd-raw').value.trim();
-  if(!jobTitle||!rough){alert('请填写岗位名称和模糊招聘需求');return;}
-  entJobTitle=jobTitle; entRoughRequirement=rough;
-  document.getElementById('jd-form').classList.add('hidden');
-  var load=document.getElementById('ent-loading');load.classList.remove('hidden');
-  document.getElementById('ent-loading-text').textContent='AI正在解析需求并生成补充问题...';
-  try{
-    var json=await entApi('/api/employer/analyze',{jobTitle:jobTitle,roughRequirement:rough});
-    if(!json.ok){showEntError(json,'需求解析');document.getElementById('jd-form').classList.remove('hidden');load.classList.add('hidden');return;}
-    setEntMode(json.mode);
-    entJobProfile=json.data.jobProfile;
-    entQuestions=json.data.questions;
-    load.classList.add('hidden');
-    setEntStep(2);
-    renderEntQuestions();
-    document.getElementById('ent-questions-card').classList.remove('hidden');
-    document.getElementById('ent-questions-card').scrollIntoView({behavior:'smooth'});
-  }catch(e){
-    document.getElementById('jd-form').classList.remove('hidden');load.classList.add('hidden');
-    alert('需求解析失败：'+e.message);
+const API_DIRECT = 'http://localhost:3001';
+// 接入后端：优先走 vite 同源代理（/api → localhost:3001），代理失败或 file:// 协议时回退直连
+async function apiPost(path, body) {
+  const opts = {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)};
+  if (location.protocol === 'file:') return fetch(API_DIRECT + path, opts);
+  try {
+    return await fetch(path, opts);
+  } catch(e) {
+    console.warn('[enterprise] 同源代理失败，改直连 3001：', e.message);
+    return fetch(API_DIRECT + path, opts);
   }
 }
 
-function renderEntQuestions(){
-  document.getElementById('ent-q-count').textContent=entQuestions.length;
-  var html='';
-  entQuestions.forEach(function(q,i){
-    var input;
-    if(q.answerType==='choice'){
-      input='<select class="ai-select" id="eans-'+q.id+'">'+(q.options||[]).map(function(o){return '<option value="'+o+'">'+o+'</option>';}).join('')+'</select>';
-    }else if(q.answerType==='number'){
-      input='<input type="number" class="ai-input" id="eans-'+q.id+'" placeholder="输入数字...">';
-    }else{
-      input='<textarea class="ai-input h-20" id="eans-'+q.id+'" placeholder="输入回答..."></textarea>';
-    }
-    html+='<div class="p-4 rounded-xl bg-white/3 border border-white/5"><div class="flex items-start justify-between mb-2"><div><span class="text-xs text-gray-500">问题 '+(i+1)+'</span> '+(q.required?'<span class="text-xs text-red-400 ml-2">*必答</span>':'<span class="text-xs text-gray-500 ml-2">选答</span>')+'</div></div><p class="text-gray-200 text-sm mb-2">'+q.text+'</p><p class="text-xs text-gray-500 mb-3">💡 '+q.reason+'</p>'+input+'</div>';
-  });
-  document.getElementById('ent-questions-container').innerHTML=html;
-}
+// ─── Skills Database ───────────────────────────────────────────────
+const SKILLS_BY_INDUSTRY = {
+  "互联网/科技": [
+    "产品设计", "用户研究", "数据分析", "Python", "SQL", "Java", "Go",
+    "React", "Vue", "Node.js", "AI/机器学习", "Figma", "Axure",
+    "项目管理", "敏捷开发", "A/B测试", "增长运营", "内容运营", "SEO/SEM",
+    "用户增长", "社群运营", "短视频运营", "直播运营", "品牌营销",
+    "信息流投放", "KOL合作", "公众号运营", "小红书运营", "视频剪辑",
+    "PR剪辑", "剪映", "PS/AI", "摄影摄像", "直播带货", "私域运营",
+    "DevOps", "K8s", "云服务", "算法", "测试", "技术写作"
+  ],
+  "电商/零售": [
+    "选品策略", "供应链管理", "直播带货", "店铺运营", "私域运营",
+    "抖音运营", "小红书运营", "社群运营", "客服管理", "仓储物流",
+    "数据复盘", "转化率优化", "详情页设计", "品牌策划", "促销活动"
+  ],
+  "金融/银行": [
+    "风控建模", "量化分析", "合规管理", "信贷评估", "Python", "SQL",
+    "投资分析", "财务建模", "行业研究", "产品设计", "监管报告"
+  ],
+  "教育/培训": [
+    "课程设计", "教研", "直播授课", "短视频运营", "社群运营",
+    "学员服务", "完课率优化", "知识付费", "私域运营", "品牌营销"
+  ],
+  "医疗/健康": [
+    "临床数据分析", "医疗产品", "健康管理", "用户增长", "私域运营",
+    "内容运营", "短视频运营", "品牌营销", "合规管理"
+  ]
+};
 
-/* STEP 2 → POST /api/employer/generate */
-async function entGenerate(){
-  var answers=[];var ok=true;
-  entQuestions.forEach(function(q){
-    var el=document.getElementById('eans-'+q.id);
-    if(!el)return;var v=(el.value||'').trim();
-    if(q.required&&!v){ok=false;el.style.borderColor='rgba(239,68,68,.5)';}
-    else{answers.push({questionId:q.id,answer:v});}
-  });
-  if(!ok){alert('请完成所有必答补充问题');return;}
-  document.getElementById('ent-questions-card').classList.add('hidden');
-  var load=document.getElementById('ent-loading');load.classList.remove('hidden');
-  document.getElementById('ent-loading-text').textContent='AI正在生成标准JD、筛选维度和面试题...';
-  try{
-    var json=await entApi('/api/employer/generate',{
-      jobTitle:entJobTitle, roughRequirement:entRoughRequirement,
-      jobProfile:entJobProfile, questions:entQuestions, answers:answers
+const INDUSTRIES = Object.keys(SKILLS_BY_INDUSTRY);
+
+// ─── State ──────────────────────────────────────────────────────────
+let selectedSalary = '';
+let selectedSkills = [];
+let currentIndustry = '互联网/科技';
+
+// ─── Particle System ────────────────────────────────────────────────
+(function(){
+  const c=document.getElementById('particle-canvas'),ctx=c.getContext('2d');
+  const ps=Array.from({length:60},()=>({x:Math.random()*innerWidth,y:Math.random()*innerHeight,s:Math.random()*2+.5,dy:Math.random()*.4+.1,dx:(Math.random()-.5)*.2,a:Math.random()*.3+.05}));
+  function R(){c.width=innerWidth;c.height=innerHeight}
+  R();window.addEventListener('resize',R);
+  function A(){
+    ctx.clearRect(0,0,c.width,c.height);
+    ps.forEach(p=>{
+      p.y-=p.dy;p.x+=p.dx;
+      if(p.y<-10)p.y=c.height+10;
+      if(p.x<-10)p.x=c.width+10;
+      if(p.x>c.width+10)p.x=-10;
+      ctx.beginPath();ctx.arc(p.x,p.y,p.s,0,Math.PI*2);
+      ctx.fillStyle=`rgba(99,102,241,${p.a})`;ctx.fill();
     });
-    if(!json.ok){showEntError(json,'材料生成');document.getElementById('ent-questions-card').classList.remove('hidden');load.classList.add('hidden');return;}
-    setEntMode(json.mode);
-    renderEntResults(json.data);
-    setEntStep(3);
-    load.classList.add('hidden');
-    document.getElementById('ent-results').classList.remove('hidden');
-    document.getElementById('ent-results').scrollIntoView({behavior:'smooth'});
-  }catch(e){
-    document.getElementById('ent-questions-card').classList.remove('hidden');load.classList.add('hidden');
-    alert('材料生成失败：'+e.message);
+    requestAnimationFrame(A);
+  }
+  A();
+})();
+
+// ─── Init Skills ────────────────────────────────────────────────────
+function renderSkills() {
+  const container = document.getElementById('skills-container');
+  const skills = SKILLS_BY_INDUSTRY[currentIndustry] || SKILLS_BY_INDUSTRY["互联网/科技"];
+  selectedSkills = [];
+
+  container.innerHTML = skills.map(s =>
+    `<button class="skill-chip" data-skill="${s}" onclick="toggleSkill(this)">${s}</button>`
+  ).join('');
+}
+
+renderSkills();
+
+// ─── Role Change Handler ────────────────────────────────────────────
+function onRoleChange() {
+  const role = document.getElementById('ent-role').value.trim();
+  const hintEl = document.getElementById('role-hint');
+
+  // Detect industry from role keywords
+  const industryHints = {
+    "金融": "金融/银行", "银行": "金融/银行", "保险": "金融/银行", "风控": "金融/银行", "量化": "金融/银行",
+    "教育": "教育/培训", "培训": "教育/培训", "课程": "教育/培训", "教研": "教育/培训",
+    "电商": "电商/零售", "零售": "电商/零售", "带货": "电商/零售", "店铺": "电商/零售", "选品": "电商/零售",
+    "医疗": "医疗/健康", "健康": "医疗/健康", "医药": "医疗/健康", "临床": "医疗/健康",
+    "运营": "互联网/科技", "产品": "互联网/科技", "开发": "互联网/科技", "前端": "互联网/科技",
+    "后端": "互联网/科技", "设计": "互联网/科技", "数据": "互联网/科技"
+  };
+
+  let detectedIndustry = null;
+  for (const [keyword, industry] of Object.entries(industryHints)) {
+    if (role.includes(keyword)) { detectedIndustry = industry; break; }
+  }
+
+  if (detectedIndustry && detectedIndustry !== currentIndustry) {
+    currentIndustry = detectedIndustry;
+    document.getElementById('current-industry').textContent = currentIndustry;
+    renderSkills();
+    hintEl.textContent = `🏭 已识别行业：${detectedIndustry}`;
+    hintEl.classList.remove('hidden');
+  } else if (!role) {
+    currentIndustry = '互联网/科技';
+    document.getElementById('current-industry').textContent = currentIndustry;
+    renderSkills();
+    hintEl.classList.add('hidden');
   }
 }
 
-function renderEntResults(kit){
-  // Standardized JD
-  var jd=kit.standardizedJD;
-  var jdHtml='<div><h4 class="text-tech-cyan font-semibold text-sm mb-2">'+jd.title+'</h4><p class="text-sm text-gray-300">'+jd.summary+'</p></div>';
-  jdHtml+='<div><h4 class="text-tech-cyan font-semibold text-sm mb-2 mt-4">岗位职责</h4><ul class="space-y-1 text-sm text-gray-300">'+jd.responsibilities.map(function(r){return '<li>• '+r+'</li>';}).join('')+'</ul></div>';
-  jdHtml+='<div><h4 class="text-tech-cyan font-semibold text-sm mb-2 mt-4">任职要求（必须条件）</h4><ul class="space-y-1 text-sm text-gray-300">'+jd.requirements.map(function(r){return '<li>• '+r+'</li>';}).join('')+'</ul></div>';
-  if(jd.niceToHaves&&jd.niceToHaves.length){jdHtml+='<div><h4 class="text-tech-cyan font-semibold text-sm mb-2 mt-4">加分条件</h4><ul class="space-y-1 text-sm text-gray-300">'+jd.niceToHaves.map(function(r){return '<li>• '+r+'</li>';}).join('')+'</ul></div>';}
-  if(jd.workingConditions&&jd.workingConditions.length){jdHtml+='<div><h4 class="text-tech-cyan font-semibold text-sm mb-2 mt-4">工作条件</h4><ul class="space-y-1 text-sm text-gray-300">'+jd.workingConditions.map(function(r){return '<li>• '+r+'</li>';}).join('')+'</ul></div>';}
-  document.getElementById('ent-jd-display').innerHTML=jdHtml;
+// ─── Salary Selection ───────────────────────────────────────────────
+function toggleSalary(el) {
+  document.querySelectorAll('.salary-pill').forEach(p => p.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedSalary = el.dataset.salary;
+}
 
-  // Screening dimensions — weights sum to 100
-  var dims=kit.screeningDimensions;
-  var sum=dims.reduce(function(a,d){return a+d.weight;},0);
-  var dimHtml='<div class="text-xs text-gray-400 mb-3">权重总和：<strong class="text-tech-cyan">'+sum+'</strong>/100'+(sum===100?' ✅':' ⚠️应=100')+'</div>';
-  dims.forEach(function(d){
-    dimHtml+='<div class="p-4 rounded-xl bg-white/3 border border-white/5"><div class="flex items-center justify-between mb-2"><span class="text-white font-semibold text-sm">'+d.name+'</span><span class="text-tech-cyan text-sm font-bold">'+d.weight+'%</span></div><div class="match-bar mb-2"><div class="match-bar-fill" style="width:'+d.weight+'%"></div></div><p class="text-xs text-gray-400 mb-2">'+d.description+'</p><div class="text-xs text-gray-500">证据线索：'+d.evidenceToLookFor.map(function(e){return '<span class="skill-tag !text-xs !px-2 !py-0.5 mr-1 mb-1 inline-block">'+e+'</span>';}).join('')+'</div></div>';
+// ─── Skill Selection ────────────────────────────────────────────────
+function toggleSkill(el) {
+  const skill = el.dataset.skill;
+  if (el.classList.contains('selected')) {
+    el.classList.remove('selected');
+    selectedSkills = selectedSkills.filter(s => s !== skill);
+  } else {
+    el.classList.add('selected');
+    selectedSkills.push(skill);
+  }
+  document.getElementById('selected-count').textContent = `已选 ${selectedSkills.length} 项`;
+}
+
+function addCustomSkill() {
+  const input = document.getElementById('custom-skill');
+  const skill = input.value.trim();
+  if (!skill) return;
+
+  if (!selectedSkills.includes(skill)) {
+    selectedSkills.push(skill);
+    // Add a visual chip
+    const container = document.getElementById('skills-container');
+    const chip = document.createElement('button');
+    chip.className = 'skill-chip selected';
+    chip.textContent = skill;
+    chip.setAttribute('data-skill', skill);
+    chip.onclick = function() { this.remove(); selectedSkills = selectedSkills.filter(s => s !== skill); updateCount(); };
+    container.appendChild(chip);
+  }
+  input.value = '';
+  updateCount();
+}
+
+function updateCount() {
+  document.getElementById('selected-count').textContent = `已选 ${selectedSkills.length} 项`;
+}
+
+// ─── Toast ──────────────────────────────────────────────────────────
+function toast(msg, isErr) {
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className=isErr?'error':'';t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// ─── Generate ──────────────────────────────────────────────────────
+async function generate() {
+  const company = document.getElementById('ent-company').value.trim();
+  const role = document.getElementById('ent-role').value.trim();
+  const rough = document.getElementById('ent-rough').value.trim();
+  const errEl = document.getElementById('gen-error');
+
+  if (!role) { errEl.textContent = '请输入岗位名称'; errEl.classList.remove('hidden'); return; }
+  if (!rough) { errEl.textContent = '请输入模糊招聘要求'; errEl.classList.remove('hidden'); return; }
+
+  // 组装 roughRequirement：以模糊要求为主，附加结构化输入作为上下文
+  const parts = [];
+  if (company) parts.push('公司：' + company);
+  if (typeof currentIndustry !== 'undefined' && currentIndustry) parts.push('行业：' + currentIndustry);
+  if (typeof selectedSalary !== 'undefined' && selectedSalary) parts.push('期望薪资：' + selectedSalary);
+  if (typeof selectedSkills !== 'undefined' && selectedSkills.length) parts.push('提及技能：' + selectedSkills.join('、'));
+  parts.push('招聘要求：' + rough);
+  const roughRequirement = parts.join('；');
+
+  const btn = document.getElementById('generate-btn');
+  errEl.classList.add('hidden');
+  btn.disabled = true; btn.textContent = '⏳ AI分析中...';
+  document.getElementById('analyze-results').classList.add('hidden');
+  document.getElementById('results').classList.add('hidden');
+  document.getElementById('loading').classList.remove('hidden');
+  document.getElementById('loading').scrollIntoView({behavior:'smooth'});
+
+  try {
+    const res = await apiPost('/api/employer/analyze', { jobTitle: role, roughRequirement });
+    const json = await res.json().catch(()=>({}));
+    if (!json.ok) { throw new Error((json.error && json.error.message) || ('HTTP ' + res.status)); }
+    const modeEl = document.getElementById('analyze-mode');
+    if (modeEl) modeEl.textContent = (json.mode === 'mock') ? '🔸 MOCK 演示数据' : ('Mode: ' + json.mode);
+    window.__employerJobTitle = role;
+    window.__employerRough = roughRequirement;
+    renderAnalyze(json.data);
+  } catch(err) {
+    console.error(err);
+    errEl.textContent = '岗位分析失败：' + err.message;
+    errEl.classList.remove('hidden');
+  } finally {
+    document.getElementById('loading').classList.add('hidden');
+    btn.disabled = false; btn.textContent = '🤖 AI 生成岗位说明';
+  }
+}
+
+// ─── HTML escape ───────────────────────────────────────────────────
+function escH(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+
+// ─── 渲染岗位画像卡片（契约 JobProfile 全字段） ───────────────────
+function buildProfileHTML(p) {
+  function chip(arr,color){if(!arr||!arr.length)return '<span class="text-xs text-gray-600">无</span>';return arr.map(function(x){return '<span class="text-xs px-2.5 py-1 rounded-full border '+color+'">'+escH(x)+'</span>';}).join('');}
+  function list(arr){if(!arr||!arr.length)return '<p class="text-xs text-gray-600">无</p>';return '<ul class="space-y-1">'+arr.map(function(x){return '<li class="text-sm text-gray-300 flex gap-2"><span class="text-tech-cyan">•</span><span>'+escH(x)+'</span></li>';}).join('')+'</ul>';}
+  var meta='';
+  if(p.employmentType)meta+='<span class="text-xs px-2.5 py-1 rounded-full bg-tech-blue/15 text-tech-blue border border-tech-blue/30">'+escH(p.employmentType)+'</span>';
+  if(p.seniority)meta+='<span class="text-xs px-2.5 py-1 rounded-full bg-gradient-purple/15 text-purple-300 border border-gradient-purple/30">'+escH(p.seniority)+'</span>';
+  var html='';
+  html+='<div class="mb-4"><p class="text-xs text-gray-500 mb-1">岗位名称</p><div class="flex items-center gap-2 flex-wrap"><p class="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-tech-blue to-tech-cyan">'+escH(p.jobTitle||'目标岗位')+'</p>'+meta+'</div></div>';
+  html+='<div class="grid grid-cols-1 md:grid-cols-2 gap-4">';
+  html+='<div><p class="text-xs text-gray-500 mb-1.5">📋 岗位职责</p>'+list(p.responsibilities)+'</div>';
+  html+='<div><p class="text-xs text-gray-500 mb-1.5">🎯 核心能力</p>'+list(p.coreCompetencies)+'</div>';
+  html+='<div><p class="text-xs text-gray-500 mb-1.5">🔴 硬性要求</p><div class="flex flex-wrap gap-1.5">'+chip(p.mustHaves,'bg-red-400/10 text-red-300 border-red-400/25')+'</div></div>';
+  html+='<div><p class="text-xs text-gray-500 mb-1.5">🟢 加分项</p><div class="flex flex-wrap gap-1.5">'+chip(p.niceToHaves,'bg-green-400/10 text-green-300 border-green-400/25')+'</div></div>';
+  html+='<div><p class="text-xs text-gray-500 mb-1.5">📈 预期成果</p>'+list(p.expectedOutcomes)+'</div>';
+  html+='<div><p class="text-xs text-gray-500 mb-1.5">⛓️ 约束条件</p>'+list(p.constraints)+'</div>';
+  html+='</div>';
+  html+='<div class="mt-4 pt-4 border-t border-white/5 grid grid-cols-1 md:grid-cols-2 gap-4">';
+  html+='<div><p class="text-xs text-gray-500 mb-1.5">🏷️ 关键词</p><div class="flex flex-wrap gap-1.5">'+chip(p.keywords,'bg-tech-cyan/10 text-tech-cyan border-tech-cyan/25')+'</div></div>';
+  html+='<div><p class="text-xs text-gray-500 mb-1.5">❓ 不确定项（需企业确认）</p>'+list(p.uncertainties)+'</div>';
+  html+='</div>';
+  return html;
+}
+
+// ─── 渲染 /api/employer/analyze 结果 ───────────────────────────────
+function renderAnalyze(data) {
+  var p = data.jobProfile || {};
+  ['responsibilities','coreCompetencies','mustHaves','niceToHaves','expectedOutcomes','constraints','keywords','uncertainties'].forEach(function(k){
+    if(!Array.isArray(p[k])) p[k] = [];
   });
-  document.getElementById('ent-dimensions').innerHTML=dimHtml;
+  window.__employerJobProfile = p;
+  window.__employerQuestions = data.questions || [];
+  document.getElementById('analyze-profile-body').innerHTML = buildProfileHTML(p);
+  var qs = window.__employerQuestions;
+  var html = qs.map(function(q, i){
+    var inputType = q.answerType === 'number' ? 'type="number"' : 'type="text"';
+    return '<div class="border border-white/10 rounded-lg p-4">'+
+      '<div class="flex items-center gap-2 mb-1">'+
+      '<span class="text-xs text-gray-500">问题 '+(i+1)+'</span>'+
+      (q.required?'<span class="text-xs text-red-400">*必答</span>':'')+
+      '<span class="text-xs text-gray-500">'+escH(q.answerType||'text')+'</span>'+
+      '</div>'+
+      '<p class="text-sm text-gray-200 mb-1">'+escH(q.text||'')+'</p>'+
+      (q.reason?'<p class="text-xs text-gray-500 mb-2">💡 '+escH(q.reason)+'</p>':'')+
+      '<input '+inputType+' id="ans-'+q.id+'" class="ai-input !py-2 !text-sm" placeholder="输入企业回答（可留空）">'+
+      '</div>';
+  }).join('');
+  html += '<div class="mt-4"><button class="glow-btn w-full" id="gen-jd-btn" onclick="generateJD()">✅ 确认回答，生成岗位说明 →</button></div>';
+  document.getElementById('analyze-questions').innerHTML = html;
+  document.getElementById('generate-results').classList.add('hidden');
+  document.getElementById('analyze-results').classList.remove('hidden');
+  document.getElementById('analyze-results').scrollIntoView({behavior:'smooth'});
+}
 
-  // Interview questions — exactly 5
-  var qs=kit.interviewQuestions;
-  var qHtml='<p class="text-xs text-gray-400 mb-4">共 <strong class="text-tech-cyan">'+qs.length+'</strong> 道面试题'+(qs.length===5?' ✅':' ⚠️应=5')+'，每题包含考察能力、目的与优秀回答信号。</p>';
+// ─── 列表渲染 helper ───────────────────────────────────────────────
+function listOrEmpty(arr){if(!arr||!arr.length)return '<p class="text-xs text-gray-600">无</p>';return '<ul class="space-y-1">'+arr.map(function(x){return '<li class="text-sm text-gray-300 flex gap-2"><span class="text-tech-cyan">•</span><span>'+escH(x)+'</span></li>';}).join('')+'</ul>';}
+
+// ─── 确认回答 → POST /api/employer/generate ────────────────────────
+async function generateJD() {
+  var qs = window.__employerQuestions || [];
+  var answers = [];
+  qs.forEach(function(q){
+    var el = document.getElementById('ans-'+q.id);
+    var val = el ? el.value.trim() : '';
+    if (val) { answers.push({ questionId: q.id, answer: val }); }
+  });
+  var missing = qs.filter(function(q){ return q.required && !answers.some(function(a){return a.questionId===q.id;}); });
+  if (missing.length) {
+    alert('请回答必答问题：' + missing.map(function(q){return q.text;}).join('；'));
+    return;
+  }
+  var reqBody = {
+    jobTitle: window.__employerJobTitle,
+    roughRequirement: window.__employerRough,
+    jobProfile: window.__employerJobProfile,
+    questions: qs,
+    answers: answers
+  };
+  var btn = document.getElementById('gen-jd-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ 生成中...'; }
+  try {
+    var res = await apiPost('/api/employer/generate', reqBody);
+    var json = await res.json().catch(function(){return {};});
+    if (!json.ok) { throw new Error((json.error && json.error.message) || ('HTTP ' + res.status)); }
+    renderGenerate(json.data);
+  } catch(err) {
+    console.error(err);
+    alert('生成失败：' + err.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '✅ 确认回答，生成岗位说明 →'; }
+  }
+}
+
+// ─── 列表渲染 helper ───────────────────────────────────────────────
+function listOrEmpty(arr){if(!arr||!arr.length)return '<p class="text-xs text-gray-600">无</p>';return '<ul class="space-y-1">'+arr.map(function(x){return '<li class="text-sm text-gray-300 flex gap-2"><span class="text-tech-cyan">•</span><span>'+escH(x)+'</span></li>';}).join('')+'</ul>';}
+
+// ─── 渲染 /api/employer/generate 结果（RecruitmentKit 正式结构）──────
+function renderGenerate(data) {
+  var p = data.jobProfile || {};
+  ['responsibilities','coreCompetencies','mustHaves','niceToHaves','expectedOutcomes','constraints','keywords','uncertainties'].forEach(function(k){
+    if(!Array.isArray(p[k])) p[k] = [];
+  });
+  // 1. 确认后的岗位画像
+  document.getElementById('gen-profile-body').innerHTML = buildProfileHTML(p);
+  // 2. 标准化 JD（standardizedJD）
+  var jd = data.standardizedJD || {};
+  var jdHtml = '';
+  if (jd.title) jdHtml += '<div class="mb-3"><p class="text-xs text-gray-500 mb-1">岗位名称</p><p class="text-sm text-tech-cyan font-semibold">'+escH(jd.title)+'</p></div>';
+  if (jd.summary) jdHtml += '<div class="mb-3"><p class="text-xs text-gray-500 mb-1">岗位概述</p><p class="text-sm text-gray-200 leading-relaxed">'+escH(jd.summary)+'</p></div>';
+  jdHtml += '<div class="mb-3"><p class="text-xs text-gray-500 mb-1">岗位职责</p>'+listOrEmpty(jd.responsibilities)+'</div>';
+  jdHtml += '<div class="mb-3"><p class="text-xs text-gray-500 mb-1">任职要求</p>'+listOrEmpty(jd.requirements)+'</div>';
+  jdHtml += '<div class="mb-3"><p class="text-xs text-gray-500 mb-1">加分项</p>'+listOrEmpty(jd.niceToHaves)+'</div>';
+  jdHtml += '<div><p class="text-xs text-gray-500 mb-1">工作条件</p>'+listOrEmpty(jd.workingConditions)+'</div>';
+  document.getElementById('gen-jd-body').innerHTML = jdHtml;
+  // 3. 筛选维度及权重（含 evidenceToLookFor）
+  var dims = data.screeningDimensions || [];
+  var sum = dims.reduce(function(a,d){return a+(d.weight||0);},0);
+  var dimHtml = '<div class="space-y-3">';
+  dims.forEach(function(d,i){
+    dimHtml += '<div class="border border-white/10 rounded-lg p-3">'+
+      '<div class="flex items-center justify-between mb-1">'+
+      '<span class="text-sm text-gray-200">'+escH(d.name||('维度'+(i+1)))+'</span>'+
+      '<span class="text-xs px-2 py-0.5 rounded-full bg-tech-cyan/15 text-tech-cyan border border-tech-cyan/30">权重 '+d.weight+'</span>'+
+      '</div>'+
+      (d.description?'<p class="text-xs text-gray-500 mb-1">'+escH(d.description)+'</p>':'')+
+      (d.evidenceToLookFor&&d.evidenceToLookFor.length?'<p class="text-xs text-gray-500">🔍 证据线索：'+d.evidenceToLookFor.map(escH).join('、')+'</p>':'')+
+      '</div>';
+  });
+  dimHtml += '</div>';
+  dimHtml += '<p class="text-xs text-gray-500 mt-3">权重总和：'+sum+'（须为正整数且合计 100）</p>';
+  document.getElementById('gen-screening-body').innerHTML = dimHtml;
+  // 4. 面试题（严格5道，competency/purpose/strongAnswerSignals）
+  var qs = data.interviewQuestions || [];
+  var qHtml = '<div class="space-y-3">';
   qs.forEach(function(q,i){
-    qHtml+='<div class="p-4 rounded-xl bg-white/3 border border-white/5"><div class="flex items-start gap-2 mb-2"><span class="text-tech-cyan text-xs font-bold mt-0.5">Q'+(i+1)+'</span><p class="text-gray-200 text-sm flex-1">'+q.question+'</p></div><p class="text-xs text-gray-500 mb-1">考察能力：<span class="text-indigo-300">'+q.competency+'</span></p><p class="text-xs text-gray-500 mb-1">目的：'+q.purpose+'</p><div class="text-xs text-gray-500">优秀回答信号：'+q.strongAnswerSignals.map(function(s){return '<span class="skill-tag !text-xs !px-2 !py-0.5 mr-1 mb-1 inline-block">'+s+'</span>';}).join('')+'</div></div>';
+    qHtml += '<div class="border border-white/10 rounded-lg p-4">'+
+      '<div class="flex items-center gap-2 mb-1">'+
+      '<span class="text-xs text-gray-500">问题 '+(i+1)+'</span>'+
+      '<span class="text-xs px-2 py-0.5 rounded-full bg-purple-400/10 text-purple-300 border border-purple-400/30">'+escH(q.competency||'')+'</span>'+
+      '</div>'+
+      '<p class="text-sm text-gray-200 mb-2">'+escH(q.question||'')+'</p>'+
+      (q.purpose?'<p class="text-xs text-gray-500 mb-1">🎯 '+escH(q.purpose)+'</p>':'')+
+      (q.strongAnswerSignals&&q.strongAnswerSignals.length?'<p class="text-xs text-green-400/80">✓ 优秀信号：'+q.strongAnswerSignals.map(escH).join('、')+'</p>':'')+
+      (q.followUpQuestion?'<p class="text-xs text-gray-500 mt-1">↪ 追问：'+escH(q.followUpQuestion)+'</p>':'')+
+      '</div>';
   });
-  document.getElementById('ent-interview-questions').innerHTML=qHtml;
+  qHtml += '</div>';
+  qHtml += '<p class="text-xs text-gray-500 mt-3">共 '+qs.length+' 道面试题（严格 5 道）</p>';
+  document.getElementById('gen-interview-body').innerHTML = qHtml;
+  // 显示
+  document.getElementById('generate-results').classList.remove('hidden');
+  document.getElementById('generate-results').scrollIntoView({behavior:'smooth'});
 }
 
-function entReset(){
-  entJobTitle='';entRoughRequirement='';entJobProfile=null;entQuestions=[];
-  document.getElementById('ent-results').classList.add('hidden');
-  document.getElementById('ent-questions-card').classList.add('hidden');
-  document.getElementById('jd-form').classList.remove('hidden');
-  document.getElementById('ent-job-title').value='';document.getElementById('ent-jd-raw').value='';
-  setEntStep(1);
+// ─── Local Fallback ─────────────────────────────────────────────────
+function buildLocalResponse(company, role) {
+  const primary = selectedSkills[0] || '专业技能';
+  const weights = selectedSkills.length === 2 ? [55,45]
+    : selectedSkills.length === 3 ? [40,35,25]
+    : selectedSkills.length === 4 ? [30,28,22,20]
+    : [30,25,20,15,10];
+
+  const comps = selectedSkills.slice(0,5);
+  while (comps.length < 5) comps.push('综合能力');
+
+  return {
+    company: company || '您的公司', role,
+    standardJD: {
+      overview: `我们正在寻找一位${role}，负责${currentIndustry}领域的相关工作。理想候选人应具备${selectedSkills.slice(0,3).join('、')}等能力。`,
+      responsibilities: [
+        `负责${role}日常核心工作，确保项目按时高质量交付`,
+        `与团队协作推进${primary}相关项目`,
+        `跟踪和分析关键数据指标，持续优化工作效果`,
+        `关注行业趋势，输出有价值的内容和方案`,
+        `制定和执行${role}相关策略，推动业务增长`
+      ],
+      requirements: [
+        '本科及以上学历', `具备${role}相关经验`,
+        `熟练掌握${primary}`, '良好的沟通协作能力'
+      ],
+      niceToHave: [`有${currentIndustry}行业经验`, `有${primary}相关证书或作品集`, '能快速到岗']
+    },
+    coreCompetencies: comps.map((s,i) => ({
+      name: s, weight: weights[i] || 15,
+      description: `${s}是${role}岗位的核心能力维度。`
+    })),
+    mustHave: [`具备${primary}能力`, '能全职工作', '有相关经验'],
+    preferred: [`有${currentIndustry}行业背景`, '能长期稳定工作', '有出色的案例/作品'],
+    candidateProfile: `具备${selectedSkills.slice(0,3).join('、')}等核心能力，${currentIndustry}行业背景优先的${role}。`,
+    interviewQuestions: [
+      { question: `请分享一个你运用${primary}完成的最满意的项目案例。`, dimension: '专业能力', whatToLookFor: '好答案：清晰的项目背景、个人角色、具体行动和量化成果。差答案：描述模糊。', weight: '高' },
+      { question: `在${role}工作中，遇到过最棘手的问题是什么？怎么解决的？`, dimension: '问题解决', whatToLookFor: '好答案：描述问题背景、分析思路、尝试方案、最终结果。差答案：归因于外部。', weight: '高' },
+      { question: `你如何保持对${currentIndustry}行业趋势的了解？`, dimension: '行业认知', whatToLookFor: '好答案：有具体关注渠道、能说出行业趋势。差答案：泛泛而谈。', weight: '中' },
+      { question: '当多个紧急任务同时出现时，你如何安排优先级？', dimension: '时间管理', whatToLookFor: '好答案：有判断标准、能解释取舍逻辑。差答案：没有具体方法。', weight: '中' },
+      { question: '在团队协作中，如果你发现某个流程效率很低，你会怎么做？', dimension: '主动性', whatToLookFor: '好答案：先调研原因、提出方案、推动落地。差答案：抱怨或等着别人解决。', weight: '低' }
+    ],
+    salaryReference: `${selectedSalary}（${currentIndustry}行业参考）`
+  };
 }
 
-// Init
-document.addEventListener('DOMContentLoaded',()=>{new ParticleSystem();setEntStep(1);});
+// ─── Render ────────────────────────────────────────────────────────
+function render(d) {
+  // 1. Standard JD
+  document.getElementById('jd-company').textContent = d.company || '';
+  document.getElementById('jd-role').textContent = d.role || '';
+  document.getElementById('jd-overview').textContent = (d.standardJD || d).overview || '';
 
+  const jd = d.standardJD || d;
+  document.getElementById('jd-responsibilities').innerHTML = (jd.responsibilities || []).map(r =>
+    `<li class="flex items-start gap-2 text-sm text-gray-300"><span class="text-tech-cyan mt-1">•</span>${escapeHtml(r)}</li>`
+  ).join('');
+  document.getElementById('jd-requirements').innerHTML = (jd.requirements || []).map(r =>
+    `<li class="flex items-start gap-2 text-sm text-gray-300"><span class="text-tech-cyan mt-1">•</span>${escapeHtml(r)}</li>`
+  ).join('');
+  document.getElementById('jd-nice').innerHTML = (jd.niceToHave || []).map(r =>
+    `<li class="flex items-start gap-2 text-sm text-gray-300"><span class="text-green-400 mt-1">•</span>${escapeHtml(r)}</li>`
+  ).join('');
+
+  // 2. Competencies
+  document.getElementById('competencies').innerHTML = (d.coreCompetencies || []).map(c => {
+    const w = c.weight || 0;
+    return `<div>
+      <div class="flex justify-between items-center mb-1.5"><span class="text-sm text-white font-medium">${escapeHtml(c.name)}</span><span class="text-xs text-tech-cyan">${w}%</span></div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${w}%"></div></div>
+      <p class="text-xs text-gray-500 mt-1">${escapeHtml(c.description || '')}</p>
+    </div>`;
+  }).join('');
+
+  // 3. Must-have / Preferred
+  document.getElementById('must-have-list').innerHTML = (d.mustHave || []).map(r =>
+    `<li class="flex items-start gap-2 text-sm text-gray-300"><span class="tag tag-must shrink-0">必须</span>${escapeHtml(r)}</li>`
+  ).join('');
+  document.getElementById('preferred-list').innerHTML = (d.preferred || []).map(r =>
+    `<li class="flex items-start gap-2 text-sm text-gray-300"><span class="tag tag-nice shrink-0">加分</span>${escapeHtml(r)}</li>`
+  ).join('');
+
+  // 4. Candidate Profile
+  document.getElementById('candidate-profile').textContent = d.candidateProfile || '';
+
+  // 5. Interview Qs
+  document.getElementById('interview-qs').innerHTML = (d.interviewQuestions || []).map((q, i) => {
+    const weightColors = { '高': 'text-red-400 bg-red-400/10', '中': 'text-amber-400 bg-amber-400/10', '低': 'text-green-400 bg-green-400/10' };
+    const wc = weightColors[q.weight] || weightColors['中'];
+    return `<div class="section-card">
+      <div class="flex items-start justify-between gap-4">
+        <div class="flex-1">
+          <p class="text-white font-medium">${i+1}. ${escapeHtml(q.question)}</p>
+          <div class="flex flex-wrap gap-2 mt-2">
+            <span class="text-xs text-gray-500 bg-white/5 px-2 py-0.5 rounded">🎯 ${escapeHtml(q.dimension || '')}</span>
+            <span class="text-xs ${wc} px-2 py-0.5 rounded font-medium">权重: ${escapeHtml(q.weight || '中')}</span>
+          </div>
+        </div>
+      </div>
+      <div class="mt-3 p-3 rounded-lg bg-white/[0.02] border border-white/5">
+        <p class="text-xs text-gray-400"><span class="text-tech-cyan">🔍 考察要点：</span>${escapeHtml(q.whatToLookFor || '')}</p>
+      </div>
+    </div>`;
+  }).join('');
+
+  // 6. Salary
+  document.getElementById('salary-ref').textContent = d.salaryReference || '根据市场行情面议';
+
+  // Progress bar animation trigger
+  setTimeout(() => {
+    document.querySelectorAll('.progress-fill').forEach(el => {
+      el.style.transition = 'none';
+      el.offsetHeight;
+      el.style.transition = 'width 1.2s ease-out';
+    });
+  }, 200);
+}
+
+// ─── Copy Section ───────────────────────────────────────────────────
+function copySection(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const text = el.innerText.replace(/\n{2,}/g, '\n').trim();
+  navigator.clipboard.writeText(text).then(() => toast('✅ 已复制到剪贴板')).catch(() => toast('复制失败，请手动选中复制', true));
+}
+
+// ─── Export Full JD ────────────────────────────────────────────────
+function exportFullJD() {
+  const results = document.getElementById('results');
+  if (!results) return;
+  const sections = results.querySelectorAll('.glass-card');
+  let text = '';
+  sections.forEach(s => { const txt = s.innerText.trim(); if (txt) text += txt + '\n\n' + '─'.repeat(50) + '\n\n'; });
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = '岗位说明_' + (document.getElementById('jd-role').textContent || 'JD') + '.txt';
+  a.click(); URL.revokeObjectURL(url);
+  toast('📄 岗位说明已导出');
+}
+
+// ─── Utils ─────────────────────────────────────────────────────────
+function escapeHtml(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 </script>
 </body>
 </html>
