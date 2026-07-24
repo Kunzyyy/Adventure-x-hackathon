@@ -13,15 +13,15 @@ describe("approved UI integration", () => {
     for (const page of ["index.html", "student.html", "enterprise.html"]) {
       const html = readRepoFile(page);
       expect(html).toContain('data-design-system="warm-paper-clay"');
-      expect(html).toContain('/css/approved-ui.css');
+      expect(html).toContain('./css/approved-ui.css');
       expect(html).not.toMatch(/cdn\.tailwindcss|three\.js|gsap/i);
     }
   });
 
   test("homepage routes users into both functional product flows", () => {
     const html = readRepoFile("index.html");
-    expect(html).toContain('href="/student.html"');
-    expect(html).toContain('href="/enterprise.html"');
+    expect(html).toContain('href="./student.html"');
+    expect(html).toContain('href="./enterprise.html"');
   });
 
   test("student UI contains the approved four-step shell and all seeker endpoints", () => {
