@@ -714,54 +714,17 @@ function proceedToGenerate(){
   });
 }
 
-/* ===== 根据已确认事实生成简历（沿用原 AI 链路） ===== */
+/* ===== 根据已确认事实生成简历 → POST /api/seeker/generate（mock） ===== */
 function generateResumeFromFacts(){
   var confirmed=facts.filter(function(f){return f.confirmed;});
-  var factsText=confirmed.map(function(f){return '['+f.category+'] '+f.statement+(f.sourceQuote?('（来源原话：'+f.sourceQuote+'）'):'');}).join('\n');
-  var hasInternship=confirmed.some(function(f){return f.category==='internship';});
-  var expandHint='';
-  if(!hasInternship){
-    expandHint='\n\n【⚠️ 应届生扩充指令】\n候选人目前没有正式实习经验。你必须主动通过以下方式把简历做到信息充实、专业饱满：\n'+
-      '① 把【课程作业/毕业设计/课程项目/大作业】包装成 2-3 个"项目经验"，写出商业价值\n'+
-      '② 把【社团/学生会/志愿者/班级职务/比赛/兼职】包装成"实践经历"，体现组织/协作/领导力\n'+
-      '③ 补充【专业技能/工具/语言】时，只能基于候选人事实中提到的内容或其课程/项目的合理延伸；禁止虚构证书、获奖、竞赛名次\n'+
-      '④ 每个项目/经历必须用 STAR 方法描述，并尽量量化（数据/比例/排名/规模/用户数）\n'+
-      '⑤ 自我评价避免空洞词（不要"我积极乐观"），写真实体现岗位匹配的具体素质\n';
-  }
-  var resumeSys='你是资深简历生成专家，擅长为应届毕业生撰写专业简历。根据用户确认的事实（部分可能很简短），生成一份【信息充实、结构完整、专业饱满】的应届生简历 JSON。'+
-    '【真实性红线·最高优先级】\n'+
-    '0) 严禁虚构事实：公司名、学校名、专业、学位、职位、时间、GPA、主修课程必须 100% 来自用户提供的事实；候选人没提过的雇主（尤其是知名企业，如腾讯、阿里巴巴、字节跳动等）绝不允许出现在简历里；不得编造候选人没做过的项目或没获得过的奖项证书；教育背景(education)必须来自事实中 education 类别的条目，若用户未提供学校/专业/时间，education 必须设为空数组 []，绝不允许编造"XX大学·计算机专业·本科·2021-2025·GPA 3.5"这类内容\n'+
-    '核心要求：\n'+
-    '1) 不要局限于事实字面，每个事实都要【扩展、量化、提炼】成 1-3 个专业表达（"扩展"仅指对真实经历的专业化表达，绝不虚构新事实）\n'+
-    '2) 用 STAR 方法（情境/任务/行动/结果）描述项目/经历，结果尽量量化\n'+
-    '3) 动词开头，条理清晰，专业术语准确\n'+
-    '4) 技能要【分类】（专业技能/工具/语言/软技能），并标注熟练程度（熟练/掌握/了解）\n'+
-    '5) 自我评价避免空洞词，体现岗位匹配的具体素质'+
-    expandHint+
-    '\n\n【输出 JSON 结构】（只输出 JSON，不要任何解释文字、Markdown、代码块标记）：\n{\n'+
-    '  "title": "简历标题（如：短视频运营与内容创作专家）",\n'+
-    '  "name": "姓名",\n'+
-    '  "summary": [{"text":"个人概述","evidenceIds":[]}, ...至少 2 条],\n'+
-    '  "education": [{"text":"学校·专业·学位·时间·GPA·主修课程","evidenceIds":[]}]（仅来自事实 education 类别,若用户未提供教育信息则设为空数组 []）,\n'+
-    '  "experiences": [{"name":"项目/经历名","role":"你的角色","period":"时间","bullets":[{"text":"...","evidenceIds":[]}, ...3-5 条]}, ...至少 4-5 段],\n'+
-    '  "projects": [{"name":"项目名","role":"你的角色","period":"时间","desc":"一句话项目描述","tech":"技术栈","highlights":["亮点1","亮点2"]}, ...可选, 建议 1-3 个],\n'+
-    '  "skills": [{"text":"技能名（熟练程度）","evidenceIds":[]}, ...至少 6-10 条],\n'+
-    '  "awards": [{"text":"奖项/证书","evidenceIds":[]}, ...可选, 建议 1-3 条],\n'+
-    '  "certifications": [{"text":"证书名","evidenceIds":[]}, ...可选],\n'+
-    '  "languages": [{"text":"语言(等级)","evidenceIds":[]}, ...可选, 至少 1 条],\n'+
-    '  "selfEvaluation": "2-3 句话的自我评价，体现岗位匹配和个人优势，避免空洞词"\n'+
-    '}';
-  return callAI(factsText, resumeSys, 'resume_expert')
-    .then(function(reply){
-      generatedResume=extractJSON(reply);
-      document.getElementById('loading-text').textContent='AI正在分析简历的缺失信息与面试风险...';
-      var checkSys='你是求职辅导专家。基于生成的简历内容，分析：\n1) 简历中【缺失但应该补充】的信息（如起止时间、GPA、作品链接、数据量化等）\n2) 面试官看到这份简历后可能的【追问风险】（如对某个项目细节、某个数据、某个能力的怀疑）\n3) 必须基于这份简历的实际内容，不要输出无关的通用建议\n\n输出 JSON（只输出 JSON）：\n{\n  "missingInfo":["缺失信息1","缺失信息2", ...至少 3 条],\n  "interviewRisks":[{"risk":"追问风险描述","relatedFact":"简历中对应的内容点"}, ...至少 2 条]\n}';
-      return callAI('目标岗位：'+(jobProfile&&jobProfile.jobTitle?jobProfile.jobTitle:'')+'\n\n简历内容：\n'+JSON.stringify(generatedResume), checkSys, 'career_advisor');
-    })
-    .then(function(checkReply){
-      var ck=extractJSON(checkReply);
-      missingInfo=Array.isArray(ck.missingInfo)?ck.missingInfo:[];
-      interviewRisks=Array.isArray(ck.interviewRisks)?ck.interviewRisks:[];
+  return apiPost('/api/seeker/generate', {jobProfile:jobProfile||{}, confirmedFacts:confirmed})
+    .then(function(json){
+      if(!json.ok) throw new Error((json.error&&json.error.message)||'生成失败');
+      setModeBadge(json.mode);
+      var d=json.data||{};
+      generatedResume=d.resume||{};
+      missingInfo=Array.isArray(d.missingInformation)?d.missingInformation:[];
+      interviewRisks=Array.isArray(d.interviewRisks)?d.interviewRisks:[];
       document.getElementById('step-loading').classList.add('hidden');setStep(3);renderResume();
       document.getElementById('step3').classList.remove('hidden');
       document.getElementById('step3').scrollIntoView({behavior:'smooth',block:'start'});

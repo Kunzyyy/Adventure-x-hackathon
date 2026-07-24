@@ -449,3 +449,202 @@ seekerRouter.post("/facts", (req: Request, res: Response) => {
   const missingInformation = deriveMissingInformation(jobProfile, answers as AnswerItem[]);
   res.json({ ok: true, data: { facts, missingInformation }, mode });
 });
+
+// ─── 契约类型：简历生成（SeekerGenerateRequest/Response）───
+interface ResumeBullet { text: string; evidenceIds: string[]; }
+interface ResumeExperience { name: string; role: string; period: string; bullets: ResumeBullet[]; }
+interface ResumeObject {
+  title: string;
+  name: string;
+  summary: ResumeBullet[];
+  education: ResumeBullet[];
+  experiences: ResumeExperience[];
+  projects: any[];
+  skills: ResumeBullet[];
+  awards: ResumeBullet[];
+  certifications: ResumeBullet[];
+  languages: ResumeBullet[];
+  selfEvaluation: string;
+}
+interface InterviewRisk { risk: string; relatedFactId: string; }
+
+// ─── MOCK：从已确认事实派生简历（每条要点 evidenceIds 只引用本次事实）───
+function deriveMockResume(jobProfile: any, confirmedFacts: Fact[]): ResumeObject {
+  const ids = confirmedFacts.map((f) => f.id);
+  const byCat: Record<FactCategory, Fact[]> = {
+    education: [], internship: [], project: [], skill: [], activity: [], other: [],
+  };
+  confirmedFacts.forEach((f) => {
+    (byCat[f.category] || byCat.other).push(f);
+  });
+  const jobTitle =
+    jobProfile && typeof jobProfile.jobTitle === "string" && jobProfile.jobTitle
+      ? jobProfile.jobTitle
+      : "目标岗位";
+
+  const summary: ResumeBullet[] = [
+    {
+      text: "求职 " + jobTitle + " 方向，具备以下相关经历与技能。",
+      evidenceIds: ids.slice(0, Math.min(4, ids.length)),
+    },
+  ];
+  const education: ResumeBullet[] = byCat.education.map((f) => ({
+    text: f.statement,
+    evidenceIds: [f.id],
+  }));
+
+  const expFacts = byCat.internship
+    .concat(byCat.project)
+    .concat(byCat.activity)
+    .concat(byCat.other)
+    .filter((f) => f.statement && f.statement.trim().length >= 3);
+  const nameByCat: Record<string, string> = {
+    internship: "工作经历",
+    project: "项目经历",
+    activity: "实践经历",
+    other: "相关经历",
+  };
+  let counter = 0;
+  const experiences: ResumeExperience[] = expFacts.map((f) => {
+    counter += 1;
+    return {
+      name: (nameByCat[f.category] || "相关经历") + " " + counter,
+      role: "参与者",
+      period: "",
+      bullets: [{ text: f.statement, evidenceIds: [f.id] }],
+    };
+  });
+
+  const skills: ResumeBullet[] = byCat.skill.map((f) => ({
+    text: f.statement,
+    evidenceIds: [f.id],
+  }));
+
+  return {
+    title: jobTitle + " · 简历",
+    name: "候选人",
+    summary,
+    education,
+    experiences,
+    projects: [],
+    skills,
+    awards: [],
+    certifications: [],
+    languages: [],
+    selfEvaluation:
+      "基于已确认事实整理的 " + jobTitle + " 方向简历，各条目均可追溯至候选人原话。",
+  };
+}
+
+// ─── MOCK：派生「待补充信息」（基于岗位 mustHaves 与事实覆盖度）───
+function missingInfoFromHay(jobProfile: any, hay: string): string[] {
+  const out: string[] = [];
+  const lower = hay.toLowerCase();
+  const mentions = (kw: string) =>
+    !kw ? false : /[a-z]/i.test(kw) ? lower.includes(kw.toLowerCase()) : hay.includes(kw);
+  if (!/学校|大学|学院|专业|课程|毕业|学位|GPA|绩点/.test(hay)) {
+    out.push("未提供教育背景（学校/专业/时间）");
+  }
+  if (!/实习|入职|公司|在职|工作经历/.test(hay)) {
+    out.push("未提供实习或工作经历");
+  }
+  const mustHaves: string[] =
+    jobProfile && Array.isArray(jobProfile.mustHaves) ? jobProfile.mustHaves : [];
+  mustHaves.forEach((s: any) => {
+    const skill = typeof s === "string" ? s.trim() : "";
+    if (skill && !mentions(skill)) out.push("未说明 " + skill + " 相关经验");
+  });
+  if (out.length === 0) out.push("未提供可量化的成果数据（如规模/比例/排名）");
+  return out;
+}
+
+// ─── MOCK：派生面试追问风险（relatedFactId 只引用本次事实 id）───
+function deriveMockInterviewRisks(
+  jobProfile: any,
+  resume: ResumeObject,
+  missingInfo: string[]
+): InterviewRisk[] {
+  const risks: InterviewRisk[] = [];
+  const expBullets: ResumeBullet[] = (resume.experiences || []).flatMap((e) => e.bullets || []);
+  if (expBullets.length) {
+    const evId = (expBullets[0].evidenceIds || [])[0] || "";
+    risks.push({
+      risk: "面试官可能追问「" + expBullets[0].text + "」的具体角色、时间跨度与量化成果",
+      relatedFactId: evId,
+    });
+  }
+  const mustHaves: string[] =
+    jobProfile && Array.isArray(jobProfile.mustHaves) ? jobProfile.mustHaves : [];
+  if (mustHaves.length) {
+    risks.push({
+      risk: "可能追问硬性要求 " + mustHaves.slice(0, 3).join("/") + " 的真实熟练度与使用场景",
+      relatedFactId: "",
+    });
+  }
+  if (missingInfo.length) {
+    risks.push({
+      risk: "简历缺少：" + missingInfo.slice(0, 2).join("；") + "，可能被追问补全",
+      relatedFactId: "",
+    });
+  }
+  if (!risks.length) {
+    risks.push({ risk: "可能追问项目细节与团队协作经历", relatedFactId: "" });
+  }
+  return risks;
+}
+
+// ─── POST /api/seeker/generate（mock）───
+// 请求：{ jobProfile, confirmedFacts: Fact[] }
+// 响应：{ ok, data: { resume, missingInformation, interviewRisks }, mode }
+// 简历每条要点的 evidenceIds 只引用 confirmedFacts 中的 id。
+seekerRouter.post("/generate", (req: Request, res: Response) => {
+  const mode: APIMode = "mock";
+  const body = req.body || {};
+  const fieldErrors: Record<string, string[]> = {};
+
+  const jobProfile = body.jobProfile;
+  if (!jobProfile || typeof jobProfile !== "object" || Array.isArray(jobProfile)) {
+    fieldErrors.jobProfile = ["jobProfile 为必填项"];
+  }
+
+  const cf = Array.isArray(body.confirmedFacts) ? body.confirmedFacts : null;
+  if (!cf || cf.length === 0) {
+    fieldErrors.confirmedFacts = ["confirmedFacts 为必填项且不能为空"];
+  } else {
+    const idSet: Record<string, boolean> = {};
+    cf.forEach((f: any, i: number) => {
+      if (!f || typeof f.id !== "string" || !f.id.trim()) {
+        fieldErrors["confirmedFacts[" + i + "].id"] = ["事实缺少 id"];
+      } else if (idSet[f.id]) {
+        fieldErrors["confirmedFacts[" + i + "].id"] = ["事实 id 重复：" + f.id];
+      } else {
+        idSet[f.id] = true;
+      }
+    });
+  }
+
+  if (Object.keys(fieldErrors).length > 0) {
+    res.status(400).json({
+      ok: false,
+      error: { code: "INVALID_INPUT", message: "请求内容不完整", fieldErrors },
+      mode,
+    });
+    return;
+  }
+
+  const validCats = ["education", "internship", "project", "skill", "activity", "other"];
+  const confirmedFacts: Fact[] = (cf as any[]).map((f: any) => ({
+    id: String(f.id),
+    category: (validCats.indexOf(f.category) >= 0 ? f.category : "other") as FactCategory,
+    statement: typeof f.statement === "string" ? f.statement : "",
+    sourceQuestionId: typeof f.sourceQuestionId === "string" ? f.sourceQuestionId : "",
+    sourceQuote: typeof f.sourceQuote === "string" ? f.sourceQuote : "",
+    confirmed: true,
+  }));
+
+  const resume = deriveMockResume(jobProfile, confirmedFacts);
+  const hay = confirmedFacts.map((f) => f.statement).join(" ");
+  const missingInformation = missingInfoFromHay(jobProfile, hay);
+  const interviewRisks = deriveMockInterviewRisks(jobProfile, resume, missingInformation);
+  res.json({ ok: true, data: { resume, missingInformation, interviewRisks }, mode });
+});
