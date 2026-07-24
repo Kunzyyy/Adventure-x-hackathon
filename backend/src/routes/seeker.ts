@@ -466,7 +466,7 @@ interface ResumeObject {
   languages: ResumeBullet[];
   selfEvaluation: string;
 }
-interface InterviewRisk { risk: string; relatedFactId: string; }
+// interviewRisks 按正式契约为 string[]
 
 // ─── MOCK：从已确认事实派生简历（每条要点 evidenceIds 只引用本次事实）───
 function deriveMockResume(jobProfile: any, confirmedFacts: Fact[]): ResumeObject {
@@ -558,37 +558,33 @@ function missingInfoFromHay(jobProfile: any, hay: string): string[] {
   return out;
 }
 
-// ─── MOCK：派生面试追问风险（relatedFactId 只引用本次事实 id）───
+// ─── MOCK：派生面试追问风险（正式契约：string[]）───
 function deriveMockInterviewRisks(
   jobProfile: any,
   resume: ResumeObject,
   missingInfo: string[]
-): InterviewRisk[] {
-  const risks: InterviewRisk[] = [];
+): string[] {
+  const risks: string[] = [];
   const expBullets: ResumeBullet[] = (resume.experiences || []).flatMap((e) => e.bullets || []);
   if (expBullets.length) {
-    const evId = (expBullets[0].evidenceIds || [])[0] || "";
-    risks.push({
-      risk: "面试官可能追问「" + expBullets[0].text + "」的具体角色、时间跨度与量化成果",
-      relatedFactId: evId,
-    });
+    risks.push(
+      "面试官可能追问「" + expBullets[0].text + "」的具体角色、时间跨度与量化成果"
+    );
   }
   const mustHaves: string[] =
     jobProfile && Array.isArray(jobProfile.mustHaves) ? jobProfile.mustHaves : [];
   if (mustHaves.length) {
-    risks.push({
-      risk: "可能追问硬性要求 " + mustHaves.slice(0, 3).join("/") + " 的真实熟练度与使用场景",
-      relatedFactId: "",
-    });
+    risks.push(
+      "可能追问硬性要求 " + mustHaves.slice(0, 3).join("/") + " 的真实熟练度与使用场景"
+    );
   }
   if (missingInfo.length) {
-    risks.push({
-      risk: "简历缺少：" + missingInfo.slice(0, 2).join("；") + "，可能被追问补全",
-      relatedFactId: "",
-    });
+    risks.push(
+      "简历缺少：" + missingInfo.slice(0, 2).join("；") + "，可能被追问补全"
+    );
   }
   if (!risks.length) {
-    risks.push({ risk: "可能追问项目细节与团队协作经历", relatedFactId: "" });
+    risks.push("可能追问项目细节与团队协作经历");
   }
   return risks;
 }
@@ -607,18 +603,41 @@ seekerRouter.post("/generate", (req: Request, res: Response) => {
     fieldErrors.jobProfile = ["jobProfile 为必填项"];
   }
 
+  const validCats = ["education", "internship", "project", "skill", "activity", "other"];
   const cf = Array.isArray(body.confirmedFacts) ? body.confirmedFacts : null;
   if (!cf || cf.length === 0) {
     fieldErrors.confirmedFacts = ["confirmedFacts 为必填项且不能为空"];
   } else {
     const idSet: Record<string, boolean> = {};
     cf.forEach((f: any, i: number) => {
-      if (!f || typeof f.id !== "string" || !f.id.trim()) {
-        fieldErrors["confirmedFacts[" + i + "].id"] = ["事实缺少 id"];
+      const path = "confirmedFacts[" + i + "]";
+      if (!f || typeof f !== "object") {
+        fieldErrors[path] = ["事实必须为对象"];
+        return;
+      }
+      if (typeof f.id !== "string" || !f.id.trim()) {
+        fieldErrors[path + ".id"] = ["id 非空且唯一"];
       } else if (idSet[f.id]) {
-        fieldErrors["confirmedFacts[" + i + "].id"] = ["事实 id 重复：" + f.id];
+        fieldErrors[path + ".id"] = ["id 重复：" + f.id];
       } else {
         idSet[f.id] = true;
+      }
+      if (validCats.indexOf(f.category) < 0) {
+        fieldErrors[path + ".category"] = [
+          "category 必须为 education/internship/project/skill/activity/other",
+        ];
+      }
+      if (typeof f.statement !== "string" || !f.statement.trim()) {
+        fieldErrors[path + ".statement"] = ["statement 非空"];
+      }
+      if (typeof f.sourceQuestionId !== "string" || !f.sourceQuestionId.trim()) {
+        fieldErrors[path + ".sourceQuestionId"] = ["sourceQuestionId 非空"];
+      }
+      if (typeof f.sourceQuote !== "string" || !f.sourceQuote.trim()) {
+        fieldErrors[path + ".sourceQuote"] = ["sourceQuote 非空"];
+      }
+      if (f.confirmed !== true) {
+        fieldErrors[path + ".confirmed"] = ["confirmed 必须为 true"];
       }
     });
   }
@@ -632,19 +651,62 @@ seekerRouter.post("/generate", (req: Request, res: Response) => {
     return;
   }
 
-  const validCats = ["education", "internship", "project", "skill", "activity", "other"];
+  // 规范化：不再强制 confirmed=true，保留客户端传入值（已校验为 true）
   const confirmedFacts: Fact[] = (cf as any[]).map((f: any) => ({
     id: String(f.id),
-    category: (validCats.indexOf(f.category) >= 0 ? f.category : "other") as FactCategory,
-    statement: typeof f.statement === "string" ? f.statement : "",
-    sourceQuestionId: typeof f.sourceQuestionId === "string" ? f.sourceQuestionId : "",
-    sourceQuote: typeof f.sourceQuote === "string" ? f.sourceQuote : "",
-    confirmed: true,
+    category: f.category as FactCategory,
+    statement: f.statement,
+    sourceQuestionId: f.sourceQuestionId,
+    sourceQuote: f.sourceQuote,
+    confirmed: f.confirmed === true,
   }));
 
   const resume = deriveMockResume(jobProfile, confirmedFacts);
   const hay = confirmedFacts.map((f) => f.statement).join(" ");
   const missingInformation = missingInfoFromHay(jobProfile, hay);
   const interviewRisks = deriveMockInterviewRisks(jobProfile, resume, missingInformation);
+
+  // 自校验：每条简历要点 evidenceIds 非空、无重复、且只引用本次 confirmedFacts.id
+  const idLookup: Record<string, boolean> = {};
+  confirmedFacts.forEach((f) => (idLookup[f.id] = true));
+  const allBullets: ResumeBullet[] = [];
+  (resume.summary || []).forEach((b) => allBullets.push(b));
+  (resume.education || []).forEach((b) => allBullets.push(b));
+  (resume.experiences || []).forEach((e) => (e.bullets || []).forEach((b) => allBullets.push(b)));
+  (resume.skills || []).forEach((b) => allBullets.push(b));
+  (resume.awards || []).forEach((b) => allBullets.push(b));
+  (resume.certifications || []).forEach((b) => allBullets.push(b));
+  (resume.languages || []).forEach((b) => allBullets.push(b));
+  for (const b of allBullets) {
+    if (!Array.isArray(b.evidenceIds) || b.evidenceIds.length === 0) {
+      res.status(500).json({
+        ok: false,
+        error: { code: "RESUME_EVIDENCE_INVALID", message: "简历要点缺少 evidenceIds" },
+        mode,
+      });
+      return;
+    }
+    const seen: Record<string, boolean> = {};
+    for (const eid of b.evidenceIds) {
+      if (!idLookup[eid]) {
+        res.status(500).json({
+          ok: false,
+          error: { code: "RESUME_EVIDENCE_INVALID", message: "evidenceIds 越界引用：" + eid },
+          mode,
+        });
+        return;
+      }
+      if (seen[eid]) {
+        res.status(500).json({
+          ok: false,
+          error: { code: "RESUME_EVIDENCE_INVALID", message: "evidenceIds 重复：" + eid },
+          mode,
+        });
+        return;
+      }
+      seen[eid] = true;
+    }
+  }
+
   res.json({ ok: true, data: { resume, missingInformation, interviewRisks }, mode });
 });

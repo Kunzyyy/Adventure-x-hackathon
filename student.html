@@ -825,8 +825,8 @@ function renderResume(){
     extra+='</ul></div>';
   }
   if(interviewRisks&&interviewRisks.length){
-    extra+='<div class="glass-card p-5"><h3 class="text-red-400 font-semibold text-sm mb-3">🔴 面试追问风险</h3><ul class="space-y-3">';
-    interviewRisks.forEach(function(r){extra+='<li class="text-sm text-gray-300"><p>'+r.risk+'</p><p class="text-xs text-gray-500 mt-1">关联事实：'+r.relatedFactId+'</p></li>';});
+    extra+='<div class="glass-card p-5"><h3 class="text-red-400 font-semibold text-sm mb-3">🔴 面试追问风险</h3><ul class="space-y-2">';
+    interviewRisks.forEach(function(r){extra+='<li class="text-sm text-gray-300 flex items-start gap-2"><span class="text-red-400">•</span>'+(typeof r==='string'?r:(r&&r.risk?r.risk:''))+'</li>';});
     extra+='</ul></div>';
   }
   document.getElementById('extra-info-container').innerHTML=extra;
