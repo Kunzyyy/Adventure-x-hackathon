@@ -139,6 +139,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC"
           </div>
         </div>
         <p id="role-hint" class="text-xs text-gray-600 mt-2 hidden"></p>
+        <div class="mt-3">
+          <label class="text-xs text-gray-500 mb-1 block">模糊招聘要求 <span class="text-red-400">*</span></label>
+          <textarea id="ent-rough" rows="4" placeholder="用一段话描述招聘需求，例如：招一个会做短视频和数据分析的运营，最好有小红书经验，每周到岗3天以上" class="ai-input !py-3 !text-sm w-full"></textarea>
+          <p class="text-xs text-gray-600 mt-2">未确认的薪资/福利/地点/到岗天数/硬性条件会归入「不确定项」，待澄清问题确认。</p>
+        </div>
       </div>
 
       <!-- Step 2: Salary Range -->
@@ -193,6 +198,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC"
       <div class="flex items-center justify-center gap-3 text-tech-cyan">
         <span class="text-2xl animate-pulse">⏳</span>
         <span>AI 正在生成专业岗位说明...</span>
+      </div>
+    </div>
+
+    <!-- ANALYZE RESULTS（/api/employer/analyze）-->
+    <div id="analyze-results" class="hidden space-y-6">
+      <div class="glass-card p-6 md:p-8 fade-in-up">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2"><span class="text-green-400 text-lg">📋</span><h3 class="text-white font-semibold text-lg">岗位画像（草稿）</h3></div>
+          <span id="analyze-mode" class="text-xs px-2 py-1 rounded-full bg-amber-400/10 text-amber-300 border border-amber-400/30"></span>
+        </div>
+        <p class="text-xs text-gray-500 mb-4">未经确认的薪资/福利/地点/到岗/硬性条件已归入「不确定项」</p>
+        <div id="analyze-profile-body"></div>
+      </div>
+      <div class="glass-card p-6 md:p-8 fade-in-up">
+        <div class="flex items-center gap-2 mb-4"><span class="text-amber-400 text-lg">❓</span><h3 class="text-white font-semibold text-lg">澄清问题（待企业确认）</h3></div>
+        <div id="analyze-questions" class="space-y-3"></div>
+      </div>
+      <div class="flex flex-wrap gap-3 justify-center pb-6">
+        <button class="glow-btn-outline" onclick="window.scrollTo({top:0,behavior:'smooth'})">🔄 重新分析</button>
       </div>
     </div>
 
@@ -450,57 +474,94 @@ function toast(msg, isErr) {
 async function generate() {
   const company = document.getElementById('ent-company').value.trim();
   const role = document.getElementById('ent-role').value.trim();
+  const rough = document.getElementById('ent-rough').value.trim();
   const errEl = document.getElementById('gen-error');
 
-  // Validate
-  if (!role) {
-    errEl.textContent = '请输入岗位名称';
-    errEl.classList.remove('hidden');
-    return;
-  }
-  if (!selectedSalary) {
-    errEl.textContent = '请选择月薪范围';
-    errEl.classList.remove('hidden');
-    return;
-  }
-  if (selectedSkills.length === 0) {
-    errEl.textContent = '请至少选择一个技能标签';
-    errEl.classList.remove('hidden');
-    return;
-  }
+  if (!role) { errEl.textContent = '请输入岗位名称'; errEl.classList.remove('hidden'); return; }
+  if (!rough) { errEl.textContent = '请输入模糊招聘要求'; errEl.classList.remove('hidden'); return; }
+
+  // 组装 roughRequirement：以模糊要求为主，附加结构化输入作为上下文
+  const parts = [];
+  if (company) parts.push('公司：' + company);
+  if (typeof currentIndustry !== 'undefined' && currentIndustry) parts.push('行业：' + currentIndustry);
+  if (typeof selectedSalary !== 'undefined' && selectedSalary) parts.push('期望薪资：' + selectedSalary);
+  if (typeof selectedSkills !== 'undefined' && selectedSkills.length) parts.push('提及技能：' + selectedSkills.join('、'));
+  parts.push('招聘要求：' + rough);
+  const roughRequirement = parts.join('；');
 
   const btn = document.getElementById('generate-btn');
   errEl.classList.add('hidden');
   btn.disabled = true; btn.textContent = '⏳ AI分析中...';
+  document.getElementById('analyze-results').classList.add('hidden');
   document.getElementById('results').classList.add('hidden');
   document.getElementById('loading').classList.remove('hidden');
   document.getElementById('loading').scrollIntoView({behavior:'smooth'});
 
   try {
-    const res = await apiPost('/api/job/generate-jd', {
-      company, role,
-      skills: selectedSkills,
-      salaryRange: selectedSalary,
-      industry: currentIndustry,
-      notes: ''
-    });
-
-    if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error || e.detail || '请求失败'); }
-
-    const data = await res.json();
-    render(data);
+    const res = await apiPost('/api/employer/analyze', { jobTitle: role, roughRequirement });
+    const json = await res.json().catch(()=>({}));
+    if (!json.ok) { throw new Error((json.error && json.error.message) || ('HTTP ' + res.status)); }
+    const modeEl = document.getElementById('analyze-mode');
+    if (modeEl) modeEl.textContent = (json.mode === 'mock') ? '🔸 MOCK 演示数据' : ('Mode: ' + json.mode);
+    renderAnalyze(json.data);
   } catch(err) {
     console.error(err);
-    errEl.textContent = '生成失败: ' + err.message + ' (已使用离线版本)';
+    errEl.textContent = '岗位分析失败：' + err.message;
     errEl.classList.remove('hidden');
-    // Local fallback
-    render(buildLocalResponse(company, role));
   } finally {
     document.getElementById('loading').classList.add('hidden');
-    document.getElementById('results').classList.remove('hidden');
-    document.getElementById('results').scrollIntoView({behavior:'smooth'});
     btn.disabled = false; btn.textContent = '🤖 AI 生成岗位说明';
   }
+}
+
+// ─── HTML escape ───────────────────────────────────────────────────
+function escH(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+
+// ─── 渲染岗位画像卡片（契约 JobProfile 全字段） ───────────────────
+function buildProfileHTML(p) {
+  function chip(arr,color){if(!arr||!arr.length)return '<span class="text-xs text-gray-600">无</span>';return arr.map(function(x){return '<span class="text-xs px-2.5 py-1 rounded-full border '+color+'">'+escH(x)+'</span>';}).join('');}
+  function list(arr){if(!arr||!arr.length)return '<p class="text-xs text-gray-600">无</p>';return '<ul class="space-y-1">'+arr.map(function(x){return '<li class="text-sm text-gray-300 flex gap-2"><span class="text-tech-cyan">•</span><span>'+escH(x)+'</span></li>';}).join('')+'</ul>';}
+  var meta='';
+  if(p.employmentType)meta+='<span class="text-xs px-2.5 py-1 rounded-full bg-tech-blue/15 text-tech-blue border border-tech-blue/30">'+escH(p.employmentType)+'</span>';
+  if(p.seniority)meta+='<span class="text-xs px-2.5 py-1 rounded-full bg-gradient-purple/15 text-purple-300 border border-gradient-purple/30">'+escH(p.seniority)+'</span>';
+  var html='';
+  html+='<div class="mb-4"><p class="text-xs text-gray-500 mb-1">岗位名称</p><div class="flex items-center gap-2 flex-wrap"><p class="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-tech-blue to-tech-cyan">'+escH(p.jobTitle||'目标岗位')+'</p>'+meta+'</div></div>';
+  html+='<div class="grid grid-cols-1 md:grid-cols-2 gap-4">';
+  html+='<div><p class="text-xs text-gray-500 mb-1.5">📋 岗位职责</p>'+list(p.responsibilities)+'</div>';
+  html+='<div><p class="text-xs text-gray-500 mb-1.5">🎯 核心能力</p>'+list(p.coreCompetencies)+'</div>';
+  html+='<div><p class="text-xs text-gray-500 mb-1.5">🔴 硬性要求</p><div class="flex flex-wrap gap-1.5">'+chip(p.mustHaves,'bg-red-400/10 text-red-300 border-red-400/25')+'</div></div>';
+  html+='<div><p class="text-xs text-gray-500 mb-1.5">🟢 加分项</p><div class="flex flex-wrap gap-1.5">'+chip(p.niceToHaves,'bg-green-400/10 text-green-300 border-green-400/25')+'</div></div>';
+  html+='<div><p class="text-xs text-gray-500 mb-1.5">📈 预期成果</p>'+list(p.expectedOutcomes)+'</div>';
+  html+='<div><p class="text-xs text-gray-500 mb-1.5">⛓️ 约束条件</p>'+list(p.constraints)+'</div>';
+  html+='</div>';
+  html+='<div class="mt-4 pt-4 border-t border-white/5 grid grid-cols-1 md:grid-cols-2 gap-4">';
+  html+='<div><p class="text-xs text-gray-500 mb-1.5">🏷️ 关键词</p><div class="flex flex-wrap gap-1.5">'+chip(p.keywords,'bg-tech-cyan/10 text-tech-cyan border-tech-cyan/25')+'</div></div>';
+  html+='<div><p class="text-xs text-gray-500 mb-1.5">❓ 不确定项（需企业确认）</p>'+list(p.uncertainties)+'</div>';
+  html+='</div>';
+  return html;
+}
+
+// ─── 渲染 /api/employer/analyze 结果 ───────────────────────────────
+function renderAnalyze(data) {
+  var p = data.jobProfile || {};
+  ['responsibilities','coreCompetencies','mustHaves','niceToHaves','expectedOutcomes','constraints','keywords','uncertainties'].forEach(function(k){
+    if(!Array.isArray(p[k])) p[k] = [];
+  });
+  document.getElementById('analyze-profile-body').innerHTML = buildProfileHTML(p);
+  var qs = data.questions || [];
+  document.getElementById('analyze-questions').innerHTML = qs.map(function(q, i){
+    return '<div class="border border-white/10 rounded-lg p-4">'+
+      '<div class="flex items-center gap-2 mb-1">'+
+      '<span class="text-xs text-gray-500">问题 '+(i+1)+'</span>'+
+      (q.required?'<span class="text-xs text-red-400">*必答</span>':'')+
+      '<span class="text-xs text-gray-500">'+escH(q.answerType||'text')+'</span>'+
+      '</div>'+
+      '<p class="text-sm text-gray-200 mb-1">'+escH(q.text||'')+'</p>'+
+      (q.reason?'<p class="text-xs text-gray-500">💡 '+escH(q.reason)+'</p>':'')+
+      '</div>';
+  }).join('');
+  document.getElementById('analyze-results').classList.remove('hidden');
+  document.getElementById('analyze-results').scrollIntoView({behavior:'smooth'});
 }
 
 // ─── Local Fallback ─────────────────────────────────────────────────

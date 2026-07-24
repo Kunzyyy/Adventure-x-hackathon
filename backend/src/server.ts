@@ -8,6 +8,7 @@ import { authRouter } from "./routes/auth.js";
 import { configRouter } from "./routes/config.js";
 import { chatRouter } from "./routes/chat.js";
 import { seekerRouter } from "./routes/seeker.js";
+import { employerRouter } from "./routes/employer.js";
 
 dotenv.config();
 
@@ -24,6 +25,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/config", configRouter);
 app.use("/api/chat", chatRouter);
 app.use("/api/seeker", seekerRouter);
+app.use("/api/employer", employerRouter);
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
