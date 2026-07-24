@@ -224,6 +224,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC"
         <div><h3 class="text-white font-semibold text-lg">✅ 事实确认</h3><p class="text-gray-400 text-sm">AI 从你的回答提炼出 <span id="fact-count">0</span> 条事实，请逐条确认或修改</p></div>
         <span class="mode-badge mode-mock" id="facts-mode">🔸 MOCK</span>
       </div>
+      <div id="facts-missing-box" class="mb-4"></div>
       <div class="space-y-4" id="facts-container"></div>
       <button class="glow-btn w-full mt-5" onclick="proceedToGenerate()" id="facts-btn">✅ 全部确认，生成简历 →</button>
     </div>
@@ -388,7 +389,7 @@ function setStep(n){
    MOCK API — simulates backend responses per API-CONTRACT.md
    ================================================================ */
 var currentMode='mock';
-var jobProfile=null, questions=[], facts=[], generatedResume=null, missingInfo=[], interviewRisks=[];
+var jobProfile=null, questions=[], facts=[], generatedResume=null, missingInfo=[], interviewRisks=[], factsMissing=[];
 
 var MOCK_QUESTIONS=[
   {id:'q1',text:'请介绍一个你参与制作的短视频或图文内容，你在其中具体负责什么？',reason:'确认候选人真实的内容制作经验',answerType:'text',required:true},
@@ -632,7 +633,7 @@ function step2Submit(){
   questions.forEach(function(q){
     var el=document.getElementById('ans-'+q.id);
     if(q.required&&(!el||!el.value.trim())){allFilled=false;el.style.borderColor='rgba(239,68,68,.5)';return;}
-    answers.push({id:q.id,text:q.text,answer:(el?el.value.trim():'')});
+    answers.push({questionId:q.id,answer:(el?el.value.trim():'')});
   });
   if(!allFilled){alert('请完成所有必答题');return;}
   document.getElementById('step2').classList.add('hidden');
@@ -648,6 +649,7 @@ function step2Submit(){
       }
       setModeBadge(json.mode);
       facts=Array.isArray(json.data&&json.data.facts)?json.data.facts:[];
+      factsMissing=Array.isArray(json.data&&json.data.missingInformation)?json.data.missingInformation:[];
       if(!facts.length){
         document.getElementById('step2').classList.remove('hidden');
         alert('未能从你的回答中提炼出有效事实，请补充更具体的回答后重试');
@@ -668,6 +670,8 @@ function step2Submit(){
 var FACT_CAT_LABEL={education:'🎓 教育',internship:'💼 实习',project:'🛠 项目',skill:'⚙️ 技能',activity:'🏅 活动',other:'📌 其他'};
 function renderFactsConfirm(){
   document.getElementById('fact-count').textContent=facts.length;
+  var mbox=document.getElementById('facts-missing-box');
+  if(mbox){ if(factsMissing&&factsMissing.length){ mbox.innerHTML='<div class="rounded-lg border border-amber-400/25 bg-amber-400/10 px-4 py-3"><p class="text-xs text-amber-300 font-semibold mb-1">💡 建议补充的信息（来自岗位分析）</p><ul class="space-y-1">'+factsMissing.map(function(m){return '<li class="text-xs text-amber-200/90 flex gap-1.5"><span>•</span><span>'+escH(m)+'</span></li>';}).join('')+'</ul></div>'; } else { mbox.innerHTML=''; } }
   var html='';
   facts.forEach(function(f){
     var cat=FACT_CAT_LABEL[f.category]||FACT_CAT_LABEL.other;

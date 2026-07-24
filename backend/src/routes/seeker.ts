@@ -268,7 +268,7 @@ seekerRouter.post("/analyze", (req: Request, res: Response) => {
   res.json({ ok: true, data, mode });
 });
 
-// ─── 契约类型：事实（§3）───
+// ─── 契约类型：事实（§3，SeekerFactsRequest/Response）───
 type FactCategory = "education" | "project" | "internship" | "skill" | "activity" | "other";
 
 interface Fact {
@@ -281,8 +281,7 @@ interface Fact {
 }
 
 interface AnswerItem {
-  id: string;
-  text?: string;
+  questionId: string;
   answer: string;
 }
 
@@ -296,19 +295,24 @@ function deriveCategory(hay: string): FactCategory {
   return "other";
 }
 
-function deriveFacts(answers: AnswerItem[]): Fact[] {
+function deriveFacts(answers: AnswerItem[], questions: AIQuestion[]): Fact[] {
+  const qById: Record<string, AIQuestion> = {};
+  (questions || []).forEach((q: any) => {
+    if (q && typeof q.id === "string" && q.id.trim()) qById[q.id] = q;
+  });
   const out: Fact[] = [];
   let n = 0;
   for (const a of answers) {
     const ans = typeof a.answer === "string" ? a.answer.trim() : "";
     if (!ans) continue;
     n += 1;
-    const qText = typeof a.text === "string" ? a.text : "";
+    const q = qById[a.questionId];
+    const qText = q && typeof q.text === "string" ? q.text : "";
     out.push({
       id: "f" + n,
       category: deriveCategory(ans + " " + qText),
       statement: ans.length > 120 ? ans.slice(0, 120) : ans,
-      sourceQuestionId: typeof a.id === "string" ? a.id : "",
+      sourceQuestionId: typeof a.questionId === "string" ? a.questionId : "",
       sourceQuote: ans.length > 60 ? ans.slice(0, 60) : ans,
       confirmed: false,
     });
@@ -316,19 +320,118 @@ function deriveFacts(answers: AnswerItem[]): Fact[] {
   return out;
 }
 
-// ─── POST /api/seeker/facts ───
+// ─── MOCK：派生「待补充信息」（基于岗位 mustHaves 与回答覆盖度，不虚构）───
+function deriveMissingInformation(jobProfile: any, answers: AnswerItem[]): string[] {
+  const out: string[] = [];
+  const hay = (answers || []).map((a) => (typeof a.answer === "string" ? a.answer : "")).join(" ");
+  const lower = hay.toLowerCase();
+  const mentions = (kw: string) => {
+    if (!kw) return false;
+    return /[a-z]/i.test(kw) ? lower.includes(kw.toLowerCase()) : hay.includes(kw);
+  };
+  if (!/学校|大学|学院|专业|课程|毕业|学位|GPA|绩点/.test(hay)) {
+    out.push("未提供教育背景（学校/专业/时间）");
+  }
+  if (!/实习|入职|公司|在职|工作经历/.test(hay)) {
+    out.push("未提供实习或工作经历");
+  }
+  const mustHaves: string[] = jobProfile && Array.isArray(jobProfile.mustHaves) ? jobProfile.mustHaves : [];
+  mustHaves.forEach((s: any) => {
+    const skill = typeof s === "string" ? s.trim() : "";
+    if (skill && !mentions(skill)) {
+      out.push("未说明 " + skill + " 相关经验");
+    }
+  });
+  if (out.length === 0) {
+    out.push("未提供可量化的成果数据（如规模/比例/排名）");
+  }
+  return out;
+}
+
+// ─── POST /api/seeker/facts（SeekerFactsRequest/Response，mock）───
+// 请求：{ jobProfile, questions, answers:[{questionId, answer}] }
+// 校验：三者必填；questions 5~8 道且 id 不重复；answer.questionId 必须对应问题 id；
+//       必答题必须有非空回答；同一问题不能重复回答。
 seekerRouter.post("/facts", (req: Request, res: Response) => {
   const mode: APIMode = "mock";
   const body = req.body || {};
   const fieldErrors: Record<string, string[]> = {};
 
-  const answers = Array.isArray(body.answers) ? body.answers : null;
-  if (!answers || answers.length === 0) {
-    fieldErrors.answers = ["请至少提交一道问题的回答"];
+  // jobProfile 必填
+  const jobProfile = body.jobProfile;
+  if (!jobProfile || typeof jobProfile !== "object" || Array.isArray(jobProfile)) {
+    fieldErrors.jobProfile = ["jobProfile 为必填项"];
+  }
+
+  // questions 必填 + 5~8 道 + id 不重复
+  const questions = Array.isArray(body.questions) ? body.questions : null;
+  if (!questions) {
+    fieldErrors.questions = ["questions 为必填项"];
   } else {
+    if (questions.length < 5 || questions.length > 8) {
+      fieldErrors.questions = ["questions 数量必须为 5～8 道，当前 " + questions.length + " 道"];
+    }
+    const seenQ: Record<string, boolean> = {};
+    const dupQ: string[] = [];
+    questions.forEach((q: any, i: number) => {
+      if (!q || typeof q.id !== "string" || !q.id.trim()) {
+        fieldErrors["questions[" + i + "].id"] = ["问题缺少 id"];
+      } else if (seenQ[q.id]) {
+        if (!dupQ.includes(q.id)) dupQ.push(q.id);
+      } else {
+        seenQ[q.id] = true;
+      }
+    });
+    if (dupQ.length) {
+      fieldErrors.questions = (fieldErrors.questions || []).concat([
+        "questions 中存在重复的 id：" + dupQ.join(", "),
+      ]);
+    }
+  }
+
+  // answers 必填 + questionId 必须对应问题 + 不重复回答
+  const answers = Array.isArray(body.answers) ? body.answers : null;
+  const validQIds: string[] = questions
+    ? (questions as any[])
+        .map((q) => (q && typeof q.id === "string" ? q.id : null))
+        .filter((x): x is string => typeof x === "string")
+    : [];
+  if (!answers) {
+    fieldErrors.answers = ["answers 为必填项"];
+  } else {
+    const seenA: Record<string, boolean> = {};
     answers.forEach((a: any, i: number) => {
-      if (!a || typeof a.id !== "string" || !a.id.trim()) {
-        fieldErrors["answers[" + i + "].id"] = ["回答缺少对应的问题 id"];
+      if (!a || typeof a.questionId !== "string" || !a.questionId.trim()) {
+        fieldErrors["answers[" + i + "].questionId"] = ["回答缺少 questionId"];
+        return;
+      }
+      if (validQIds.length && !validQIds.includes(a.questionId)) {
+        fieldErrors["answers[" + i + "].questionId"] = ["questionId 不存在于问题列表：" + a.questionId];
+      }
+      if (seenA[a.questionId]) {
+        fieldErrors["answers[" + i + "].questionId"] = ["同一问题被重复回答：" + a.questionId];
+      } else {
+        seenA[a.questionId] = true;
+      }
+    });
+  }
+
+  // 必答题必须有非空回答
+  if (questions && answers) {
+    const ansByQ: Record<string, string> = {};
+    answers.forEach((a: any) => {
+      if (a && typeof a.questionId === "string" && typeof a.answer === "string") {
+        ansByQ[a.questionId] = a.answer;
+      }
+    });
+    questions.forEach((q: any) => {
+      if (q && q.required && typeof q.id === "string" && q.id.trim()) {
+        const v = ansByQ[q.id];
+        if (v === undefined || !String(v).trim()) {
+          fieldErrors.answers = (fieldErrors.answers || []).concat([
+            "必答题未作答：" + q.id + "（" + String(q.text || "").slice(0, 20) + "）",
+          ]);
+        }
       }
     });
   }
@@ -342,6 +445,7 @@ seekerRouter.post("/facts", (req: Request, res: Response) => {
     return;
   }
 
-  const facts = deriveFacts(answers as AnswerItem[]);
-  res.json({ ok: true, data: { facts }, mode });
+  const facts = deriveFacts(answers as AnswerItem[], questions as AIQuestion[]);
+  const missingInformation = deriveMissingInformation(jobProfile, answers as AnswerItem[]);
+  res.json({ ok: true, data: { facts, missingInformation }, mode });
 });
