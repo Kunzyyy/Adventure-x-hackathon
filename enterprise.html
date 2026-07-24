@@ -602,10 +602,17 @@ function listOrEmpty(arr){if(!arr||!arr.length)return '<p class="text-xs text-gr
 // ─── 确认回答 → POST /api/employer/generate ────────────────────────
 async function generateJD() {
   var qs = window.__employerQuestions || [];
-  var answers = qs.map(function(q){
+  var answers = [];
+  qs.forEach(function(q){
     var el = document.getElementById('ans-'+q.id);
-    return { questionId: q.id, answer: el ? el.value.trim() : '' };
+    var val = el ? el.value.trim() : '';
+    if (val) { answers.push({ questionId: q.id, answer: val }); }
   });
+  var missing = qs.filter(function(q){ return q.required && !answers.some(function(a){return a.questionId===q.id;}); });
+  if (missing.length) {
+    alert('请回答必答问题：' + missing.map(function(q){return q.text;}).join('；'));
+    return;
+  }
   var reqBody = {
     jobTitle: window.__employerJobTitle,
     roughRequirement: window.__employerRough,
@@ -628,7 +635,10 @@ async function generateJD() {
   }
 }
 
-// ─── 渲染 /api/employer/generate 结果 ──────────────────────────────
+// ─── 列表渲染 helper ───────────────────────────────────────────────
+function listOrEmpty(arr){if(!arr||!arr.length)return '<p class="text-xs text-gray-600">无</p>';return '<ul class="space-y-1">'+arr.map(function(x){return '<li class="text-sm text-gray-300 flex gap-2"><span class="text-tech-cyan">•</span><span>'+escH(x)+'</span></li>';}).join('')+'</ul>';}
+
+// ─── 渲染 /api/employer/generate 结果（RecruitmentKit 正式结构）──────
 function renderGenerate(data) {
   var p = data.jobProfile || {};
   ['responsibilities','coreCompetencies','mustHaves','niceToHaves','expectedOutcomes','constraints','keywords','uncertainties'].forEach(function(k){
@@ -636,15 +646,17 @@ function renderGenerate(data) {
   });
   // 1. 确认后的岗位画像
   document.getElementById('gen-profile-body').innerHTML = buildProfileHTML(p);
-  // 2. 标准化 JD
-  var jd = data.standardJD || {};
+  // 2. 标准化 JD（standardizedJD）
+  var jd = data.standardizedJD || {};
   var jdHtml = '';
-  if (jd.overview) jdHtml += '<div class="mb-3"><p class="text-xs text-gray-500 mb-1">岗位概述</p><p class="text-sm text-gray-200 leading-relaxed">'+escH(jd.overview)+'</p></div>';
+  if (jd.title) jdHtml += '<div class="mb-3"><p class="text-xs text-gray-500 mb-1">岗位名称</p><p class="text-sm text-tech-cyan font-semibold">'+escH(jd.title)+'</p></div>';
+  if (jd.summary) jdHtml += '<div class="mb-3"><p class="text-xs text-gray-500 mb-1">岗位概述</p><p class="text-sm text-gray-200 leading-relaxed">'+escH(jd.summary)+'</p></div>';
   jdHtml += '<div class="mb-3"><p class="text-xs text-gray-500 mb-1">岗位职责</p>'+listOrEmpty(jd.responsibilities)+'</div>';
   jdHtml += '<div class="mb-3"><p class="text-xs text-gray-500 mb-1">任职要求</p>'+listOrEmpty(jd.requirements)+'</div>';
-  jdHtml += '<div><p class="text-xs text-gray-500 mb-1">加分项</p>'+listOrEmpty(jd.niceToHave)+'</div>';
+  jdHtml += '<div class="mb-3"><p class="text-xs text-gray-500 mb-1">加分项</p>'+listOrEmpty(jd.niceToHaves)+'</div>';
+  jdHtml += '<div><p class="text-xs text-gray-500 mb-1">工作条件</p>'+listOrEmpty(jd.workingConditions)+'</div>';
   document.getElementById('gen-jd-body').innerHTML = jdHtml;
-  // 3. 筛选维度及权重
+  // 3. 筛选维度及权重（含 evidenceToLookFor）
   var dims = data.screeningDimensions || [];
   var sum = dims.reduce(function(a,d){return a+(d.weight||0);},0);
   var dimHtml = '<div class="space-y-3">';
@@ -654,24 +666,26 @@ function renderGenerate(data) {
       '<span class="text-sm text-gray-200">'+escH(d.name||('维度'+(i+1)))+'</span>'+
       '<span class="text-xs px-2 py-0.5 rounded-full bg-tech-cyan/15 text-tech-cyan border border-tech-cyan/30">权重 '+d.weight+'</span>'+
       '</div>'+
-      (d.description?'<p class="text-xs text-gray-500">'+escH(d.description)+'</p>':'')+
+      (d.description?'<p class="text-xs text-gray-500 mb-1">'+escH(d.description)+'</p>':'')+
+      (d.evidenceToLookFor&&d.evidenceToLookFor.length?'<p class="text-xs text-gray-500">🔍 证据线索：'+d.evidenceToLookFor.map(escH).join('、')+'</p>':'')+
       '</div>';
   });
   dimHtml += '</div>';
   dimHtml += '<p class="text-xs text-gray-500 mt-3">权重总和：'+sum+'（须为正整数且合计 100）</p>';
   document.getElementById('gen-screening-body').innerHTML = dimHtml;
-  // 4. 面试题（严格5道）
+  // 4. 面试题（严格5道，competency/purpose/strongAnswerSignals）
   var qs = data.interviewQuestions || [];
   var qHtml = '<div class="space-y-3">';
   qs.forEach(function(q,i){
     qHtml += '<div class="border border-white/10 rounded-lg p-4">'+
       '<div class="flex items-center gap-2 mb-1">'+
       '<span class="text-xs text-gray-500">问题 '+(i+1)+'</span>'+
-      '<span class="text-xs text-purple-300">'+escH(q.dimension||'')+'</span>'+
-      (q.weight?'<span class="text-xs px-2 py-0.5 rounded-full bg-purple-400/10 text-purple-300 border border-purple-400/30">'+escH(q.weight)+'</span>':'')+
+      '<span class="text-xs px-2 py-0.5 rounded-full bg-purple-400/10 text-purple-300 border border-purple-400/30">'+escH(q.competency||'')+'</span>'+
       '</div>'+
       '<p class="text-sm text-gray-200 mb-2">'+escH(q.question||'')+'</p>'+
-      (q.whatToLookFor?'<p class="text-xs text-gray-500">💡 '+escH(q.whatToLookFor)+'</p>':'')+
+      (q.purpose?'<p class="text-xs text-gray-500 mb-1">🎯 '+escH(q.purpose)+'</p>':'')+
+      (q.strongAnswerSignals&&q.strongAnswerSignals.length?'<p class="text-xs text-green-400/80">✓ 优秀信号：'+q.strongAnswerSignals.map(escH).join('、')+'</p>':'')+
+      (q.followUpQuestion?'<p class="text-xs text-gray-500 mt-1">↪ 追问：'+escH(q.followUpQuestion)+'</p>':'')+
       '</div>';
   });
   qHtml += '</div>';
