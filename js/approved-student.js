@@ -1,4 +1,5 @@
 const body = document.body;
+const apiOrigin = body.dataset.apiOrigin || window.location.origin;
 const endpoints = {
   analyze: body.dataset.seekerAnalyze,
   facts: body.dataset.seekerFacts,
@@ -59,7 +60,7 @@ function setButtonLoading(button, loading, loadingText) {
 }
 
 async function apiPost(url, payload) {
-  const response = await fetch(url, {
+  const response = await fetch(new URL(url, apiOrigin), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),

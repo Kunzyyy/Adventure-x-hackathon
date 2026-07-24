@@ -17,3 +17,11 @@ services:
       - key: NODE_ENV
         value: production
       # 如需接入真实 AI,在 Render 控制台添加 AI_API_KEY 环境变量,并把 LLM_MODE 改为 live
+
+  - type: web
+    name: ai-career-copilot-ui
+    runtime: static
+    branch: Jin-Ziyao
+    buildCommand: mkdir -p static-dist && cp index.html student.html enterprise.html static-dist/ && cp -R css js static-dist/
+    staticPublishPath: ./static-dist
+    autoDeployTrigger: off

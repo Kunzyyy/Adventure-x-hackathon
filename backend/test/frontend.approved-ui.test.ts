@@ -26,6 +26,7 @@ describe("approved UI integration", () => {
 
   test("student UI contains the approved four-step shell and all seeker endpoints", () => {
     const html = readRepoFile("student.html");
+    expect(html).toContain('data-api-origin="https://ai-career-copilot-438i.onrender.com"');
     for (const step of ["job", "questions", "facts", "resume"]) {
       expect(html).toContain(`data-seeker-step="${step}"`);
     }
@@ -43,6 +44,7 @@ describe("approved UI integration", () => {
 
   test("enterprise UI contains the approved two-step shell and employer endpoints", () => {
     const html = readRepoFile("enterprise.html");
+    expect(html).toContain('data-api-origin="https://ai-career-copilot-438i.onrender.com"');
     expect(html).toContain('data-employer-step="analyze"');
     expect(html).toContain('data-employer-step="generate"');
     expect(html).toContain("/api/employer/analyze");
@@ -54,6 +56,8 @@ describe("approved UI integration", () => {
   test("dynamic questions expose their question text as an accessible input label", () => {
     const studentScript = readRepoFile("js/approved-student.js");
     const employerScript = readRepoFile("js/approved-employer.js");
+    expect(studentScript).toContain("new URL(url, apiOrigin)");
+    expect(employerScript).toContain("new URL(url, apiOrigin)");
     expect(studentScript).toContain('aria-label="${escapeHtml(question.text)}"');
     expect(employerScript).toContain('aria-label="${escapeHtml(question.text)}"');
   });
