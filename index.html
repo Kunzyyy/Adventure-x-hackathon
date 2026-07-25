@@ -11,13 +11,13 @@
     <title>投个明白 × 招个明白｜AI 双向求职招聘助手</title>
     <link rel="stylesheet" href="./css/approved-ui.css" />
   </head>
-  <body>
+  <body data-api-origin="https://ai-career-copilot-438i.onrender.com">
     <a class="skip-link" href="#main">跳到主要内容</a>
     <header class="site-header">
       <div class="header-inner">
         <a class="brand" href="#hero" aria-label="回到首页">
           <span class="brand-mark">明</span>
-          <span class="brand-name">明白求职</span>
+          <span class="brand-name">投个明白 × 招个明白</span>
         </a>
         <nav class="site-nav" aria-label="主导航">
           <a href="#projects">项目</a>
@@ -150,7 +150,23 @@
 
     <footer class="site-footer">
       <span>投个明白 × 招个明白｜AI 双向求职招聘助手</span>
-      <span>当前运行模式：Mock · 不需要 AI Key</span>
+      <span data-role="mode">当前运行模式：检测中…</span>
     </footer>
+    <script>
+      (async () => {
+        const origin = document.body.dataset.apiOrigin || window.location.origin;
+        const pill = document.querySelector('[data-role="mode"]');
+        if (!pill) return;
+        try {
+          const response = await fetch(new URL("/api/health", origin));
+          const json = await response.json().catch(() => null);
+          const mode = json?.mode || "unknown";
+          const suffix = mode === "mock" ? "不需要 AI Key" : "需要 AI Key";
+          pill.textContent = `当前运行模式：${mode.toUpperCase()} · ${suffix}`;
+        } catch {
+          pill.textContent = "当前运行模式：检测失败";
+        }
+      })();
+    </script>
   </body>
 </html>

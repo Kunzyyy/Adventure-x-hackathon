@@ -97,9 +97,26 @@ async function apiPost(url, payload) {
       : "";
     throw new Error(fieldErrors || json?.error?.message || `请求失败（HTTP ${response.status}）`);
   }
-  const mode = document.querySelector('[data-role="mode"]');
-  if (mode && json.mode) mode.textContent = `${json.mode.toUpperCase()} · 真实信息优先`;
+  updateModePill(json.mode);
   return json.data;
+}
+
+function updateModePill(mode) {
+  const pill = document.querySelector('[data-role="mode"]');
+  if (!pill || !mode) return;
+  const suffix = "真实信息优先";
+  const label = mode === "mock" ? "MOCK" : mode.toUpperCase();
+  pill.textContent = `${label} · ${suffix}`;
+}
+
+async function syncModeFromHealth() {
+  try {
+    const response = await fetch(new URL("/api/health", apiOrigin));
+    const json = await response.json().catch(() => null);
+    updateModePill(json?.mode);
+  } catch {
+    // leave pill untouched on network error
+  }
 }
 
 function canOpenStep(step) {
@@ -699,3 +716,5 @@ document.querySelectorAll("[data-step-target]").forEach((control) => {
 document.querySelector('[data-action="restart"]').addEventListener("click", () => {
   window.location.reload();
 });
+
+syncModeFromHealth();

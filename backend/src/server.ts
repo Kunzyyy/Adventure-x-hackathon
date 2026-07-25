@@ -11,7 +11,7 @@ import { configRouter } from "./routes/config.js";
 import { chatRouter } from "./routes/chat.js";
 import { seekerRouter } from "./routes/seeker.js";
 import { employerRouter } from "./routes/employer.js";
-import { initLlm } from "./llm/index.js";
+import { getLlmMode, initLlm } from "./llm/index.js";
 
 dotenv.config();
 
@@ -38,7 +38,7 @@ app.use("/api/seeker", seekerRouter);
 app.use("/api/employer", employerRouter);
 
 app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
+  res.json({ status: "ok", mode: getLlmMode(), timestamp: new Date().toISOString() });
 });
 
 // ─── MVP static pages (root directory), served over HTTP not file:// ───
