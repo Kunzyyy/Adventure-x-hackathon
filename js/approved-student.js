@@ -563,13 +563,18 @@ function exportResume() {
     const doPrint = () => {
       try {
         printWindow.focus();
-        printWindow.print();
+        // 让提示先渲染，再唤起系统打印对话框
+        requestAnimationFrame(() => {
+          setTimeout(() => printWindow.print(), 50);
+        });
       } catch (err) {
         window.print();
       } finally {
         setTimeout(cleanup, 1000);
       }
     };
+
+    setNotice("正在准备打印… 请在打印设置里取消“页眉和页脚”，再保存为 PDF。", "info");
 
     if (printWindow?.document.readyState === "complete") {
       doPrint();

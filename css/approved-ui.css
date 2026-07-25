@@ -850,6 +850,12 @@ button[disabled] {
   border-color: var(--success);
 }
 
+.notice[data-tone="info"] {
+  color: var(--text);
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
 .notice[hidden] {
   display: none;
 }
