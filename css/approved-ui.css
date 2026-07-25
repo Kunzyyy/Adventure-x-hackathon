@@ -1566,30 +1566,54 @@ button[disabled] {
 }
 
 @media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
   body {
     background: #fff;
   }
 
-  body * {
-    visibility: hidden;
-  }
-
-  .resume-paper,
-  .resume-paper * {
-    visibility: visible;
+  /* 兜底：用户直接按 ⌘P 时只保留简历区 */
+  .app-shell,
+  .mobile-flow,
+  .notice-bar,
+  .flow-step:not([data-seeker-step="resume"]),
+  .aside-stack {
+    display: none !important;
   }
 
   .resume-paper {
-    position: absolute;
-    inset: 0 auto auto 0;
+    position: static;
     width: 100%;
-    min-height: 100vh;
+    max-width: 210mm;
+    min-height: auto;
+    margin: 0 auto;
+    padding: 0;
     border: 0;
     box-shadow: none;
+    background: #fff;
+    color: var(--ink);
+    font-family: Inter, "Noto Sans SC", "PingFang SC", "Microsoft YaHei",
+      "Source Han Sans SC", ui-sans-serif, sans-serif;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
-  .evidence-detail {
-    display: none;
+  .resume-template-academic {
+    font-family: Georgia, "Times New Roman", "Noto Serif SC", "Songti SC",
+      "SimSun", serif;
+  }
+
+  .evidence-button,
+  .evidence-detail,
+  .aside-stack button {
+    display: none !important;
+  }
+
+  .resume-section {
+    page-break-inside: avoid;
   }
 }
 

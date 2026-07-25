@@ -75,6 +75,8 @@ describe("approved UI integration", () => {
     }
     expect(studentScript).toContain('data-action="select-template"');
     expect(studentScript).toContain('data-action="export-resume"');
+    expect(studentScript).toContain("document.createElement(\"iframe\")");
+    expect(studentScript).toContain("contentWindow");
     expect(studentScript).toContain('data-action="change-template"');
   });
 

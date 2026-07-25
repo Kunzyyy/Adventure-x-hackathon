@@ -390,13 +390,180 @@ function renderResume(data) {
   if (label) label.textContent = `${template.name} · 每条要点可追溯`;
 }
 
+function getPrintableResumeHtml(container, templateClass) {
+  const resumeHtml = container.innerHTML;
+  return `
+    <!DOCTYPE html>
+    <html lang="zh-CN">
+    <head>
+      <meta charset="UTF-8" />
+      <title>简历打印</title>
+      <style>
+        :root {
+          --ink: #151310;
+          --muted: #6f6a62;
+          --serif: Georgia, "Times New Roman", "Noto Serif SC", "Songti SC", "SimSun", serif;
+          --sans: Inter, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", ui-sans-serif, sans-serif;
+        }
+        * { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; background: #fff; color: var(--ink); }
+        body { font-family: var(--sans); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        @page { size: A4; margin: 12mm; }
+
+        .resume-paper {
+          width: 100%;
+          max-width: 210mm;
+          min-height: 277mm;
+          margin: 0 auto;
+          padding: 8mm;
+          background: #fff;
+          border: none;
+          box-shadow: none;
+          color: var(--ink);
+        }
+
+        .resume-paper > h2 {
+          margin: 0 0 4px;
+          font-family: var(--serif);
+          font-size: 32px;
+          font-style: italic;
+          font-weight: 500;
+        }
+
+        .resume-paper > p {
+          margin: 0 0 16px;
+          color: var(--muted);
+          font-size: 13px;
+        }
+
+        .resume-template-modern {
+          display: grid;
+          grid-template-columns: minmax(140px, 0.36fr) minmax(0, 0.64fr);
+          gap: 20px;
+        }
+
+        .resume-template-modern > h2,
+        .resume-template-modern > p { grid-column: 1 / -1; }
+
+        .resume-template-modern .resume-section:nth-of-type(1),
+        .resume-template-modern .resume-section:nth-of-type(2),
+        .resume-template-modern .resume-section:last-child { grid-column: 1; }
+
+        .resume-template-modern .resume-section { margin-top: 0; }
+
+        .resume-template-compact { padding: 6mm; }
+
+        .resume-template-compact > h2 {
+          padding-bottom: 12px;
+          font-family: var(--sans);
+          font-size: 28px;
+          font-style: normal;
+          border-bottom: 4px solid var(--ink);
+        }
+
+        .resume-template-compact .resume-section { margin-top: 16px; padding-top: 10px; }
+
+        .resume-template-academic {
+          font-family: var(--serif);
+          box-shadow: none;
+        }
+
+        .resume-template-academic > h2 {
+          font-size: 34px;
+          font-style: normal;
+          text-align: center;
+        }
+
+        .resume-template-academic > p { text-align: center; }
+
+        .resume-section {
+          margin-top: 20px;
+          padding-top: 14px;
+          border-top: 1px solid var(--ink);
+          page-break-inside: avoid;
+        }
+
+        .resume-section h3 {
+          margin: 0 0 10px;
+          font-size: 12px;
+          letter-spacing: 0.09em;
+          text-transform: uppercase;
+        }
+
+        .resume-bullet {
+          margin: 8px 0;
+          line-height: 1.6;
+        }
+
+        .evidence-button,
+        .evidence-detail { display: none !important; }
+      </style>
+    </head>
+    <body>
+      <article class="resume-paper ${templateClass}">
+        ${resumeHtml}
+      </article>
+    </body>
+    </html>
+  `;
+}
+
 function exportResume() {
   const container = document.querySelector('[data-role="resume-result"]');
   if (!container?.dataset.ready) {
     setNotice("请先生成简历，再导出 PDF。");
     return;
   }
-  window.print();
+
+  const templateClass = Array.from(container.classList).find((c) => c.startsWith("resume-template-")) || "resume-template-classic";
+  const iframe = document.createElement("iframe");
+  iframe.setAttribute("aria-hidden", "true");
+  iframe.style.cssText = "position:fixed;inset:0;width:1px;height:1px;opacity:0;pointer-events:none;border:0;";
+
+  let cleanedUp = false;
+  function cleanup() {
+    if (cleanedUp) return;
+    cleanedUp = true;
+    if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+  }
+
+  iframe.onerror = cleanup;
+  document.body.appendChild(iframe);
+
+  try {
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc) {
+      cleanup();
+      window.print();
+      return;
+    }
+
+    doc.open();
+    doc.write(getPrintableResumeHtml(container, templateClass));
+    doc.close();
+
+    const printWindow = iframe.contentWindow;
+    const doPrint = () => {
+      try {
+        printWindow.focus();
+        printWindow.print();
+      } catch (err) {
+        window.print();
+      } finally {
+        setTimeout(cleanup, 1000);
+      }
+    };
+
+    if (printWindow?.document.readyState === "complete") {
+      doPrint();
+    } else {
+      iframe.onload = doPrint;
+      setTimeout(doPrint, 500);
+    }
+  } catch (err) {
+    cleanup();
+    window.print();
+  }
 }
 
 document.querySelector('[data-action="fill-jd"]').addEventListener("click", () => {
