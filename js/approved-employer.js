@@ -110,6 +110,10 @@ function showStep(step, force = false) {
     else control.removeAttribute("aria-current");
     control.classList.toggle("is-complete", step === "generate" && control.dataset.employerTarget === "analyze");
   });
+  // 返回 Step 1 时，如果已有确认后的招聘包，用更新过的岗位画像覆盖原画像
+  if (step === "analyze" && state.recruitmentKit?.jobProfile) {
+    renderProfile(state.recruitmentKit.jobProfile);
+  }
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -224,6 +228,7 @@ function renderRecruitmentKit(data) {
               <div class="dimension-row">
                 <div>
                   <div class="dimension-weight">${dimension.weight}%</div>
+                  <div class="dimension-weight-bar" aria-hidden="true"><span style="width: ${dimension.weight}%"></span></div>
                   <strong>${escapeHtml(dimension.name)}</strong>
                 </div>
                 <div>
@@ -258,19 +263,95 @@ function renderRecruitmentKit(data) {
   `;
 }
 
+function getPrintableKitHtml(container) {
+  return `
+    <!DOCTYPE html>
+    <html lang="zh-CN">
+    <head>
+      <meta charset="UTF-8" />
+      <title>岗位说明</title>
+      <style>
+        @page { size: A4; margin: 12mm; }
+        * { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; background: #fff; font-family: Inter, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", ui-sans-serif, sans-serif; color: #1a1a1a; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        body { padding: 0; }
+        h1 { font-size: 22px; margin: 0 0 16px; }
+        h2 { font-size: 16px; margin: 18px 0 10px; border-bottom: 1px solid #ddd; padding-bottom: 6px; }
+        h3 { font-size: 14px; margin: 12px 0 6px; }
+        p, li { font-size: 13px; line-height: 1.6; margin: 4px 0; }
+        ul { margin: 6px 0; padding-left: 20px; }
+        .kit-paper { width: 210mm; min-height: 277mm; margin: 0 auto; padding: 0; background: #fff; }
+        .dimension-print { margin-bottom: 12px; page-break-inside: avoid; }
+        .dimension-print strong { display: block; font-size: 14px; margin-bottom: 4px; }
+        .dimension-print .weight { color: #666; font-size: 12px; margin-bottom: 4px; }
+        .interview-print { margin-bottom: 12px; page-break-inside: avoid; }
+      </style>
+    </head>
+    <body>
+      <article class="kit-paper">
+        ${container.innerHTML}
+      </article>
+    </body>
+    </html>
+  `;
+}
+
 function exportKit() {
   if (!state.recruitmentKit) {
     setNotice("当前还没有可以导出的招聘包。");
     return;
   }
-  const text = document.querySelector('[data-role="recruitment-kit"]').innerText.trim();
-  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = `${state.jobTitle || "岗位"}_招聘包.txt`;
-  anchor.click();
-  URL.revokeObjectURL(url);
+  const container = document.querySelector('[data-role="recruitment-kit"]');
+  if (!container) return;
+
+  const iframe = document.createElement("iframe");
+  iframe.setAttribute("aria-hidden", "true");
+  iframe.style.cssText = "position:fixed;inset:0;width:1px;height:1px;opacity:0;pointer-events:none;border:0;";
+
+  let cleanedUp = false;
+  function cleanup() {
+    if (cleanedUp) return;
+    cleanedUp = true;
+    if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+  }
+
+  document.body.appendChild(iframe);
+
+  try {
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc) {
+      cleanup();
+      return;
+    }
+    doc.open();
+    doc.write(getPrintableKitHtml(container));
+    doc.close();
+
+    const printWindow = iframe.contentWindow;
+    const doPrint = () => {
+      try {
+        printWindow.focus();
+        requestAnimationFrame(() => {
+          setTimeout(() => printWindow.print(), 50);
+        });
+      } catch (err) {
+        window.print();
+      } finally {
+        setTimeout(cleanup, 1000);
+      }
+    };
+
+    setNotice("正在打开打印预览… 请在打印设置里取消“页眉和页脚”，再保存为 PDF。", "info");
+
+    if (printWindow?.document.readyState === "complete") {
+      doPrint();
+    } else {
+      iframe.onload = doPrint;
+      setTimeout(doPrint, 500);
+    }
+  } catch (err) {
+    cleanup();
+  }
 }
 
 document.querySelector('[data-action="fill-requirement"]').addEventListener("click", () => {
