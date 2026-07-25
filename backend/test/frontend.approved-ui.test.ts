@@ -51,10 +51,10 @@ describe("approved UI integration", () => {
     }
   });
 
-  test("student UI contains the approved four-step shell and all seeker endpoints", () => {
+  test("student UI contains the approved five-step shell, resume templates, and all seeker endpoints", () => {
     const html = readRepoFile("student.html");
     expect(html).toContain('data-api-origin="https://ai-career-copilot-438i.onrender.com"');
-    for (const step of ["job", "questions", "facts", "resume"]) {
+    for (const step of ["job", "questions", "facts", "template", "resume"]) {
       expect(html).toContain(`data-seeker-step="${step}"`);
     }
     for (const endpoint of [
@@ -66,7 +66,16 @@ describe("approved UI integration", () => {
     }
     expect(html).toContain('data-role="job-profile"');
     expect(html).toContain('data-role="facts-list"');
+    expect(html).toContain('data-role="template-list"');
     expect(html).toContain('data-role="resume-result"');
+
+    const studentScript = readRepoFile("js/approved-student.js");
+    for (const templateId of ["classic", "modern", "compact", "academic"]) {
+      expect(studentScript).toContain(`id: "${templateId}"`);
+    }
+    expect(studentScript).toContain('data-action="select-template"');
+    expect(studentScript).toContain('data-action="export-resume"');
+    expect(studentScript).toContain('data-action="change-template"');
   });
 
   test("enterprise UI contains the approved two-step shell and employer endpoints", () => {

@@ -13,9 +13,34 @@ const state = {
   answers: [],
   facts: [],
   oldResume: "",
+  selectedTemplate: "classic",
+  resumeData: null,
 };
 
-const stepOrder = ["job", "questions", "facts", "resume"];
+const resumeTemplates = [
+  {
+    id: "classic",
+    name: "经典单栏",
+    description: "居中标题和标准分区，最稳妥，适合大多数岗位投递。",
+  },
+  {
+    id: "modern",
+    name: "现代双栏",
+    description: "左侧放摘要和技能，右侧放经历，适合产品、设计、运营。",
+  },
+  {
+    id: "compact",
+    name: "紧凑信息型",
+    description: "标题更硬朗，信息密度更高，适合内容较多但需要压进一页。",
+  },
+  {
+    id: "academic",
+    name: "学术型",
+    description: "衬线字体和安静分隔，适合科研、课程项目或偏学术经历。",
+  },
+];
+
+const stepOrder = ["job", "questions", "facts", "template", "resume"];
 const notice = document.querySelector('[data-role="notice"]');
 
 function escapeHtml(value) {
@@ -81,6 +106,7 @@ function canOpenStep(step) {
   if (step === "job") return true;
   if (step === "questions") return Boolean(state.jobProfile);
   if (step === "facts") return state.facts.length > 0;
+  if (step === "template") return state.facts.length > 0;
   if (step === "resume") {
     return document.querySelector('[data-role="resume-result"]')?.dataset.ready === "true";
   }
@@ -215,6 +241,47 @@ function collectConfirmedFacts() {
     .filter((fact) => fact.confirmed && fact.statement);
 }
 
+function selectedTemplate() {
+  return resumeTemplates.find((template) => template.id === state.selectedTemplate) || resumeTemplates[0];
+}
+
+function renderTemplates() {
+  const container = document.querySelector('[data-role="template-list"]');
+  if (!container) return;
+  container.innerHTML = resumeTemplates
+    .map((template) => {
+      const selected = template.id === state.selectedTemplate;
+      return `
+        <button
+          class="template-card ${selected ? "is-selected" : ""}"
+          type="button"
+          data-action="select-template"
+          data-template-id="${escapeHtml(template.id)}"
+          aria-pressed="${selected ? "true" : "false"}"
+        >
+          <span class="template-preview template-preview-${escapeHtml(template.id)}" aria-hidden="true">
+            <span></span><span></span><span></span><span></span><span></span>
+          </span>
+          <span class="template-copy">
+            <strong>${escapeHtml(template.name)}</strong>
+            <span>${escapeHtml(template.description)}</span>
+          </span>
+        </button>
+      `;
+    })
+    .join("");
+
+  const current = document.querySelector('[data-role="template-current"]');
+  if (current) current.textContent = `已选：${selectedTemplate().name}`;
+}
+
+function setTemplate(templateId) {
+  if (!resumeTemplates.some((template) => template.id === templateId)) return;
+  state.selectedTemplate = templateId;
+  renderTemplates();
+  if (state.resumeData) renderResume(state.resumeData);
+}
+
 function evidenceDetail(ids) {
   const related = ids
     .map((id) => state.facts.find((fact) => fact.id === id))
@@ -243,10 +310,14 @@ function bullets(items) {
 function renderResume(data) {
   const resume = data.resume;
   const container = document.querySelector('[data-role="resume-result"]');
+  const template = selectedTemplate();
+  state.resumeData = data;
   container.dataset.ready = "true";
+  container.dataset.template = template.id;
+  container.className = `resume-paper resume-template-${template.id}`;
   container.innerHTML = `
     <h2>${escapeHtml(resume.title)}</h2>
-    <p>基于你刚刚确认的事实生成</p>
+    <p>基于你刚刚确认的事实生成 · ${escapeHtml(template.name)}</p>
     <section class="resume-section"><h3>个人概述</h3>${bullets(resume.summary)}</section>
     <section class="resume-section"><h3>教育背景</h3>${bullets(resume.education)}</section>
     ${(resume.experiences || [])
@@ -267,6 +338,17 @@ function renderResume(data) {
   document.querySelector('[data-role="interview-risks"]').innerHTML = `
     <h3>面试追问风险</h3>${list(data.interviewRisks, "当前没有明显风险。")}
   `;
+  const label = document.querySelector('[data-role="resume-template-label"]');
+  if (label) label.textContent = `${template.name} · 每条要点可追溯`;
+}
+
+function exportResume() {
+  const container = document.querySelector('[data-role="resume-result"]');
+  if (!container?.dataset.ready) {
+    setNotice("请先生成简历，再导出 PDF。");
+    return;
+  }
+  window.print();
 }
 
 document.querySelector('[data-action="fill-jd"]').addEventListener("click", () => {
@@ -340,6 +422,21 @@ document.querySelector('[data-role="questions-form"]').addEventListener("submit"
   }
 });
 
+document.querySelector('[data-action="review-templates"]').addEventListener("click", () => {
+  clearNotice();
+  const confirmedFacts = collectConfirmedFacts();
+  if (!confirmedFacts.length) {
+    setNotice("请至少确认一条准确事实。");
+    return;
+  }
+  state.facts = state.facts.map((fact) => {
+    const updated = confirmedFacts.find((item) => item.id === fact.id);
+    return updated || fact;
+  });
+  renderTemplates();
+  showStep("template", true);
+});
+
 document.querySelector('[data-action="generate-resume"]').addEventListener("click", async () => {
   clearNotice();
   const confirmedFacts = collectConfirmedFacts();
@@ -366,6 +463,19 @@ document.querySelector('[data-action="generate-resume"]').addEventListener("clic
     setButtonLoading(button, false);
   }
 });
+
+document.querySelector('[data-role="template-list"]').addEventListener("click", (event) => {
+  const button = event.target.closest('[data-action="select-template"]');
+  if (!button) return;
+  setTemplate(button.dataset.templateId);
+});
+
+document.querySelector('[data-action="change-template"]').addEventListener("click", () => {
+  renderTemplates();
+  showStep("template", true);
+});
+
+document.querySelector('[data-action="export-resume"]').addEventListener("click", exportResume);
 
 document.querySelectorAll("[data-step-target]").forEach((control) => {
   control.addEventListener("click", () => showStep(control.dataset.stepTarget));

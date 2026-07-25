@@ -34,8 +34,11 @@
           <button class="step-link" type="button" data-step-target="facts">
             <span class="step-number">3</span><span class="step-copy"><strong>事实确认</strong><span>修改或删除</span></span>
           </button>
+          <button class="step-link" type="button" data-step-target="template">
+            <span class="step-number">4</span><span class="step-copy"><strong>选择模板</strong><span>只改变排版</span></span>
+          </button>
           <button class="step-link" type="button" data-step-target="resume">
-            <span class="step-number">4</span><span class="step-copy"><strong>生成结果</strong><span>来源与风险</span></span>
+            <span class="step-number">5</span><span class="step-copy"><strong>生成结果</strong><span>来源与风险</span></span>
           </button>
         </nav>
         <div class="sidebar-note">“好简历不是看起来厉害，而是每一句都经得起追问。”</div>
@@ -137,7 +140,7 @@
               <div class="fact-list" data-role="facts-list"></div>
               <div class="button-row">
                 <button class="button" type="button" data-step-target="questions">← 返回修改回答</button>
-                <button class="button button-primary" type="button" data-action="generate-resume" data-role="generate-button">确认事实，生成简历 →</button>
+                <button class="button button-primary" type="button" data-action="review-templates" data-role="template-button">确认事实，选择模板 →</button>
               </div>
             </div>
             <aside class="aside-stack">
@@ -154,14 +157,44 @@
           </div>
         </section>
 
+        <section class="flow-step" data-seeker-step="template" hidden>
+          <div class="page-intro">
+            <div>
+              <p class="eyebrow">Step 04 · Resume template</p>
+              <h1>选择一种排版，<br />不改变事实。</h1>
+              <p>模板只决定简历呈现方式。真正进入简历的内容，仍然只来自你刚刚确认过的事实。</p>
+            </div>
+            <div class="progress-note" data-role="template-current">默认经典单栏</div>
+          </div>
+
+          <div class="content-grid">
+            <div class="template-list" data-role="template-list" aria-label="简历模板列表"></div>
+            <aside class="aside-stack">
+              <div class="tip-card">
+                <h3>怎么选？</h3>
+                <ul>
+                  <li>不确定时选经典单栏，最稳。</li>
+                  <li>内容多时选紧凑信息型。</li>
+                  <li>投设计、产品、运营，可以试现代双栏。</li>
+                </ul>
+              </div>
+              <div class="status-card"><strong>模板边界</strong><span>这里只换排版，不会让 AI 偷偷增加经历、数字或结论。</span></div>
+              <div class="button-row">
+                <button class="button" type="button" data-step-target="facts">← 返回改事实</button>
+                <button class="button button-primary" type="button" data-action="generate-resume" data-role="generate-button">用这个模板生成简历 →</button>
+              </div>
+            </aside>
+          </div>
+        </section>
+
         <section class="flow-step" data-seeker-step="resume" hidden>
           <div class="page-intro">
             <div>
-              <p class="eyebrow">Step 04 · Resume result</p>
+              <p class="eyebrow">Step 05 · Resume result</p>
               <h1>一份可信的简历，<br />和它的证据。</h1>
               <p>没有虚构的 HR 评分。你看到的是简历正文、事实来源，以及面试前需要补充的部分。</p>
             </div>
-            <div class="progress-note">每条要点可追溯</div>
+            <div class="progress-note" data-role="resume-template-label">每条要点可追溯</div>
           </div>
 
           <div class="content-grid content-grid-wide">
@@ -172,6 +205,8 @@
             <aside class="aside-stack">
               <div class="result-card" data-role="resume-missing"><h3>缺失信息</h3><p>生成后显示。</p></div>
               <div class="result-card" data-role="interview-risks"><h3>面试追问风险</h3><p>生成后显示。</p></div>
+              <button class="button" type="button" data-action="change-template">换一个模板</button>
+              <button class="button button-primary" type="button" data-action="export-resume">导出 PDF</button>
               <button class="button" type="button" data-action="restart">重新开始</button>
             </aside>
           </div>
@@ -183,7 +218,8 @@
       <button type="button" data-step-target="job" aria-current="step">01<br />岗位</button>
       <button type="button" data-step-target="questions">02<br />追问</button>
       <button type="button" data-step-target="facts">03<br />确认</button>
-      <button type="button" data-step-target="resume">04<br />结果</button>
+      <button type="button" data-step-target="template">04<br />模板</button>
+      <button type="button" data-step-target="resume">05<br />结果</button>
     </nav>
     <script type="module" src="./js/approved-student.js"></script>
   </body>
