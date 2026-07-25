@@ -560,48 +560,63 @@ function exportResume() {
     if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
   }
 
-  iframe.onerror = cleanup;
   document.body.appendChild(iframe);
 
-  try {
-    const doc = iframe.contentDocument || iframe.contentWindow?.document;
-    if (!doc) {
-      cleanup();
-      window.print();
-      return;
-    }
+  const printWindow = iframe.contentWindow;
+  if (!printWindow) {
+    cleanup();
+    window.print();
+    return;
+  }
 
+  try {
+    const doc = printWindow.document;
     doc.open();
     doc.write(getPrintableResumeHtml(container, templateClass));
     doc.close();
-
-    const printWindow = iframe.contentWindow;
-    const doPrint = () => {
-      try {
-        printWindow.focus();
-        // 让提示先渲染，再唤起系统打印对话框
-        requestAnimationFrame(() => {
-          setTimeout(() => printWindow.print(), 50);
-        });
-      } catch (err) {
-        window.print();
-      } finally {
-        setTimeout(cleanup, 1000);
-      }
-    };
-
-    setNotice("正在准备打印… 请在打印设置里取消“页眉和页脚”，再保存为 PDF。", "info");
-
-    if (printWindow?.document.readyState === "complete") {
-      doPrint();
-    } else {
-      iframe.onload = doPrint;
-      setTimeout(doPrint, 500);
-    }
   } catch (err) {
     cleanup();
     window.print();
+    return;
   }
+
+  setNotice("正在准备 PDF… 请在打印设置里取消“页眉和页脚”，再保存为 PDF。", "info");
+
+  function doPrint() {
+    try {
+      printWindow.focus();
+      printWindow.print();
+    } catch (err) {
+      window.print();
+    } finally {
+      // 给打印对话框充分的响应和清理时间
+      setTimeout(cleanup, 2000);
+    }
+  }
+
+  function schedulePrint() {
+    // 等待 iframe 文档稳定、字体就绪，并留出渲染缓冲
+    Promise.all([
+      new Promise((resolve) => {
+        if (printWindow.document.readyState === "complete") {
+          resolve();
+        } else {
+          printWindow.addEventListener("load", resolve, { once: true });
+        }
+      }),
+      printWindow.document.fonts && typeof printWindow.document.fonts.ready === "object"
+        ? printWindow.document.fonts.ready.then(() => {})
+        : Promise.resolve(),
+      new Promise((resolve) => setTimeout(resolve, 350)),
+    ])
+      .then(doPrint)
+      .catch(() => {
+        cleanup();
+        window.print();
+      });
+  }
+
+  schedulePrint();
 }
 
 document.querySelector('[data-action="fill-jd"]').addEventListener("click", () => {
