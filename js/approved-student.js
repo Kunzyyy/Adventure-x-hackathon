@@ -245,6 +245,56 @@ function selectedTemplate() {
   return resumeTemplates.find((template) => template.id === state.selectedTemplate) || resumeTemplates[0];
 }
 
+function renderTemplatePreview(templateId) {
+  if (templateId === "modern") {
+    return `
+      <span class="template-preview template-preview-sidebar" aria-hidden="true">
+        <span class="preview-sidebar"></span>
+        <span class="preview-main">
+          <span class="preview-title"></span>
+          <span class="preview-row preview-row-short"></span>
+          <span class="preview-row"></span>
+          <span class="preview-row"></span>
+        </span>
+      </span>
+    `;
+  }
+  if (templateId === "compact") {
+    return `
+      <span class="template-preview template-preview-density" aria-hidden="true">
+        <span class="preview-topbar"></span>
+        <span class="preview-columns">
+          <span></span><span></span><span></span>
+        </span>
+        <span class="preview-dense-list">
+          <span></span><span></span><span></span><span></span><span></span>
+        </span>
+      </span>
+    `;
+  }
+  if (templateId === "academic") {
+    return `
+      <span class="template-preview template-preview-citation" aria-hidden="true">
+        <span class="preview-title"></span>
+        <span class="preview-subtitle"></span>
+        <span class="preview-rule"></span>
+        <span class="preview-citation-row"><span></span><i>01</i></span>
+        <span class="preview-citation-row"><span></span><i>02</i></span>
+      </span>
+    `;
+  }
+  return `
+    <span class="template-preview template-preview-classic" aria-hidden="true">
+      <span class="preview-title"></span>
+      <span class="preview-subtitle"></span>
+      <span class="preview-rule"></span>
+      <span class="preview-row"></span>
+      <span class="preview-row preview-row-short"></span>
+      <span class="preview-row"></span>
+    </span>
+  `;
+}
+
 function renderTemplates() {
   const container = document.querySelector('[data-role="template-list"]');
   if (!container) return;
@@ -259,9 +309,7 @@ function renderTemplates() {
           data-template-id="${escapeHtml(template.id)}"
           aria-pressed="${selected ? "true" : "false"}"
         >
-          <span class="template-preview template-preview-${escapeHtml(template.id)}" aria-hidden="true">
-            <span></span><span></span><span></span><span></span><span></span>
-          </span>
+          ${renderTemplatePreview(template.id)}
           <span class="template-copy">
             <strong>${escapeHtml(template.name)}</strong>
             <span>${escapeHtml(template.description)}</span>

@@ -78,6 +78,21 @@ describe("approved UI integration", () => {
     expect(studentScript).toContain('data-action="change-template"');
   });
 
+  test("student resume template previews expose visibly different layout structures", () => {
+    const studentScript = readRepoFile("js/approved-student.js");
+    const stylesheet = readRepoFile("css/approved-ui.css");
+
+    for (const previewClass of [
+      "template-preview-classic",
+      "template-preview-sidebar",
+      "template-preview-density",
+      "template-preview-citation",
+    ]) {
+      expect(studentScript).toContain(previewClass);
+      expect(stylesheet).toContain(`.${previewClass}`);
+    }
+  });
+
   test("enterprise UI contains the approved two-step shell and employer endpoints", () => {
     const html = readRepoFile("enterprise.html");
     expect(html).toContain('data-api-origin="https://ai-career-copilot-438i.onrender.com"');

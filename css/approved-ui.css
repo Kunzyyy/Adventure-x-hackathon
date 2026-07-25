@@ -977,59 +977,173 @@ button[disabled] {
   padding: 13px;
   background: #fffdf8;
   border: 1px solid var(--ink);
-  gap: 8px;
+  gap: 7px;
+  overflow: hidden;
 }
 
-.template-preview span {
+.template-preview span,
+.template-preview i {
   display: block;
+}
+
+.template-preview [class^="preview-"],
+.template-preview .preview-columns span,
+.template-preview .preview-dense-list span {
   min-height: 6px;
   background: var(--ink);
 }
 
-.template-preview span:nth-child(1) {
-  width: 54%;
-  height: 16px;
+.template-preview-classic {
+  justify-items: center;
+  align-content: start;
 }
 
-.template-preview span:nth-child(2) {
-  width: 34%;
+.template-preview-classic .preview-title {
+  width: 58%;
+  height: 15px;
 }
 
-.template-preview span:nth-child(3) {
-  width: 86%;
-}
-
-.template-preview span:nth-child(4) {
-  width: 74%;
-}
-
-.template-preview span:nth-child(5) {
-  width: 64%;
-}
-
-.template-preview-modern {
-  grid-template-columns: 36% 1fr;
-}
-
-.template-preview-modern span:nth-child(1),
-.template-preview-modern span:nth-child(2) {
-  grid-column: 1 / -1;
-}
-
-.template-preview-compact span {
+.template-preview-classic .preview-subtitle {
+  width: 32%;
   min-height: 5px;
+  background: var(--accent);
 }
 
-.template-preview-compact span:nth-child(1) {
-  height: 12px;
+.template-preview-classic .preview-rule {
+  width: 92%;
+  min-height: 1px;
+  margin: 3px 0;
+  background: var(--ink);
 }
 
-.template-preview-academic {
+.template-preview-classic .preview-row {
+  width: 84%;
+}
+
+.template-preview-classic .preview-row-short {
+  width: 66%;
+}
+
+.template-preview-sidebar {
+  grid-template-columns: 34% 1fr;
+  gap: 10px;
+}
+
+.template-preview-sidebar .preview-sidebar {
+  min-height: 100%;
+  background:
+    linear-gradient(var(--ink) 0 13px, transparent 13px 21px, var(--ink) 21px 27px, transparent 27px 35px, var(--ink) 35px 41px, transparent 41px),
+    var(--accent-soft);
+  border-right: 1px solid var(--ink);
+}
+
+.template-preview-sidebar .preview-main {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  background: transparent;
+}
+
+.template-preview-sidebar .preview-title {
+  width: 74%;
+  height: 15px;
+}
+
+.template-preview-sidebar .preview-row {
+  width: 92%;
+}
+
+.template-preview-sidebar .preview-row-short {
+  width: 54%;
+  background: var(--accent);
+}
+
+.template-preview-density {
+  align-content: start;
+  gap: 6px;
+}
+
+.template-preview-density .preview-topbar {
+  width: 100%;
+  height: 14px;
+  background: var(--ink);
+}
+
+.template-preview-density .preview-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 5px;
+  background: transparent;
+}
+
+.template-preview-density .preview-columns span {
+  min-height: 17px;
+  background: var(--accent-soft);
+  border: 1px solid var(--ink);
+}
+
+.template-preview-density .preview-dense-list {
+  display: grid;
+  gap: 4px;
+  background: transparent;
+}
+
+.template-preview-density .preview-dense-list span {
+  width: 100%;
+  min-height: 4px;
+}
+
+.template-preview-density .preview-dense-list span:nth-child(even) {
+  width: 78%;
+}
+
+.template-preview-citation {
+  justify-items: center;
+  align-content: start;
   font-family: var(--serif);
 }
 
-.template-preview-academic span {
+.template-preview-citation .preview-title {
+  width: 44%;
+  height: 14px;
   background: var(--accent-dark);
+}
+
+.template-preview-citation .preview-subtitle {
+  width: 28%;
+  min-height: 4px;
+  background: var(--line);
+}
+
+.template-preview-citation .preview-rule {
+  width: 94%;
+  min-height: 1px;
+  margin: 4px 0;
+  background: var(--ink);
+}
+
+.template-preview-citation .preview-citation-row {
+  display: grid;
+  width: 88%;
+  align-items: center;
+  grid-template-columns: 1fr 20px;
+  gap: 8px;
+  background: transparent;
+}
+
+.template-preview-citation .preview-citation-row span {
+  min-height: 5px;
+  background: var(--ink);
+}
+
+.template-preview-citation .preview-citation-row i {
+  min-height: 16px;
+  color: var(--accent-dark);
+  background: transparent;
+  font-size: 10px;
+  font-style: italic;
+  line-height: 16px;
+  text-align: right;
 }
 
 .template-copy {
