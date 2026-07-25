@@ -296,6 +296,65 @@ function getPrintableKitHtml(container) {
   `;
 }
 
+function createPrintIframe(container) {
+  const iframe = document.createElement("iframe");
+  iframe.setAttribute("aria-hidden", "true");
+  iframe.style.cssText = "position:fixed;left:-9999px;top:0;width:210mm;height:297mm;border:0;";
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentWindow?.document;
+  if (!doc) {
+    iframe.remove();
+    return null;
+  }
+
+  doc.open();
+  doc.write(getPrintableKitHtml(container));
+  doc.close();
+  return iframe;
+}
+
+function printKitFallback(container) {
+  const iframe = createPrintIframe(container);
+  if (!iframe) {
+    window.print();
+    return;
+  }
+
+  const printWindow = iframe.contentWindow;
+  setNotice("正在打开打印预览… 请在打印设置里取消“页眉和页脚”，再保存为 PDF。", "info");
+
+  function doPrint() {
+    try {
+      printWindow.focus();
+      printWindow.print();
+    } catch (err) {
+      window.print();
+    } finally {
+      setTimeout(() => iframe.remove(), 2000);
+    }
+  }
+
+  Promise.all([
+    new Promise((resolve) => {
+      if (printWindow.document.readyState === "complete") {
+        resolve();
+      } else {
+        printWindow.addEventListener("load", resolve, { once: true });
+      }
+    }),
+    printWindow.document.fonts && typeof printWindow.document.fonts.ready === "object"
+      ? printWindow.document.fonts.ready.then(() => {})
+      : Promise.resolve(),
+    new Promise((resolve) => setTimeout(resolve, 350)),
+  ])
+    .then(doPrint)
+    .catch(() => {
+      iframe.remove();
+      window.print();
+    });
+}
+
 function exportKit() {
   if (!state.recruitmentKit) {
     setNotice("当前还没有可以导出的招聘包。");
@@ -304,54 +363,45 @@ function exportKit() {
   const container = document.querySelector('[data-role="recruitment-kit"]');
   if (!container) return;
 
-  const iframe = document.createElement("iframe");
-  iframe.setAttribute("aria-hidden", "true");
-  iframe.style.cssText = "position:fixed;inset:0;width:1px;height:1px;opacity:0;pointer-events:none;border:0;";
-
-  let cleanedUp = false;
-  function cleanup() {
-    if (cleanedUp) return;
-    cleanedUp = true;
-    if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+  if (typeof html2pdf !== "function") {
+    printKitFallback(container);
+    return;
   }
 
-  document.body.appendChild(iframe);
+  setNotice("正在生成 PDF…", "info");
 
-  try {
-    const doc = iframe.contentDocument || iframe.contentWindow?.document;
-    if (!doc) {
-      cleanup();
-      return;
-    }
-    doc.open();
-    doc.write(getPrintableKitHtml(container));
-    doc.close();
-
-    const printWindow = iframe.contentWindow;
-    const doPrint = () => {
-      try {
-        printWindow.focus();
-        requestAnimationFrame(() => {
-          setTimeout(() => printWindow.print(), 50);
-        });
-      } catch (err) {
-        window.print();
-      } finally {
-        setTimeout(cleanup, 1000);
-      }
-    };
-
-    setNotice("正在打开打印预览… 请在打印设置里取消“页眉和页脚”，再保存为 PDF。", "info");
-
-    if (printWindow?.document.readyState === "complete") {
-      doPrint();
-    } else {
-      iframe.onload = doPrint;
-      setTimeout(doPrint, 500);
-    }
-  } catch (err) {
-    cleanup();
+  const iframe = createPrintIframe(container);
+  if (!iframe) {
+    printKitFallback(container);
+    return;
   }
+
+  const element = iframe.contentDocument.querySelector(".kit-paper");
+  const title = document.getElementById("employer-title")?.value?.trim() || "岗位说明";
+
+  const opt = {
+    margin: 0,
+    filename: `${title}.pdf`,
+    image: { type: "jpeg", quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, backgroundColor: "#fff", logging: false },
+    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+    pagebreak: { mode: ["avoid-all", "css", "legacy"] },
+  };
+
+  html2pdf()
+    .set(opt)
+    .from(element)
+    .save()
+    .then(() => {
+      setNotice("PDF 已下载", "success");
+      iframe.remove();
+    })
+    .catch((err) => {
+      console.error("html2pdf failed:", err);
+      iframe.remove();
+      setNotice("PDF 生成失败，改用系统打印…", "info");
+      printKitFallback(container);
+    });
 }
 
 document.querySelector('[data-action="fill-requirement"]').addEventListener("click", () => {
