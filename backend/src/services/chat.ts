@@ -80,7 +80,7 @@ const PROVIDER_DEFAULTS: Record<ModelProvider, { baseURL: string; defaultModel: 
   },
   deepseek: {
     baseURL: "https://api.deepseek.com",
-    defaultModel: "deepseek-chat",
+    defaultModel: "deepseek-v4-flash",
   },
   claude: {
     baseURL: "https://api.anthropic.com/v1",
@@ -219,8 +219,8 @@ export function getProviders() {
     {
       id: "deepseek",
       name: "DeepSeek",
-      models: ["deepseek-chat", "deepseek-reasoner", "DeepseekV4Pro"],
-      defaultModel: "deepseek-chat",
+      models: ["deepseek-v4-flash", "deepseek-v4-pro"],
+      defaultModel: "deepseek-v4-flash",
       baseURL: "https://api.deepseek.com",
     },
     {

@@ -3,218 +3,782 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Keal - AI求职助手 | 让AI重新定义求职方式</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
-<script>
-tailwind.config = {
-  theme: { extend: {
-    colors: {
-      'space-black':'#0a0a14','deep-space':'#0d0d1f','tech-blue':'#3b82f6','tech-cyan':'#06b6d4',
-      'gradient-purple':'#8b5cf6','ai-glow':'#6366f1','glass-white':'rgba(255,255,255,0.06)',
-      'glass-border':'rgba(255,255,255,0.1)',
-    },
-    fontFamily: { 'sf':['-apple-system','BlinkMacSystemFont','"SF Pro Display"','"PingFang SC"', 'sans-serif'] },
-    animation: {
-      'float': 'float 6s ease-in-out infinite',
-      'glow-pulse': 'glowPulse 3s ease-in-out infinite',
-      'orbit': 'orbit 20s linear infinite',
-      'particle-rise': 'particleRise 8s linear infinite',
-    }
-  }}
-}
-</script>
+<title>KEAL // AI CAREER OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
-:root {
-  --glass-bg: rgba(15, 15, 35, 0.6); --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-highlight: rgba(255, 255, 255, 0.04);
+:root{
+  --bg:#050505;
+  --orange:#FF4D00;
+  --orange-soft:rgba(255,77,0,.35);
+  --teal:#00FFE0;
+  --teal-soft:rgba(0,255,224,.25);
+  --panel:rgba(10,12,12,.55);
+  --line:rgba(255,77,0,.28);
 }
-*{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC",sans-serif;background:#0a0a14;color:#e2e8f0;overflow-x:hidden;-webkit-font-smoothing:antialiased;}
-#particle-canvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;}
-.nav-glass{backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);background:rgba(10,10,20,0.7);border-bottom:1px solid var(--glass-border);}
-.glass-card{background:var(--glass-bg);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border:1px solid var(--glass-border);border-radius:20px;transition:all .4s cubic-bezier(.25,.1,.25,1);position:relative;overflow:hidden;}
-.glass-card::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at top left, var(--glass-highlight), transparent 70%);pointer-events:none;}
-.glass-card:hover{border-color:rgba(99,102,241,.3);box-shadow:0 8px 40px rgba(99,102,241,.1),inset 0 1px 0 rgba(255,255,255,.05);transform:translateY(-2px);}
-.glow-btn{position:relative;overflow:hidden;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border:none;color:#fff;font-weight:600;border-radius:14px;padding:14px 32px;cursor:pointer;transition:all .4s cubic-bezier(.25,.1,.25,1);box-shadow:0 0 30px rgba(99,102,241,.3);letter-spacing:.5px;}
-.glow-btn:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 0 50px rgba(99,102,241,.5);}
-.glow-btn-outline{position:relative;background:transparent;border:1.5px solid rgba(139,92,246,.5);color:#c4b5fd;font-weight:600;border-radius:14px;padding:14px 32px;cursor:pointer;transition:all .4s cubic-bezier(.25,.1,.25,1);letter-spacing:.5px;}
-.glow-btn-outline:hover{border-color:#8b5cf6;box-shadow:0 0 30px rgba(139,92,246,.2);background:rgba(139,92,246,.1);transform:translateY(-2px);}
-#three-canvas{position:absolute;top:0;left:0;width:100%;height:100%;z-index:0;}
-.notif-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 10px rgba(34,197,94,.5);}
-::-webkit-scrollbar{width:6px;}
-::-webkit-scrollbar-track{background:transparent;}
-::-webkit-scrollbar-thumb{background:rgba(99,102,241,.3);border-radius:3px;}
-@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-20px);}}
-@keyframes glowPulse{0%,100%{box-shadow:0 0 20px rgba(99,102,241,.3);}50%{box-shadow:0 0 50px rgba(99,102,241,.6),0 0 100px rgba(139,92,246,.3);}}
-@keyframes orbit{from{transform:rotate(0);}to{transform:rotate(360deg);}}
-@keyframes particleRise{0%{transform:translateY(100vh) scale(0);opacity:0;}10%{opacity:1;}90%{opacity:1;}100%{transform:translateY(-10vh) scale(1);opacity:0;}}
-@keyframes fadeInUp{from{opacity:0;transform:translateY(30px);}to{opacity:1;transform:translateY(0);}}
-.fade-in-up{animation:fadeInUp .6s ease-out forwards;}
-.fade-in-up-delay-1{animation:fadeInUp .6s .1s ease-out forwards;opacity:0;}
-.fade-in-up-delay-2{animation:fadeInUp .6s .2s ease-out forwards;opacity:0;}
-@media(max-width:768px){.glass-card{border-radius:16px;}.glow-btn{padding:12px 24px;font-size:14px;border-radius:12px;}}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:var(--bg);color:#fff;font-family:'JetBrains Mono',ui-monospace,monospace;overflow-x:hidden}
+::selection{background:var(--orange);color:#000}
+a{color:inherit;text-decoration:none}
+body::-webkit-scrollbar{width:6px}
+body::-webkit-scrollbar-thumb{background:var(--orange-soft)}
+
+/* ===== 3D canvas & overlays ===== */
+#scene{position:fixed;inset:0;z-index:0;display:block}
+.fx-grid{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background-image:linear-gradient(rgba(0,255,224,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,224,.035) 1px,transparent 1px);
+  background-size:56px 56px;
+  mask-image:radial-gradient(ellipse 90% 80% at 50% 40%,#000 0%,transparent 78%);
+  -webkit-mask-image:radial-gradient(ellipse 90% 80% at 50% 40%,#000 0%,transparent 78%);}
+.fx-scanlines{position:fixed;inset:0;z-index:60;pointer-events:none;opacity:.5;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.22) 0 1px,transparent 1px 3px);}
+.fx-scanbar{position:fixed;left:0;right:0;height:120px;z-index:60;pointer-events:none;
+  background:linear-gradient(180deg,transparent,rgba(0,255,224,.05),transparent);
+  animation:scanbar 7s linear infinite;}
+@keyframes scanbar{0%{top:-15%}100%{top:110%}}
+.fx-noise{position:fixed;inset:0;z-index:61;pointer-events:none;opacity:.05;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation:noise .4s steps(4) infinite;}
+@keyframes noise{0%{transform:translate(0,0)}25%{transform:translate(-3px,2px)}50%{transform:translate(2px,-3px)}75%{transform:translate(-2px,-2px)}100%{transform:translate(3px,2px)}}
+.fx-vignette{position:fixed;inset:0;z-index:2;pointer-events:none;
+  background:radial-gradient(ellipse 110% 100% at 50% 45%,transparent 55%,rgba(0,0,0,.85) 100%);}
+
+/* ===== boot ===== */
+#boot{position:fixed;inset:0;z-index:100;background:#020202;display:flex;align-items:center;justify-content:center}
+.boot-inner{width:min(560px,86vw)}
+.boot-line{font-size:14px;letter-spacing:.14em;color:var(--teal);min-height:22px;margin-bottom:10px;white-space:pre}
+.boot-line .dim{color:rgba(255,255,255,.35)}
+.boot-bar{height:3px;background:rgba(255,255,255,.08);margin:26px 0 10px;position:relative;overflow:hidden}
+.boot-bar i{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,var(--orange),var(--teal));box-shadow:0 0 12px var(--orange)}
+.boot-pct{font-size:12px;color:var(--orange);letter-spacing:.2em;text-align:right}
+.boot-online{margin-top:22px;font-size:20px;font-weight:700;letter-spacing:.3em;color:#fff;opacity:0;text-align:center}
+.boot-online b{color:var(--orange)}
+
+/* ===== layout shell ===== */
+.shell{position:relative;z-index:10}
+
+/* nav */
+nav{display:flex;align-items:center;gap:34px;padding:22px 42px;border-bottom:1px solid rgba(255,77,0,.15);
+  background:linear-gradient(180deg,rgba(5,5,5,.9),rgba(5,5,5,.45));backdrop-filter:blur(8px);position:sticky;top:0;z-index:50}
+.logo{font-size:20px;font-weight:700;color:var(--orange);letter-spacing:.08em}
+.logo small{color:rgba(255,255,255,.45);font-size:11px;font-weight:400;letter-spacing:.22em;margin-left:12px}
+.nav-links{display:flex;gap:34px;margin-left:auto}
+.nav-links a{font-size:12px;letter-spacing:.24em;color:rgba(255,255,255,.75);position:relative;padding:4px 0;transition:color .25s}
+.nav-links a::after{content:"";position:absolute;left:0;bottom:-2px;width:0;height:1px;background:var(--teal);transition:width .3s}
+.nav-links a:hover{color:var(--teal)}
+.nav-links a:hover::after{width:100%}
+.ai-active{margin-left:10px;border:1px solid var(--orange);color:var(--orange);font-size:12px;letter-spacing:.2em;
+  padding:9px 18px;display:flex;align-items:center;gap:10px;background:rgba(255,77,0,.06);cursor:default}
+.ai-active i{width:7px;height:7px;border-radius:50%;background:var(--orange);box-shadow:0 0 10px var(--orange);animation:blink 1.4s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* ===== hero grid ===== */
+.stage{display:grid;grid-template-columns:40% 1fr 420px;gap:0;min-height:calc(100vh - 76px);padding:0 42px;align-items:center;position:relative}
+.hero{padding:40px 0 60px}
+.kicker{font-size:12px;letter-spacing:.3em;color:var(--orange);margin-bottom:18px}
+.kicker::before{content:"001 // "}
+.hero-bar{width:220px;height:4px;margin-bottom:34px;background:linear-gradient(90deg,var(--orange) 0 55%,var(--teal) 55% 75%,rgba(255,255,255,.15) 75%);position:relative;overflow:hidden}
+.hero-bar::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.6),transparent);transform:translateX(-100%);animation:barsweep 3s ease infinite}
+@keyframes barsweep{60%{transform:translateX(100%)}100%{transform:translateX(100%)}}
+h1.mega{font-family:'Archivo',sans-serif;font-weight:900;font-size:clamp(56px,6.2vw,104px);line-height:.96;letter-spacing:.01em;text-transform:uppercase}
+h1.mega .row{display:block;position:relative;width:max-content}
+/* glitch */
+.glitch{position:relative}
+.glitch::before,.glitch::after{content:attr(data-text);position:absolute;left:0;top:0;width:100%;overflow:hidden;
+  clip-path:inset(0 0 100% 0);opacity:.8;pointer-events:none}
+.glitch::before{color:var(--orange);z-index:-1}
+.glitch::after{color:var(--teal);z-index:-2}
+.glitching::before{animation:g1 .45s steps(2) both}
+.glitching::after{animation:g2 .45s steps(2) both}
+@keyframes g1{0%{clip-path:inset(12% 0 55% 0);transform:translate(-6px,2px)}50%{clip-path:inset(60% 0 8% 0);transform:translate(5px,-2px)}100%{clip-path:inset(0 0 100% 0);transform:none}}
+@keyframes g2{0%{clip-path:inset(58% 0 12% 0);transform:translate(6px,-2px)}50%{clip-path:inset(8% 0 68% 0);transform:translate(-5px,2px)}100%{clip-path:inset(0 0 100% 0);transform:none}}
+.title-scan{position:absolute;left:0;right:0;height:3px;background:rgba(0,255,224,.35);mix-blend-mode:screen;
+  animation:titlescan 4.5s linear infinite;pointer-events:none}
+@keyframes titlescan{0%{top:0;opacity:0}10%{opacity:1}90%{opacity:1}100%{top:100%;opacity:0}}
+.sub-os{margin-top:30px;font-size:13px;letter-spacing:.42em;color:rgba(255,255,255,.65)}
+.sub-cn{margin-top:18px;font-size:15px;line-height:2;color:rgba(255,255,255,.82);max-width:420px}
+.sub-cn b{color:var(--teal);font-weight:400}
+.cta{display:flex;gap:18px;margin-top:38px}
+.btn{position:relative;font-family:inherit;font-size:15px;letter-spacing:.1em;padding:16px 30px;cursor:pointer;display:inline-flex;align-items:center;gap:10px;transition:transform .2s}
+.btn:hover{transform:translateY(-2px)}
+.btn-solid{background:var(--orange);color:#000;font-weight:700;border:1px solid var(--orange)}
+.btn-ghost{background:rgba(255,255,255,.02);color:#fff;border:1px solid rgba(255,255,255,.35)}
+/* energy border on hover */
+.btn::before{content:"";position:absolute;inset:-3px;padding:2px;opacity:0;transition:opacity .25s;
+  background:conic-gradient(from var(--a,0deg),transparent 0 40%,var(--orange) 50%,transparent 60% 100%);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;
+  animation:spin-border 1.6s linear infinite paused}
+.btn:hover::before{opacity:1;animation-play-state:running}
+.btn:hover{box-shadow:0 0 26px rgba(255,77,0,.35)}
+@property --a{syntax:"<angle>";initial-value:0deg;inherits:false}
+@keyframes spin-border{to{--a:360deg}}
+
+/* ===== system status mini ===== */
+.sys-status{position:absolute;top:26px;right:42px;width:250px;border:1px solid var(--teal-soft);background:var(--panel);
+  backdrop-filter:blur(10px);padding:14px 16px;font-size:11px;letter-spacing:.12em;z-index:20}
+.sys-status h4{color:rgba(255,255,255,.5);font-size:10px;letter-spacing:.26em;margin-bottom:8px}
+.sys-status p{color:var(--teal);margin:3px 0}
+.sys-status p b{color:#fff;font-weight:400}
+.sys-status canvas{width:100%;height:26px;margin-top:6px}
+/* corner ticks */
+.corners{position:relative}
+.corners::before,.corners::after{content:"";position:absolute;width:10px;height:10px;border:1px solid var(--orange)}
+.corners::before{top:-1px;left:-1px;border-right:0;border-bottom:0}
+.corners::after{bottom:-1px;right:-1px;border-left:0;border-top:0}
+
+/* ===== biometric panel ===== */
+.bio{border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(14px);padding:22px 24px;position:relative;
+  box-shadow:0 0 60px rgba(255,77,0,.07), inset 0 0 40px rgba(0,0,0,.5);margin:90px 0 40px}
+.bio-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.bio-head .t{color:var(--orange);font-size:13px;letter-spacing:.18em}
+.bio-head .t::before{content:"// "}
+.bio-head .m{color:rgba(255,255,255,.7);font-size:12px;letter-spacing:.14em}
+.bio-body{display:grid;grid-template-columns:150px 1fr;gap:16px}
+#headCanvas{width:150px;height:190px;display:block}
+.bio-log{font-size:11.5px;line-height:2.05;letter-spacing:.06em;color:rgba(255,255,255,.85)}
+.bio-log div{opacity:0;transform:translateX(8px)}
+.bio-log .p{color:var(--teal)}
+.bio-log .o{color:var(--orange)}
+.match-big{font-size:52px;font-weight:700;color:var(--teal);letter-spacing:.02em;line-height:1.1;text-shadow:0 0 24px rgba(0,255,224,.45)}
+.analyzing{margin-top:14px;font-size:11px;letter-spacing:.22em;color:rgba(255,255,255,.55)}
+#waveCanvas{width:100%;height:52px;display:block;margin-top:8px}
+.stream{margin-top:14px;border-top:1px solid rgba(255,255,255,.08);padding-top:10px}
+.stream h5{font-size:10px;letter-spacing:.26em;color:rgba(255,255,255,.45);margin-bottom:8px}
+#streamBox{font-size:10.5px;line-height:1.9;color:rgba(255,255,255,.6);height:96px;overflow:hidden}
+#streamBox .ts{color:rgba(255,255,255,.35)}
+#streamBox .tag-INFO{color:var(--teal)} #streamBox .tag-SCAN{color:var(--orange)}
+#streamBox .tag-MATCH{color:var(--teal)} #streamBox .tag-DONE{color:var(--orange)}
+#streamBox .hex{float:right;color:rgba(255,255,255,.18)}
+
+/* ===== feature cards ===== */
+.cards-wrap{padding:10px 42px 26px;position:relative;z-index:10}
+.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;border:1px solid var(--line);padding:18px;background:rgba(5,5,5,.35);backdrop-filter:blur(6px)}
+.card{display:flex;align-items:center;gap:14px;padding:18px 16px;background:rgba(10,10,10,.72);border:1px solid rgba(255,77,0,.22);
+  transition:transform .25s,border-color .25s,box-shadow .25s;position:relative;overflow:hidden}
+.card::after{content:"";position:absolute;left:-60%;top:0;width:40%;height:100%;transform:skewX(-20deg);
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.07),transparent);transition:left .5s}
+.card:hover{transform:translateY(-7px);border-color:var(--orange);box-shadow:0 14px 34px rgba(255,77,0,.22)}
+.card:hover::after{left:120%}
+.card .ic{width:46px;height:46px;flex:none;border:1px solid rgba(0,255,224,.3);display:flex;align-items:center;justify-content:center;background:rgba(0,255,224,.04)}
+.card .ic svg{width:24px;height:24px;stroke:var(--teal);fill:none;stroke-width:1.6}
+.card h3{font-size:13.5px;letter-spacing:.1em;color:#fff;font-weight:700}
+.card p{font-size:11px;color:rgba(255,255,255,.5);margin-top:5px;letter-spacing:.06em}
+
+/* ===== bottom panels ===== */
+.panels{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:18px;padding:0 42px 48px;position:relative;z-index:10}
+.panel{border:1px solid var(--teal-soft);background:var(--panel);backdrop-filter:blur(8px);padding:16px 18px;min-height:150px}
+.panel h4{font-size:11px;letter-spacing:.26em;color:rgba(255,255,255,.55);margin-bottom:12px}
+.panel .inner{border:1px solid rgba(255,255,255,.08);padding:12px 14px;font-size:11.5px;line-height:2;color:var(--teal);letter-spacing:.08em}
+.panel .inner .w{color:rgba(255,255,255,.8)}
+#feedCanvas{width:100%;height:96px;display:block}
+.sec-grid{display:flex;gap:16px;align-items:center}
+.sec-grid .lock{width:86px;height:96px;flex:none;display:flex;align-items:center;justify-content:center;
+  clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);border:1px solid var(--teal);background:rgba(0,255,224,.05);
+  box-shadow:0 0 24px rgba(0,255,224,.15) inset}
+.sec-grid .lock svg{width:34px;height:34px;stroke:var(--teal);fill:none;stroke-width:1.5}
+footer{padding:18px 42px;border-top:1px solid rgba(255,77,0,.14);font-size:10px;letter-spacing:.24em;color:rgba(255,255,255,.3);
+  display:flex;justify-content:space-between;position:relative;z-index:10}
+footer b{color:var(--orange);font-weight:400}
+
+@media (max-width:1200px){
+  .stage{grid-template-columns:1fr;padding-top:60px}
+  .bio{max-width:560px;margin:40px auto}
+  .cards{grid-template-columns:repeat(2,1fr)}
+  .panels{grid-template-columns:1fr}
+  .sys-status{display:none}
+}
 </style>
 </head>
-<body class="font-sf">
+<body>
 
-<canvas id="particle-canvas"></canvas>
-
-<!-- Navigation -->
-<nav class="nav-glass fixed top-0 left-0 w-full z-50 px-4 md:px-8 py-3 flex items-center justify-between">
-  <div class="flex items-center gap-3">
-    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-tech-blue to-gradient-purple flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-indigo-500/25">K</div>
-    <span class="text-white font-semibold text-lg tracking-tight hidden sm:inline">Keal</span>
-  </div>
-  <div class="flex items-center gap-2 md:gap-4">
-    <a href="student.html" class="text-sm text-gray-300 hover:text-white transition px-3 py-2 rounded-lg hover:bg-white/5 hidden md:inline-block no-underline">学生端</a>
-    <a href="enterprise.html" class="text-sm text-gray-300 hover:text-white transition px-3 py-2 rounded-lg hover:bg-white/5 hidden md:inline-block no-underline">企业端</a>
-    <a href="student.html" class="glow-btn text-sm !py-2 !px-5 no-underline inline-block">开始体验</a>
-  </div>
-</nav>
-
-<!-- 3D Canvas + Hero -->
-<div class="relative min-h-screen flex flex-col items-center justify-center px-4 pt-20 pb-16">
-  <div id="three-canvas"></div>
-
-  <div class="relative z-10 text-center max-w-4xl mx-auto fade-in-up">
-    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-8">
-      <span class="notif-dot"></span>
-      <span class="text-sm text-gray-300">AI驱动的下一代求职体验</span>
-    </div>
-    <h1 class="text-4xl md:text-6xl lg:text-7xl font-bold text-white leading-tight mb-6">
-      让AI重新定义<br class="hidden sm:block">求职方式
-    </h1>
-    <p class="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-12 leading-relaxed">
-      帮助学生发现自己的价值，帮助企业找到真正匹配的人才。
-    </p>
-    <div class="flex flex-col sm:flex-row gap-4 justify-center mb-20">
-      <a href="student.html" class="glow-btn text-lg !px-10 !py-4 no-underline inline-block">🎓 开启AI求职陪跑</a>
-      <a href="enterprise.html" class="glow-btn-outline text-lg !px-10 !py-4 no-underline inline-block">🏢 创建岗位智能模型</a>
-    </div>
-  </div>
-
-  <!-- Stats -->
-  <div class="relative z-10 grid grid-cols-3 gap-4 md:gap-8 max-w-3xl w-full fade-in-up-delay-2">
-    <div class="glass-card text-center p-6 md:p-8">
-      <div class="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-tech-blue to-tech-cyan">10,000+</div>
-      <div class="text-sm text-gray-400 mt-2">AI分析简历</div>
-    </div>
-    <div class="glass-card text-center p-6 md:p-8">
-      <div class="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-gradient-purple to-pink-400">50,000+</div>
-      <div class="text-sm text-gray-400 mt-2">模拟面试</div>
-    </div>
-    <div class="glass-card text-center p-6 md:p-8">
-      <div class="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-tech-cyan to-green-400">500+</div>
-      <div class="text-sm text-gray-400 mt-2">企业岗位模型</div>
-    </div>
-  </div>
-
-  <!-- Scroll indicator -->
-  <div class="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 opacity-50">
-    <span class="text-xs text-gray-500">向下滚动探索</span>
-    <div class="w-5 h-8 rounded-full border border-gray-600 flex justify-center pt-1"><div class="w-1 h-2 rounded-full bg-gray-400 animate-bounce"></div></div>
-  </div>
-
-  <!-- Feature Highlights -->
-  <div class="relative z-10 w-full max-w-6xl mt-32 px-4">
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-      <div class="glass-card p-6 text-center group cursor-default"><div class="text-4xl mb-4">🧠</div><h3 class="text-white font-semibold mb-2">AI能力发现</h3><p class="text-sm text-gray-400">通过智能对话挖掘你的真实竞争力</p></div>
-      <div class="glass-card p-6 text-center group cursor-default"><div class="text-4xl mb-4">📝</div><h3 class="text-white font-semibold mb-2">智能简历生成</h3><p class="text-sm text-gray-400">STAR法则优化，让每段经历都有价值</p></div>
-      <div class="glass-card p-6 text-center group cursor-default"><div class="text-4xl mb-4">🎯</div><h3 class="text-white font-semibold mb-2">精准岗位匹配</h3><p class="text-sm text-gray-400">AI分析双方需求，92%匹配精度</p></div>
-      <div class="glass-card p-6 text-center group cursor-default"><div class="text-4xl mb-4">💬</div><h3 class="text-white font-semibold mb-2">AI模拟面试</h3><p class="text-sm text-gray-400">多维度评分，针对性提升面试能力</p></div>
-    </div>
-  </div>
-
-  <!-- Bottom links -->
-  <div class="relative z-10 mt-24 text-center">
-    <p class="text-gray-600 text-sm mb-4">— 选择你的身份 —</p>
-    <div class="flex gap-4 justify-center">
-      <a href="student.html" class="glow-btn !px-8 !py-3 no-underline inline-block">🎓 我是求职者</a>
-      <a href="enterprise.html" class="glow-btn-outline !px-8 !py-3 no-underline inline-block">🏢 我是招聘方</a>
-    </div>
+<!-- BOOT SEQUENCE -->
+<div id="boot">
+  <div class="boot-inner">
+    <div class="boot-line" id="bl1"></div>
+    <div class="boot-line" id="bl2"></div>
+    <div class="boot-line" id="bl3"></div>
+    <div class="boot-bar"><i id="bootFill"></i></div>
+    <div class="boot-pct" id="bootPct">0%</div>
+    <div class="boot-online" id="bootOnline">AI CAREER <b>OS</b> ONLINE</div>
   </div>
 </div>
 
-<!-- ===== SCRIPTS ===== -->
-<script>
-// Particle System
-class ParticleSystem {
-  constructor(){this.canvas=document.getElementById('particle-canvas');this.ctx=this.canvas.getContext('2d');this.particles=[];this.resize();window.addEventListener('resize',()=>this.resize());this.init();this.animate();}
-  resize(){this.canvas.width=window.innerWidth;this.canvas.height=window.innerHeight;}
-  init(){for(let i=0;i<80;i++)this.particles.push({x:Math.random()*this.canvas.width,y:Math.random()*this.canvas.height,size:Math.random()*2+.5,speedY:Math.random()*.5+.1,speedX:(Math.random()-.5)*.3,opacity:Math.random()*.4+.1,pulse:Math.random()*Math.PI*2});}
-  animate(){this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height);this.particles.forEach(p=>{p.y-=p.speedY;p.x+=p.speedX;p.pulse+=.02;if(p.y<-10){p.y=this.canvas.height+10;p.x=Math.random()*this.canvas.width;}if(p.x<-10)p.x=this.canvas.width+10;if(p.x>this.canvas.width+10)p.x=-10;const a=p.opacity+Math.sin(p.pulse)*.15;this.ctx.beginPath();this.ctx.arc(p.x,p.y,p.size,0,Math.PI*2);this.ctx.fillStyle=`rgba(99,102,241,${Math.max(.05,a)})`;this.ctx.fill();this.ctx.beginPath();this.ctx.arc(p.x,p.y,p.size*3,0,Math.PI*2);this.ctx.fillStyle=`rgba(99,102,241,${Math.max(.01,a*.3)})`;this.ctx.fill();});requestAnimationFrame(()=>this.animate());}
-}
+<!-- 3D SCENE + FX -->
+<canvas id="scene"></canvas>
+<div class="fx-grid"></div>
+<div class="fx-vignette"></div>
+<div class="fx-scanlines"></div>
+<div class="fx-scanbar"></div>
+<div class="fx-noise"></div>
 
-// 3D Core (Three.js)
-class ThreeCore {
-  constructor(){
-    this.container=document.getElementById('three-canvas');if(!this.container)return;
-    this.scene=new THREE.Scene();
-    this.camera=new THREE.PerspectiveCamera(60,window.innerWidth/window.innerHeight,.1,1000);
-    this.camera.position.z=12;
-    this.renderer=new THREE.WebGLRenderer({alpha:true,antialias:true});
-    this.renderer.setSize(window.innerWidth,window.innerHeight);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
-    this.container.appendChild(this.renderer.domElement);
-    this.core=null;this.orbitNodes=[];this.connections=[];
-    this.mouseX=0;this.mouseY=0;
-    this.init();this.animate();
-    window.addEventListener('resize',()=>this.onResize());
-    document.addEventListener('mousemove',(e)=>{this.mouseX=(e.clientX/window.innerWidth)*2-1;this.mouseY=-(e.clientY/window.innerHeight)*2+1;});
+<div class="shell" id="shell" style="opacity:0">
+  <nav>
+    <div class="logo">KEAL<small>LINK // v2.04</small></div>
+    <div class="nav-links">
+      <a href="student.html">CANDIDATES</a>
+      <a href="student-match.html">NEURAL_MATCH</a>
+      <a href="enterprise.html">PROTOCOL</a>
+    </div>
+    <div class="ai-active">AI_ACTIVE<i></i></div>
+  </nav>
+
+  <div class="stage">
+    <!-- SYSTEM STATUS -->
+    <div class="sys-status corners" id="sysStatus">
+      <h4>SYSTEM STATUS</h4>
+      <p>NEURAL ENGINE: <b>ONLINE</b></p>
+      <p>MATCH RATE: <b id="miniRate">98.2%</b></p>
+      <canvas id="sparkCanvas"></canvas>
+    </div>
+
+    <!-- HERO -->
+    <section class="hero" id="hero">
+      <div class="kicker">NEXT GEN RECRUITMENT SYSTEM</div>
+      <div class="hero-bar"></div>
+      <h1 class="mega">
+        <span class="row"><span class="glitch" data-text="ARCHITECT">ARCHITECT</span><span class="title-scan"></span></span>
+        <span class="row"><span class="glitch" data-text="YOUR">YOUR</span></span>
+        <span class="row"><span class="glitch" data-text="FUTURE">FUTURE</span></span>
+      </h1>
+      <div class="sub-os">AI POWERED CAREER OS</div>
+      <p class="sub-cn">你会写，它会筛。求职者与企业复用同一个<b>岗位理解引擎</b>——<br>每句话可溯源，绝不编造。</p>
+      <div class="cta">
+        <a class="btn btn-solid" href="student.html">&gt;&nbsp;求职者接入</a>
+        <a class="btn btn-ghost" href="enterprise.html">&gt;&nbsp;企业协议</a>
+      </div>
+    </section>
+
+    <div><!-- neural core shows through here --></div>
+
+    <!-- BIOMETRIC SCAN -->
+    <aside class="bio corners" id="bioPanel">
+      <div class="bio-head"><span class="t">BIOMETRIC SCAN</span><span class="m"><span id="matchTop">98.2</span>% MATCH</span></div>
+      <div class="bio-body">
+        <canvas id="headCanvas" width="300" height="380"></canvas>
+        <div class="bio-log" id="bioLog">
+          <div>&gt;&gt; INITIALIZING <span class="p">BIOMETRIC_SCAN</span></div>
+          <div>&gt;&gt; ENGINE: <span class="o">AI · LIVE</span></div>
+          <div>&gt;&gt; SKILLS ANALYSIS: <span class="p">RUNNING</span></div>
+          <div>&gt;&gt; CAREER MATCH: <span class="p">LOCKED</span></div>
+          <div>&gt;&gt; SOURCE_QUOTE: <span class="p">VERIFIED</span></div>
+          <div>&gt;&gt; MATCH_PROBABILITY:</div>
+          <div class="match-big"><span id="matchBig">0.0</span>%</div>
+        </div>
+      </div>
+      <div class="analyzing">ANALYZING<span id="dots">...</span></div>
+      <canvas id="waveCanvas" width="740" height="104"></canvas>
+      <div class="stream">
+        <h5>DATA STREAM</h5>
+        <div id="streamBox"></div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- FEATURE CARDS -->
+  <div class="cards-wrap">
+    <div class="cards" id="cards">
+      <a class="card" href="student.html">
+        <span class="ic"><svg viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12h5M10 16h5"/></svg></span>
+        <span><h3>AI RESUME</h3><p>智能生成简历</p></span>
+      </a>
+      <a class="card" href="student-match.html">
+        <span class="ic"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/><path d="M7.5 7.5l3 3m3 0l3-3m-9 9l3-3m3 0l3 3"/></svg></span>
+        <span><h3>NEURAL MATCH</h3><p>神经匹配引擎</p></span>
+      </a>
+      <a class="card" href="student-interview.html">
+        <span class="ic"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span>
+        <span><h3>INTERVIEW SIM</h3><p>AI 模拟面试</p></span>
+      </a>
+      <a class="card" href="enterprise.html">
+        <span class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 10h.01M12 10h.01M16 10h.01M9 21l3-4 3 4"/></svg></span>
+        <span><h3>HR COPILOT</h3><p>HR 对话助手</p></span>
+      </a>
+      <a class="card" href="student-resume.html">
+        <span class="ic"><svg viewBox="0 0 24 24"><circle cx="5" cy="19" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="5" r="2"/><path d="M6.5 17.5L10.5 13.5M13.5 10.5L17.5 6.5"/></svg></span>
+        <span><h3>CAREER MAP</h3><p>职业发展路径</p></span>
+      </a>
+    </div>
+  </div>
+
+  <!-- BOTTOM PANELS -->
+  <div class="panels" id="panels">
+    <div class="panel corners">
+      <h4>SYSTEM LOGS</h4>
+      <div class="inner">
+        <div class="w">NEURAL ENGINE v2.04</div>
+        <div>All systems operational.</div>
+        <div>Ready to architect your future.</div>
+      </div>
+    </div>
+    <div class="panel corners">
+      <h4>LIVE DATA FEED</h4>
+      <canvas id="feedCanvas" width="900" height="192"></canvas>
+    </div>
+    <div class="panel corners">
+      <h4>SECURITY PROTOCOL</h4>
+      <div class="sec-grid">
+        <div class="inner" style="flex:1;border:0;padding:0">
+          <div>ENCRYPTION: <span class="w">AES-256</span></div>
+          <div>STATUS: <span class="w">SECURE</span></div>
+          <div>FIREWALL: <span class="w">ACTIVE</span></div>
+        </div>
+        <div class="lock"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="1"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <span>KEAL <b>//</b> AI CAREER OS — NEURAL LINK PROTOCOL</span>
+    <span>ENGINE: <b>LIVE</b> · LATENCY: <span id="lat">42</span>ms · BUILD 2604</span>
+  </footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js"}}</script>
+<script type="module">
+import * as THREE from 'three';
+
+/* ================= THREE.JS SCENE ================= */
+const canvas = document.getElementById('scene');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:false});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.6));
+renderer.setSize(innerWidth, innerHeight);
+renderer.setClearColor(0x050505, 1);
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x050505, 0.016);
+const camera = new THREE.PerspectiveCamera(55, innerWidth/innerHeight, .1, 400);
+camera.position.set(0, 1.2, 30);
+
+const ORANGE = new THREE.Color('#FF4D00');
+const TEAL   = new THREE.Color('#00FFE0');
+
+/* ---- glow sprite texture ---- */
+function glowTexture(color, inner='rgba(255,255,255,.95)'){
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const g = c.getContext('2d');
+  const grd = g.createRadialGradient(64,64,2,64,64,64);
+  grd.addColorStop(0, inner);
+  grd.addColorStop(.25, color);
+  grd.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = grd; g.fillRect(0,0,128,128);
+  return new THREE.CanvasTexture(c);
+}
+const texOrange = glowTexture('rgba(255,77,0,.85)');
+const texTeal   = glowTexture('rgba(0,255,224,.8)');
+
+/* ---- deep-space starfield ---- */
+function makeStars(count, spread, size, tex, opacity){
+  const pos = new Float32Array(count*3);
+  for(let i=0;i<count;i++){
+    pos[i*3]   = (Math.random()-.5)*spread;
+    pos[i*3+1] = (Math.random()-.5)*spread*.62;
+    pos[i*3+2] = (Math.random()-.5)*spread - 12;
   }
-  init(){
-    const coreGeo=new THREE.IcosahedronGeometry(1.5,3);
-    const coreMat=new THREE.MeshPhongMaterial({color:0x3b82f6,emissive:0x1e3a5f,shininess:100,wireframe:false,transparent:true,opacity:.9});
-    this.core=new THREE.Mesh(coreGeo,coreMat);this.scene.add(this.core);
-    const wireGeo=new THREE.IcosahedronGeometry(2.2,2);
-    const wireMat=new THREE.MeshBasicMaterial({color:0x6366f1,wireframe:true,transparent:true,opacity:.15});
-    this.scene.add(new THREE.Mesh(wireGeo,wireMat));
-    const labels=['能力分析','简历生成','需求分析','岗位匹配'];
-    const colors=[0x3b82f6,0x8b5cf6,0x06b6d4,0x6366f1];
-    labels.forEach((l,i)=>{
-      const a=(i/labels.length)*Math.PI*2;
-      const n=new THREE.Mesh(new THREE.SphereGeometry(.25,16,16),new THREE.MeshPhongMaterial({color:colors[i],emissive:colors[i],emissiveIntensity:.5}));
-      n.userData={angle:a,radius:4.5,speed:.3+i*.05,color:colors[i]};
-      n.position.x=Math.cos(a)*n.userData.radius;n.position.y=Math.sin(a)*n.userData.radius;
-      this.scene.add(n);this.orbitNodes.push(n);
-      const r=new THREE.Mesh(new THREE.TorusGeometry(n.userData.radius,.02,16,100),new THREE.MeshBasicMaterial({color:colors[i],transparent:true,opacity:.2}));
-      r.rotation.x=Math.PI/2;this.scene.add(r);
-    });
-    for(let i=0;i<60;i++){
-      const p=new THREE.Mesh(new THREE.SphereGeometry(.03,4,4),new THREE.MeshBasicMaterial({color:0x6366f1,transparent:true,opacity:.6}));
-      p.userData={orbitRadius:3+Math.random()*3,angle:Math.random()*Math.PI*2,speed:.2+Math.random()*.8,yOffset:(Math.random()-.5)*4};
-      this.scene.add(p);this.connections.push(p);
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  const mat = new THREE.PointsMaterial({size, map:tex, transparent:true, opacity,
+    depthWrite:false, blending:THREE.AdditiveBlending});
+  return new THREE.Points(geo, mat);
+}
+const starsA = makeStars(900, 150, .55, texTeal,  .55);
+const starsB = makeStars(500, 150, .8,  texOrange,.4);
+const dust   = makeStars(700, 90,  .22, texTeal,  .25);
+scene.add(starsA, starsB, dust);
+
+/* ---- background neural web ---- */
+(function(){
+  const N=70, pts=[];
+  for(let i=0;i<N;i++) pts.push(new THREE.Vector3((Math.random()-.5)*120,(Math.random()-.5)*70,(Math.random()-.5)*60-30));
+  const verts=[];
+  for(let i=0;i<N;i++)for(let j=i+1;j<N;j++){
+    if(pts[i].distanceTo(pts[j])<16){ verts.push(pts[i].x,pts[i].y,pts[i].z, pts[j].x,pts[j].y,pts[j].z); }
+  }
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(verts,3));
+  const web=new THREE.LineSegments(geo, new THREE.LineBasicMaterial({color:TEAL, transparent:true, opacity:.06}));
+  scene.add(web);
+})();
+
+/* ================= NEURAL CORE (arc reactor) ================= */
+const core = new THREE.Group();
+core.position.set(0, 1.5, 0);
+scene.add(core);
+
+/* center glowing orb */
+const orbSprite = new THREE.Sprite(new THREE.SpriteMaterial({map:texOrange, blending:THREE.AdditiveBlending, depthWrite:false}));
+orbSprite.scale.setScalar(9);
+core.add(orbSprite);
+const orbCoreSprite = new THREE.Sprite(new THREE.SpriteMaterial({map:glowTexture('rgba(255,190,120,.95)'), blending:THREE.AdditiveBlending, depthWrite:false}));
+orbCoreSprite.scale.setScalar(3.4);
+core.add(orbCoreSprite);
+/* wire sphere shell */
+const shell = new THREE.Mesh(
+  new THREE.IcosahedronGeometry(4.6, 2),
+  new THREE.MeshBasicMaterial({color:TEAL, wireframe:true, transparent:true, opacity:.14})
+);
+core.add(shell);
+const shellIn = new THREE.Mesh(
+  new THREE.IcosahedronGeometry(3.1, 1),
+  new THREE.MeshBasicMaterial({color:ORANGE, wireframe:true, transparent:true, opacity:.22})
+);
+core.add(shellIn);
+
+/* internal neural connections */
+(function(){
+  const N=26, pts=[];
+  for(let i=0;i<N;i++){
+    const v=new THREE.Vector3().randomDirection().multiplyScalar(2.2+Math.random()*2.2);
+    pts.push(v);
+  }
+  const verts=[], cols=[];
+  for(let i=0;i<N;i++)for(let j=i+1;j<N;j++){
+    if(pts[i].distanceTo(pts[j])<3.4){
+      verts.push(pts[i].x,pts[i].y,pts[i].z, pts[j].x,pts[j].y,pts[j].z);
+      const c = Math.random()<.5?ORANGE:TEAL;
+      cols.push(c.r,c.g,c.b, c.r,c.g,c.b);
     }
-    this.scene.add(new THREE.AmbientLight(0x333366,.6));
-    const pl=new THREE.PointLight(0x6366f1,1.5,20);pl.position.set(3,2,5);this.scene.add(pl);
-    const pl2=new THREE.PointLight(0x8b5cf6,.8,15);pl2.position.set(-3,-1,3);this.scene.add(pl2);
   }
-  animate(){
-    requestAnimationFrame(()=>this.animate());const t=Date.now()*.001;
-    if(this.core){this.core.rotation.x+=.002;this.core.rotation.y+=.003;}
-    this.orbitNodes.forEach(n=>{n.userData.angle+=n.userData.speed*.01;n.position.x=Math.cos(n.userData.angle)*n.userData.radius;n.position.y=Math.sin(n.userData.angle*.6)*2;n.position.z=Math.sin(n.userData.angle)*n.userData.radius;});
-    this.connections.forEach(p=>{p.userData.angle+=p.userData.speed*.01;p.position.x=Math.cos(p.userData.angle)*p.userData.orbitRadius;p.position.z=Math.sin(p.userData.angle)*p.userData.orbitRadius;p.position.y=p.userData.yOffset+Math.sin(t*p.userData.speed)*.5;p.material.opacity=.3+Math.sin(t*2+p.userData.angle)*.2;});
-    this.camera.position.x+=(this.mouseX*2-this.camera.position.x)*.02;this.camera.position.y+=(this.mouseY*1.5-this.camera.position.y)*.02;this.camera.lookAt(0,0,0);
-    this.renderer.render(this.scene,this.camera);
-  }
-  onResize(){this.camera.aspect=window.innerWidth/window.innerHeight;this.camera.updateProjectionMatrix();this.renderer.setSize(window.innerWidth,window.innerHeight);}
-}
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(verts,3));
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(cols,3));
+  const neuro=new THREE.LineSegments(geo, new THREE.LineBasicMaterial({vertexColors:true, transparent:true, opacity:.5, blending:THREE.AdditiveBlending}));
+  core.add(neuro);
+  const nodeGeo=new THREE.BufferGeometry();
+  nodeGeo.setAttribute('position', new THREE.Float32BufferAttribute(pts.flatMap(p=>[p.x,p.y,p.z]),3));
+  core.add(new THREE.Points(nodeGeo, new THREE.PointsMaterial({size:.5, map:texTeal, transparent:true, depthWrite:false, blending:THREE.AdditiveBlending})));
+})();
 
-// Init
-document.addEventListener('DOMContentLoaded',()=>{
-  new ParticleSystem();
-  new ThreeCore();
-  // GSAP scroll animations
-  if(typeof gsap!=='undefined'&&typeof ScrollTrigger!=='undefined'){
-    gsap.registerPlugin(ScrollTrigger);
-    setTimeout(()=>{
-      gsap.utils.toArray('.glass-card').forEach((card,i)=>{gsap.from(card,{scrollTrigger:{trigger:card,start:'top 85%',toggleActions:'play none none none'},y:40,opacity:0,duration:.6,delay:i*.08,ease:'power2.out'});});
-    },500);
+/* three rotating orbits with beads */
+const orbits=[];
+function makeOrbit(radius, tiltX, tiltZ, color, beads){
+  const g=new THREE.Group();
+  const curve=new THREE.EllipseCurve(0,0,radius,radius);
+  const pts=curve.getPoints(140).map(p=>new THREE.Vector3(p.x,p.y,0));
+  const ring=new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts),
+    new THREE.LineBasicMaterial({color, transparent:true, opacity:.4}));
+  g.add(ring);
+  const beadGroup=new THREE.Group();
+  for(let i=0;i<beads;i++){
+    const s=new THREE.Sprite(new THREE.SpriteMaterial({map: color===ORANGE.getHex()?texOrange:texTeal, blending:THREE.AdditiveBlending, depthWrite:false}));
+    s.scale.setScalar(1.15);
+    const a=(i/beads)*Math.PI*2;
+    s.position.set(Math.cos(a)*radius, Math.sin(a)*radius, 0);
+    beadGroup.add(s);
   }
+  g.add(beadGroup);
+  g.rotation.x=tiltX; g.rotation.z=tiltZ;
+  core.add(g);
+  orbits.push({g, beadGroup, speed:.14+Math.random()*.2});
+  return g;
+}
+makeOrbit(7.2,  Math.PI/2.15,  .3,  ORANGE.getHex(), 3);
+makeOrbit(9.0,  Math.PI/2.6,  -.55, TEAL.getHex(),   4);
+makeOrbit(11.2, Math.PI/1.75,  .95, ORANGE.getHex(), 3);
+
+/* swirling particle cloud around core */
+const swirl=(function(){
+  const N=520, pos=new Float32Array(N*3), seed=[];
+  for(let i=0;i<N;i++){
+    const r=5.5+Math.random()*7.5, a=Math.random()*Math.PI*2, y=(Math.random()-.5)*6;
+    seed.push({r,a,y,sp:.1+Math.random()*.35});
+    pos[i*3]=Math.cos(a)*r; pos[i*3+1]=y; pos[i*3+2]=Math.sin(a)*r;
+  }
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  const p=new THREE.Points(geo, new THREE.PointsMaterial({size:.42, map:texOrange, transparent:true, opacity:.8, depthWrite:false, blending:THREE.AdditiveBlending}));
+  core.add(p);
+  return {p, seed, geo};
+})();
+
+/* holographic projection platform */
+const platform=new THREE.Group();
+platform.position.set(0,-8.2,0);
+scene.add(platform);
+for(let i=0;i<4;i++){
+  const r=2.5+i*1.7;
+  const ring=new THREE.Mesh(new THREE.RingGeometry(r, r+.07, 80),
+    new THREE.MeshBasicMaterial({color:i%2?TEAL:ORANGE, transparent:true, opacity:.5-i*.09, side:THREE.DoubleSide, blending:THREE.AdditiveBlending, depthWrite:false}));
+  ring.rotation.x=-Math.PI/2;
+  platform.add(ring);
+}
+/* light cone */
+const cone=new THREE.Mesh(
+  new THREE.CylinderGeometry(1.1, 4.4, 9.4, 40, 1, true),
+  new THREE.MeshBasicMaterial({color:ORANGE, transparent:true, opacity:.055, side:THREE.DoubleSide, blending:THREE.AdditiveBlending, depthWrite:false})
+);
+cone.position.y=4.8;
+platform.add(cone);
+/* rising particle column */
+const column=(function(){
+  const N=160, pos=new Float32Array(N*3), seed=[];
+  for(let i=0;i<N;i++){
+    const r=Math.random()*2.6, a=Math.random()*Math.PI*2, y=Math.random()*9;
+    seed.push({r,a,y,sp:.5+Math.random()*1.4});
+    pos[i*3]=Math.cos(a)*r; pos[i*3+1]=y; pos[i*3+2]=Math.sin(a)*r;
+  }
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  const p=new THREE.Points(geo, new THREE.PointsMaterial({size:.3, map:texOrange, transparent:true, opacity:.75, depthWrite:false, blending:THREE.AdditiveBlending}));
+  platform.add(p);
+  return {p, seed, geo};
+})();
+
+/* ---- mouse reaction ---- */
+const mouse={x:0,y:0,tx:0,ty:0,near:0};
+addEventListener('pointermove', e=>{
+  mouse.tx=(e.clientX/innerWidth)*2-1;
+  mouse.ty=(e.clientY/innerHeight)*2-1;
+  const dx=e.clientX-innerWidth/2, dy=e.clientY-innerHeight/2;
+  mouse.near=Math.max(0, 1-Math.hypot(dx,dy)/(innerWidth*.3));
+},{passive:true});
+
+addEventListener('resize', ()=>{
+  renderer.setSize(innerWidth, innerHeight);
+  camera.aspect=innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
 });
+
+const clock=new THREE.Clock();
+let running=true;
+document.addEventListener('visibilitychange', ()=>{ running=!document.hidden; if(running) loop(); });
+
+function loop(){
+  if(!running) return;
+  requestAnimationFrame(loop);
+  const t=clock.getElapsedTime();
+  mouse.x+=(mouse.tx-mouse.x)*.05;
+  mouse.y+=(mouse.ty-mouse.y)*.05;
+
+  /* core pulse + mouse proximity reaction */
+  const pulse=1+Math.sin(t*2.2)*.05 + mouse.near*.22;
+  orbSprite.scale.setScalar(9*pulse);
+  orbCoreSprite.scale.setScalar(3.4*(1+Math.sin(t*3.1)*.08+mouse.near*.3));
+  shell.rotation.y=t*.18; shell.rotation.x=Math.sin(t*.3)*.2;
+  shellIn.rotation.y=-t*.3; shellIn.rotation.z=t*.12;
+  core.rotation.y=mouse.x*.35; core.rotation.x=mouse.y*.18;
+
+  orbits.forEach((o,i)=>{ o.beadGroup.rotation.z=t*o.speed*(i%2?1:-1)*2.4; o.g.rotation.y=Math.sin(t*.1+i)*.12; });
+
+  /* swirl */
+  {
+    const pos=swirl.geo.attributes.position.array;
+    for(let i=0;i<swirl.seed.length;i++){
+      const s=swirl.seed[i], a=s.a+t*s.sp*(1+mouse.near*.8);
+      pos[i*3]=Math.cos(a)*s.r;
+      pos[i*3+1]=s.y+Math.sin(t*.8+i)*0.5;
+      pos[i*3+2]=Math.sin(a)*s.r;
+    }
+    swirl.geo.attributes.position.needsUpdate=true;
+  }
+  /* rising column */
+  {
+    const pos=column.geo.attributes.position.array;
+    for(let i=0;i<column.seed.length;i++){
+      const s=column.seed[i];
+      let y=(s.y+t*s.sp)%9.4;
+      const shrink=1-y/11;
+      pos[i*3]=Math.cos(s.a+t*.5)*s.r*shrink;
+      pos[i*3+1]=y;
+      pos[i*3+2]=Math.sin(s.a+t*.5)*s.r*shrink;
+    }
+    column.geo.attributes.position.needsUpdate=true;
+  }
+  platform.rotation.y=t*.15;
+  starsA.rotation.y=t*.004; starsB.rotation.y=-t*.003; dust.rotation.y=t*.008;
+  camera.position.x+=(mouse.x*2.4-camera.position.x)*.04;
+  camera.position.y+=(1.2-mouse.y*1.6-camera.position.y)*.04;
+  camera.lookAt(0,0,0);
+  renderer.render(scene,camera);
+}
+loop();
+
+/* ================= 2D HUD CANVASES ================= */
+function ctx2d(id){ const c=document.getElementById(id); return c?c.getContext('2d'):null; }
+
+/* -- biometric head: stippled profile + scan sweep -- */
+(function(){
+  const cv=document.getElementById('headCanvas'), g=cv.getContext('2d');
+  const W=cv.width, H=cv.height;
+  const path=new Path2D();
+  /* side profile facing right, hand-tuned beziers (300x380 space) */
+  path.moveTo(120,40);
+  path.bezierCurveTo(200,18, 252,70, 248,140);   /* crown -> forehead */
+  path.bezierCurveTo(246,168, 258,180, 252,196); /* nose bridge */
+  path.bezierCurveTo(268,214, 250,222, 252,232); /* nose tip -> upper lip */
+  path.bezierCurveTo(258,248, 244,252, 246,262); /* lips */
+  path.bezierCurveTo(250,282, 226,296, 210,300); /* chin -> jaw */
+  path.bezierCurveTo(190,318, 160,330, 150,360); /* neck front */
+  path.lineTo(84,360);
+  path.bezierCurveTo(92,300, 62,260, 66,180);    /* back of neck/head */
+  path.bezierCurveTo(68,100, 80,56, 120,40);
+  path.closePath();
+  /* precompute stipple dots */
+  const dots=[];
+  for(let y=26;y<374;y+=7){
+    for(let x=40;x<280;x+=7){
+      if(g.isPointInPath(path,x,y)) dots.push({x:x+(Math.random()-.5)*3, y:y+(Math.random()-.5)*3, r:Math.random()});
+    }
+  }
+  let t=0;
+  setInterval(()=>{
+    t+=.03;
+    g.clearRect(0,0,W,H);
+    const scanY=(Math.sin(t)*.5+.5)*H;
+    for(const d of dots){
+      const near=Math.max(0,1-Math.abs(d.y-scanY)/46);
+      const a=.14+d.r*.2+near*.7;
+      g.fillStyle=near>.35?`rgba(255,77,0,${a})`:`rgba(0,255,224,${a})`;
+      const s=1+near*1.6;
+      g.fillRect(d.x,d.y,s,s);
+    }
+    g.strokeStyle='rgba(0,255,224,.7)'; g.lineWidth=1;
+    g.beginPath(); g.moveTo(20,scanY); g.lineTo(W-20,scanY); g.stroke();
+    g.strokeStyle='rgba(0,255,224,.25)';
+    g.stroke(path);
+  },33);
+})();
+
+/* -- waveform bars -- */
+(function(){
+  const cv=document.getElementById('waveCanvas'), g=cv.getContext('2d');
+  const W=cv.width, H=cv.height, n=64, vals=Array.from({length:n},()=>Math.random());
+  setInterval(()=>{
+    for(let i=0;i<n;i++) vals[i]+= (Math.random()-.5)*.35, vals[i]=Math.min(1,Math.max(.06,vals[i]));
+    g.clearRect(0,0,W,H);
+    const bw=W/n;
+    for(let i=0;i<n;i++){
+      const h=vals[i]*H*.92;
+      g.fillStyle=`rgba(255,77,0,${.35+vals[i]*.6})`;
+      g.fillRect(i*bw+1, H-h, bw-2.5, h);
+    }
+  },90);
+})();
+
+/* -- sparkline (system status) -- */
+(function(){
+  const cv=document.getElementById('sparkCanvas'); if(!cv) return;
+  cv.width=440; cv.height=52;
+  const g=cv.getContext('2d'), W=cv.width, H=cv.height, data=Array.from({length:60},()=>Math.random()*.5+.3);
+  setInterval(()=>{
+    data.shift(); data.push(Math.min(1,Math.max(.1,data[data.length-1]+(Math.random()-.5)*.25)));
+    g.clearRect(0,0,W,H);
+    g.strokeStyle='rgba(0,255,224,.8)'; g.lineWidth=2; g.beginPath();
+    data.forEach((v,i)=>{ const x=i/(data.length-1)*W, y=H-v*H*.9; i?g.lineTo(x,y):g.moveTo(x,y); });
+    g.stroke();
+  },160);
+})();
+
+/* -- live data feed chart -- */
+(function(){
+  const cv=document.getElementById('feedCanvas'), g=cv.getContext('2d');
+  const W=cv.width, H=cv.height, data=Array.from({length:110},()=>Math.random()*.6+.2);
+  setInterval(()=>{
+    data.shift(); data.push(Math.min(1,Math.max(.05,data[data.length-1]+(Math.random()-.5)*.3)));
+    g.clearRect(0,0,W,H);
+    g.strokeStyle='rgba(255,255,255,.06)';
+    for(let y=0;y<H;y+=24){ g.beginPath(); g.moveTo(0,y); g.lineTo(W,y); g.stroke(); }
+    g.strokeStyle='rgba(255,77,0,.9)'; g.lineWidth=2; g.beginPath();
+    data.forEach((v,i)=>{ const x=i/(data.length-1)*W, y=H-v*H*.85; i?g.lineTo(x,y):g.moveTo(x,y); });
+    g.stroke();
+    g.lineTo(W,H); g.lineTo(0,H); g.closePath();
+    g.fillStyle='rgba(255,77,0,.08)'; g.fill();
+  },120);
+})();
+
+/* -- data stream log -- */
+(function(){
+  const box=document.getElementById('streamBox');
+  const msgs=[
+    ['INFO','Candidate profile loaded'],
+    ['SCAN','Skills mapping...'],
+    ['MATCH','Career path matched'],
+    ['DONE','Analysis complete'],
+    ['INFO','JD parsed · 11 fields'],
+    ['SCAN','Evidence chain verified'],
+    ['MATCH','Probability updated'],
+    ['INFO','Neural weights synced'],
+  ];
+  let i=0;
+  function ts(){ const d=new Date(); return [d.getHours(),d.getMinutes(),d.getSeconds()].map(v=>String(v).padStart(2,'0')).join(':'); }
+  setInterval(()=>{
+    const [tag,txt]=msgs[i++%msgs.length];
+    const div=document.createElement('div');
+    div.innerHTML=`<span class="ts">${ts()}</span>&nbsp;&nbsp;<span class="tag-${tag}">[${tag}]</span>&nbsp;${txt}<span class="hex">0x${Math.floor(Math.random()*65535).toString(16).padStart(4,'0').toUpperCase()}</span>`;
+    box.appendChild(div);
+    while(box.children.length>5) box.removeChild(box.firstChild);
+  },1400);
+})();
+
+/* -- dynamic numbers -- */
+(function(){
+  const big=document.getElementById('matchBig'), top=document.getElementById('matchTop'), mini=document.getElementById('miniRate'), lat=document.getElementById('lat'), dots=document.getElementById('dots');
+  setInterval(()=>{
+    const v=(98.2+(Math.random()-.5)*.5).toFixed(1);
+    top.textContent=v; mini.textContent=v+'%';
+    if(window.__booted) big.textContent=v;
+    lat.textContent=38+Math.floor(Math.random()*14);
+  },2000);
+  let n=0; setInterval(()=>{ dots.textContent='.'.repeat(n%4+1); n++; },420);
+})();
+
+/* -- periodic glitch on title -- */
+setInterval(()=>{
+  document.querySelectorAll('.glitch').forEach(el=>{
+    if(Math.random()<.5){ el.classList.remove('glitching'); void el.offsetWidth; el.classList.add('glitching'); }
+  });
+},2600);
+
+/* ================= BOOT SEQUENCE (GSAP) ================= */
+(function(){
+  const $=id=>document.getElementById(id);
+  function type(el, text, speed=26){
+    return new Promise(res=>{
+      let i=0; el.textContent='';
+      const iv=setInterval(()=>{
+        el.textContent='> '+text.slice(0,++i)+(i<text.length?'_':'');
+        if(i>=text.length){ clearInterval(iv); res(); }
+      },speed);
+    });
+  }
+  async function boot(){
+    await type($('bl1'),'SYSTEM BOOTING...');
+    await type($('bl2'),'Loading Neural Engine...');
+    /* progress */
+    await new Promise(res=>{
+      const o={v:0};
+      gsap.to(o,{v:100,duration:1.6,ease:'power2.inOut',onUpdate(){
+        $('bootFill').style.width=o.v+'%';
+        $('bootPct').textContent=Math.round(o.v)+'%';
+      },onComplete:res});
+    });
+    await type($('bl3'),'ALL CONTRACTS VERIFIED · ENGINE LIVE');
+    gsap.to('#bootOnline',{opacity:1,duration:.5,ease:'power2.out'});
+    await new Promise(r=>setTimeout(r,900));
+    /* collapse boot, reveal OS */
+    const tl=gsap.timeline();
+    tl.to('#boot',{opacity:0,duration:.6,ease:'power2.inOut',onComplete(){ $('boot').style.display='none'; }})
+      .set('#shell',{opacity:1})
+      .from('nav',{y:-60,opacity:0,duration:.6,ease:'power3.out'},'-=.2')
+      .from('.kicker,.hero-bar',{x:-40,opacity:0,duration:.5,stagger:.08,ease:'power3.out'},'-=.3')
+      .from('h1.mega .row',{y:80,opacity:0,duration:.7,stagger:.12,ease:'power4.out',onComplete(){
+        document.querySelectorAll('.glitch').forEach(el=>el.classList.add('glitching'));
+      }},'-=.35')
+      .from('.sub-os,.sub-cn,.cta',{y:26,opacity:0,duration:.5,stagger:.1,ease:'power3.out'},'-=.3')
+      .from('#sysStatus',{x:40,opacity:0,duration:.5,ease:'power3.out'},'-=.5')
+      .from('#bioPanel',{x:60,opacity:0,duration:.6,ease:'power3.out'},'-=.4')
+      .to('#bioLog div',{opacity:1,x:0,duration:.35,stagger:.14,ease:'power2.out'},'-=.2')
+      .from('.card',{y:40,opacity:0,duration:.45,stagger:.07,ease:'power3.out'},'-=.5')
+      .from('.panel',{y:30,opacity:0,duration:.45,stagger:.1,ease:'power3.out'},'-=.3')
+      .from('footer',{opacity:0,duration:.4},'-=.2')
+      .add(()=>{
+        window.__booted=true;
+        const o={v:0}, big=$('matchBig');
+        gsap.to(o,{v:98.2,duration:1.6,ease:'power2.out',onUpdate(){ big.textContent=o.v.toFixed(1); }});
+      },'-=.6');
+  }
+  if(document.readyState==='complete'||document.readyState==='interactive') boot();
+  else addEventListener('DOMContentLoaded',boot);
+})();
 </script>
 </body>
 </html>

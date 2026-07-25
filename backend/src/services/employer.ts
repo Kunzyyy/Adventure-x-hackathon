@@ -17,6 +17,39 @@ export interface ServiceOutcome<T> {
   mode: APIMode;
 }
 
+
+// ────────────────────────── output shapes ──────────────────────────
+// 显式喂给模型的契约结构，防止 live 模型自造键名（见 services/seeker.ts 同名说明）。
+
+const JOB_PROFILE_SHAPE = `{
+    "jobTitle": "岗位名称",
+    "employmentType": "全职/实习（可省略）",
+    "seniority": "级别（可省略）",
+    "responsibilities": ["岗位职责"],
+    "coreCompetencies": ["核心能力"],
+    "mustHaves": ["硬性要求"],
+    "niceToHaves": ["加分项"],
+    "expectedOutcomes": ["预期成果"],
+    "constraints": ["约束条件"],
+    "keywords": ["关键词"],
+    "uncertainties": ["不确定项"]
+  }`;
+
+const ANALYZE_SHAPE = `{
+  "jobProfile": ${JOB_PROFILE_SHAPE},
+  "questions": [
+    {"id": "eq_1", "text": "问题内容", "reason": "提问原因", "answerType": "text", "required": true},
+    {"id": "eq_2", "text": "选择题示例", "reason": "提问原因", "answerType": "choice", "required": false, "options": ["选项A", "选项B"]}
+  ]
+}`;
+
+const KIT_SHAPE = `{
+  "jobProfile": ${JOB_PROFILE_SHAPE},
+  "standardizedJD": {"title": "岗位名", "summary": "一句话概述", "responsibilities": ["职责"], "requirements": ["必须条件"], "niceToHaves": ["加分条件"], "workingConditions": ["工作条件"]},
+  "screeningDimensions": [{"name": "维度名", "weight": 40, "description": "说明", "evidenceToLookFor": ["证据线索"]}],
+  "interviewQuestions": [{"question": "面试问题", "competency": "考察能力", "purpose": "目的", "strongAnswerSignals": ["优秀回答信号"], "followUpQuestion": "可选追问"}]
+}`;
+
 const ANALYZE_SYSTEM = `你是企业招聘需求解析助手。任务：把模糊招聘需求整理成初步岗位画像，并提出3—5道补充问题。
 规则：
 - 只把企业明确表达的内容写入JobProfile；含糊条件放入uncertainties。
@@ -35,9 +68,10 @@ export async function employerAnalyze(req: EmployerAnalyzeRequest): Promise<Serv
     schema: EmployerAnalyzeDataSchema,
     system: ANALYZE_SYSTEM,
     userBlocks: blocks,
-    maxTokens: 1800,
+    maxTokens: 4000,
     mockFn: employerAnalyzeMock,
     label: "employer.analyze",
+    outputShape: ANALYZE_SHAPE,
     onLiveFailure: "fallback",
   });
   return { data: result.data, mode: result.mode };
@@ -86,9 +120,10 @@ export async function employerGenerate(req: EmployerGenerateRequest): Promise<Se
     schema: RecruitmentKitSchema,
     system: GENERATE_SYSTEM,
     userBlocks: blocks,
-    maxTokens: 3500,
+    maxTokens: 6000,
     mockFn: employerGenerateMock,
     label: "employer.generate",
+    outputShape: KIT_SHAPE,
     onLiveFailure: "fallback",
   });
   // Semantic safety nets the schema can't express:

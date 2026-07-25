@@ -3,90 +3,109 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Keal 企业端 · AI岗位招聘助手</title>
+<title>PROTOCOL · 企业端 AI 岗位招聘引擎 · KEAL</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
 tailwind.config = {
   theme: { extend: {
     colors: {
-      'space-black':'#0a0a14','tech-blue':'#3b82f6','tech-cyan':'#06b6d4',
-      'gradient-purple':'#8b5cf6','ai-glow':'#6366f1',
+      /* 重映射到 NEURAL LINK 色板:内联的 tech-blue/cyan/purple 自动变橙/青 */
+      'space-black':'#050505','tech-blue':'#ff4d1c','tech-cyan':'#00e5d0',
+      'gradient-purple':'#ff4d1c','ai-glow':'#ff4d1c',
     },
-    fontFamily: { 'sf':['-apple-system','BlinkMacSystemFont','"SF Pro Display"','"PingFang SC"', 'sans-serif'] },
+    fontFamily: { 'sf':['Inter','"Noto Sans SC"','-apple-system','BlinkMacSystemFont','"PingFang SC"','sans-serif'] },
   }}
 }
 </script>
 <style>
-:root {
-  --glass-bg: rgba(15, 15, 35, 0.6); --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-highlight: rgba(255, 255, 255, 0.04);
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
+/* ===== NEURAL LINK 统一设计令牌 ===== */
+:root{
+  --bg:#050505; --bg-2:#0a0a0b; --panel:#0d0d10;
+  --line:rgba(255,255,255,.12); --line-soft:rgba(255,255,255,.06);
+  --fg:#ededed; --muted:#8a8a8d;
+  --accent:#ff4d1c; --accent-2:#00e5d0;
+  --mono:'JetBrains Mono','SF Mono',ui-monospace,Menlo,monospace;
+  --sans:'Inter','Noto Sans SC',-apple-system,"PingFang SC",sans-serif;
+  /* 兼容旧变量名 */
+  --glass-bg:#0d0d10; --glass-border:rgba(255,255,255,.12); --glass-highlight:rgba(255,255,255,.04);
 }
 *{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC",sans-serif;background:#0a0a14;color:#e2e8f0;overflow-x:hidden;-webkit-font-smoothing:antialiased;}
-#particle-canvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;}
+body{font-family:var(--sans);background:var(--bg);color:var(--fg);overflow-x:hidden;-webkit-font-smoothing:antialiased;position:relative;}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:linear-gradient(var(--line-soft) 1px,transparent 1px),linear-gradient(90deg,var(--line-soft) 1px,transparent 1px);
+  background-size:64px 64px;mask-image:radial-gradient(ellipse at 50% 0%,#000 15%,transparent 75%);}
+/* 旧粒子层用网格替代,直接隐藏避免蓝色粒子撞色 */
+#particle-canvas{display:none !important;}
+
+/* 等宽 HUD 辅助 */
+.hud{font-family:var(--mono);text-transform:uppercase;letter-spacing:.18em;font-size:11px;color:var(--muted);}
+.hud-accent{color:var(--accent);}
+.mono{font-family:var(--mono);}
 
 /* Nav */
-.nav-glass{backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);background:rgba(10,10,20,0.7);border-bottom:1px solid var(--glass-border);position:fixed;top:0;left:0;right:0;z-index:50;}
+.nav-glass{backdrop-filter:blur(18px) saturate(160%);-webkit-backdrop-filter:blur(18px) saturate(160%);background:rgba(5,5,5,.7);border-bottom:1px solid var(--line);position:fixed;top:0;left:0;right:0;z-index:50;}
 
-/* Cards */
-.glass-card{background:var(--glass-bg);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border:1px solid var(--glass-border);border-radius:20px;transition:all .4s cubic-bezier(.25,.1,.25,1);position:relative;overflow:hidden;}
-.glass-card::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at top left,var(--glass-highlight),transparent 70%);pointer-events:none;}
-.glass-card:hover{border-color:rgba(99,102,241,.3);box-shadow:0 8px 40px rgba(99,102,241,.1);}
+/* Cards -> panel(直角+橙色角标) */
+.glass-card{background:var(--panel);border:1px solid var(--line);border-radius:0;transition:all .35s cubic-bezier(.25,.1,.25,1);position:relative;overflow:hidden;}
+.glass-card::before{content:'';position:absolute;top:0;left:0;width:12px;height:12px;border-top:1px solid var(--accent);border-left:1px solid var(--accent);pointer-events:none;}
+.glass-card::after{content:'';position:absolute;bottom:0;right:0;width:12px;height:12px;border-bottom:1px solid var(--accent);border-right:1px solid var(--accent);pointer-events:none;}
+.glass-card:hover{border-color:rgba(255,77,28,.4);box-shadow:0 8px 40px rgba(255,77,28,.08);}
 
 /* Buttons */
-.glow-btn{position:relative;overflow:hidden;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border:none;color:#fff;font-weight:600;border-radius:14px;padding:14px 32px;cursor:pointer;transition:all .4s cubic-bezier(.25,.1,.25,1);box-shadow:0 0 30px rgba(99,102,241,.3);letter-spacing:.5px;font-family:inherit;font-size:15px;}
-.glow-btn:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 0 50px rgba(99,102,241,.5);}
+.glow-btn{position:relative;overflow:hidden;background:var(--accent);border:none;color:#0a0a0a;font-family:var(--mono);font-weight:700;text-transform:uppercase;letter-spacing:.08em;border-radius:0;padding:14px 32px;cursor:pointer;transition:all .25s;font-size:14px;}
+.glow-btn:hover{box-shadow:0 0 40px rgba(255,77,28,.5);transform:translateY(-1px);}
 .glow-btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none;}
-.glow-btn-outline{background:transparent;border:1.5px solid rgba(139,92,246,.5);color:#c4b5fd;font-weight:600;border-radius:14px;padding:12px 28px;cursor:pointer;transition:all .4s;font-family:inherit;font-size:14px;}
-.glow-btn-outline:hover{border-color:#8b5cf6;box-shadow:0 0 30px rgba(139,92,246,.2);background:rgba(139,92,246,.1);}
-.btn-sm{padding:8px 20px;font-size:13px;border-radius:10px;}
+.glow-btn-outline{background:transparent;border:1px solid var(--line);color:var(--fg);font-family:var(--mono);font-weight:600;text-transform:uppercase;letter-spacing:.08em;border-radius:0;padding:12px 28px;cursor:pointer;transition:all .25s;font-size:13px;}
+.glow-btn-outline:hover{border-color:var(--accent);color:var(--accent);background:rgba(255,77,28,.06);}
+.btn-sm{padding:8px 20px;font-size:12px;}
 
 /* Input */
-.ai-input{background:rgba(20,20,40,.8);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px 20px;color:#e2e8f0;font-size:16px;transition:all .3s;width:100%;outline:none;font-family:inherit;}
-.ai-input:focus{border-color:rgba(99,102,241,.5);box-shadow:0 0 20px rgba(99,102,241,.15);}
+.ai-input{background:var(--bg);border:1px solid var(--line);border-radius:0;padding:14px 20px;color:var(--fg);font-size:16px;transition:all .3s;width:100%;outline:none;font-family:inherit;}
+.ai-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,77,28,.12);}
 .ai-input::placeholder{color:rgba(255,255,255,.25);}
 
 /* Salary pills */
-.salary-pill{display:inline-flex;align-items:center;justify-content:center;padding:10px 20px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:rgba(20,20,40,.5);color:rgba(255,255,255,.6);cursor:pointer;transition:all .25s;font-size:14px;font-family:inherit;white-space:nowrap;}
-.salary-pill:hover{border-color:rgba(139,92,246,.4);color:#c4b5fd;background:rgba(139,92,246,.08);}
-.salary-pill.selected{border-color:#8b5cf6;background:rgba(139,92,246,.15);color:#c4b5fd;box-shadow:0 0 14px rgba(139,92,246,.2);}
+.salary-pill{display:inline-flex;align-items:center;justify-content:center;padding:10px 20px;border-radius:0;border:1px solid var(--line);background:var(--bg-2);color:var(--muted);cursor:pointer;transition:all .25s;font-family:var(--mono);font-size:13px;white-space:nowrap;}
+.salary-pill:hover{border-color:rgba(255,77,28,.5);color:#ffb59c;}
+.salary-pill.selected{border-color:var(--accent);background:rgba(255,77,28,.12);color:var(--accent);box-shadow:0 0 14px rgba(255,77,28,.2);}
 
 /* Skill chips */
-.skill-chip{display:inline-flex;align-items:center;gap:4px;padding:8px 16px;border-radius:20px;border:1px solid rgba(255,255,255,.08);background:rgba(20,20,40,.5);color:rgba(255,255,255,.5);cursor:pointer;transition:all .25s;font-size:13px;font-family:inherit;}
-.skill-chip:hover{border-color:rgba(6,182,212,.4);color:#67e8f9;}
-.skill-chip.selected{border-color:#06b6d4;background:rgba(6,182,212,.12);color:#67e8f9;box-shadow:0 0 12px rgba(6,182,212,.15);}
+.skill-chip{display:inline-flex;align-items:center;gap:4px;padding:8px 16px;border-radius:0;border:1px solid var(--line);background:var(--bg-2);color:var(--muted);cursor:pointer;transition:all .25s;font-family:var(--mono);font-size:12px;}
+.skill-chip:hover{border-color:rgba(0,229,208,.5);color:var(--accent-2);}
+.skill-chip.selected{border-color:var(--accent-2);background:rgba(0,229,208,.1);color:var(--accent-2);box-shadow:0 0 12px rgba(0,229,208,.15);}
 
 /* Tags */
-.tag{display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;}
-.tag-must{background:rgba(239,68,68,.12);color:#f87171;border:1px solid rgba(239,68,68,.25);}
-.tag-nice{background:rgba(34,197,94,.12);color:#4ade80;border:1px solid rgba(34,197,94,.25);}
+.tag{display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:0;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.05em;}
+.tag-must{background:rgba(248,113,113,.12);color:#f87171;border:1px solid rgba(248,113,113,.35);}
+.tag-nice{background:rgba(52,211,153,.12);color:#34d399;border:1px solid rgba(52,211,153,.35);}
 
 /* Progress bar */
-.progress-bar{height:8px;border-radius:4px;background:rgba(255,255,255,.06);overflow:hidden;}
-.progress-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#3b82f6,#8b5cf6);transition:width 1.2s ease-out;}
+.progress-bar{height:8px;border-radius:0;background:rgba(255,255,255,.06);overflow:hidden;}
+.progress-fill{height:100%;border-radius:0;background:linear-gradient(90deg,var(--accent),var(--accent-2));transition:width 1.2s ease-out;}
 
 /* Section cards */
-.section-card{border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:24px;background:rgba(20,20,45,.4);transition:all .3s;}
-.section-card:hover{border-color:rgba(99,102,241,.2);}
+.section-card{border:1px solid var(--line);border-radius:0;padding:24px;background:var(--bg-2);transition:all .3s;}
+.section-card:hover{border-color:rgba(255,77,28,.25);}
 
 /* Scrollbar */
 ::-webkit-scrollbar{width:5px;}
 ::-webkit-scrollbar-track{background:transparent;}
-::-webkit-scrollbar-thumb{background:rgba(99,102,241,.3);border-radius:3px;}
+::-webkit-scrollbar-thumb{background:rgba(255,77,28,.4);border-radius:0;}
 
 @keyframes fadeInUp{from{opacity:0;transform:translateY(30px);}to{opacity:1;transform:translateY(0);}}
 .fade-in-up{animation:fadeInUp .6s ease-out forwards;}
 
 /* Toast */
-#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:100;background:rgba(34,197,94,.9);color:#fff;padding:12px 24px;border-radius:12px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .3s;}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:100;background:var(--accent);color:#0a0a0a;padding:12px 24px;border-radius:0;font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.05em;opacity:0;pointer-events:none;transition:opacity .3s;}
 #toast.show{opacity:1;pointer-events:auto;}
-#toast.error{background:rgba(239,68,68,.9);}
+#toast.error{background:#f87171;}
 
 @media(max-width:768px){
-  .glass-card{border-radius:16px;}
-  .glow-btn{padding:12px 24px;font-size:14px;border-radius:12px;}
-  .salary-pill{padding:8px 14px;font-size:13px;}
-  .skill-chip{padding:6px 12px;font-size:12px;}
+  .glow-btn{padding:12px 24px;font-size:13px;}
+  .salary-pill{padding:8px 14px;font-size:12px;}
+  .skill-chip{padding:6px 12px;font-size:11px;}
 }
 </style>
 </head>
@@ -388,7 +407,7 @@ let currentIndustry = '互联网/科技';
       if(p.x<-10)p.x=c.width+10;
       if(p.x>c.width+10)p.x=-10;
       ctx.beginPath();ctx.arc(p.x,p.y,p.s,0,Math.PI*2);
-      ctx.fillStyle=`rgba(99,102,241,${p.a})`;ctx.fill();
+      ctx.fillStyle=`rgba(255,77,28,${p.a})`;ctx.fill();
     });
     requestAnimationFrame(A);
   }
@@ -840,5 +859,59 @@ function exportFullJD() {
 // ─── Utils ─────────────────────────────────────────────────────────
 function escapeHtml(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 </script>
+
+<!-- DEMO-FILL-BUTTON -->
+<script>
+(function(){
+  var CFG = {"fields": {"ent-company": "星芒文化传媒", "ent-role": "新媒体运营", "ent-rough": "想找一个会做小红书和抖音的实习生，最好会剪视频，有网感，能写文案，尽快到岗，薪资面议"}, "chips": ["小红书运营", "视频剪辑", "剪映"], "pills": ["面议"], "pool": ["实习期3个月，每周至少到岗4天（周一至周四）", "有一个约5万粉丝的小红书账号需要维护，抖音账号需要从零起号", "需要提供过往小红书笔记截图或剪映作品示例", "只需专注小红书和抖音两个平台，暂不涉及其他渠道", "小红书每月涨粉不低于10%、互动率不低于3%；抖音第一个月做到1000粉"]};
+  function fire(el){try{el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));}catch(e){}}
+  function setVal(id,val){var el=document.getElementById(id);if(!el)return 0;el.value=val;fire(el);return 1;}
+  function fillDynamic(){
+    var pool=CFG.pool||[],idx=0,n=0;
+    var els=document.querySelectorAll('[id^="ans-"],[id^="b-ans-"],[id^="diag-note-"]');
+    for(var i=0;i<els.length;i++){var el=els[i];
+      if(el.tagName==='SELECT'){if(el.selectedIndex<=0&&el.options.length>1){el.selectedIndex=1;fire(el);n++;}continue;}
+      if(el.value)continue;
+      if(el.type==='number'){el.value=4;}else{el.value=pool.length?pool[idx%pool.length]:'如实回答，具体以实际情况为准。';idx++;}
+      fire(el);n++;
+    }
+    return n;
+  }
+  function clickChips(){
+    var n=0;(CFG.chips||[]).forEach(function(s){var c=document.querySelector('.skill-chip[data-skill="'+s+'"]');if(c&&!c.classList.contains('selected')){c.click();n++;}});
+    if(!n&&CFG.chips&&CFG.chips.length){var all=document.querySelectorAll('.skill-chip:not(.selected)');for(var i=0;i<Math.min(3,all.length);i++){all[i].click();n++;}}
+    (CFG.pills||[]).forEach(function(s){var p=document.querySelector('.salary-pill[data-salary="'+s+'"]');if(p&&!p.classList.contains('selected'))p.click();});
+    return n;
+  }
+  function toast(msg){
+    var t=document.createElement('div');
+    t.textContent=msg;
+    t.style.cssText='position:fixed;bottom:86px;right:24px;z-index:99999;background:rgba(5,5,5,.92);border:1px solid #00e5d0;color:#00e5d0;padding:10px 18px;font-size:13px;font-family:monospace;box-shadow:0 0 18px rgba(0,229,208,.35);opacity:0;transition:opacity .3s;pointer-events:none;';
+    document.body.appendChild(t);
+    requestAnimationFrame(function(){t.style.opacity='1';});
+    setTimeout(function(){t.style.opacity='0';setTimeout(function(){t.remove();},400);},2200);
+  }
+  window.__fillDemo=function(){
+    var dyn=fillDynamic();
+    var n=0,f=CFG.fields||{};
+    Object.keys(f).forEach(function(id){n+=setVal(id,f[id]);});
+    n+=clickChips();
+    var sel=CFG.selects||{};
+    Object.keys(sel).forEach(function(id){var el=document.getElementById(id);if(el&&el.options.length>sel[id]){el.selectedIndex=sel[id];fire(el);n++;}});
+    if(dyn>0){toast('已自动填入 '+dyn+' 条问题回答，可直接提交');}
+    else if(n>0){toast('演示数据已填入 ✓');}
+    else{toast('当前没有可填写的输入框');}
+  };
+  var btn=document.createElement('button');
+  btn.id='demo-fill-btn';
+  btn.innerHTML='⚡ 一键填入演示数据';
+  btn.style.cssText='position:fixed;bottom:24px;right:24px;z-index:99998;background:linear-gradient(135deg,rgba(255,77,28,.15),rgba(5,5,5,.9));border:1px solid #ff4d1c;color:#ff4d1c;padding:12px 20px;font-size:13px;font-weight:600;font-family:monospace;letter-spacing:1px;cursor:pointer;box-shadow:0 0 16px rgba(255,77,28,.3);transition:all .25s;border-radius:2px;';
+  btn.onmouseenter=function(){btn.style.background='rgba(255,77,28,.25)';btn.style.boxShadow='0 0 26px rgba(255,77,28,.55)';};
+  btn.onmouseleave=function(){btn.style.background='linear-gradient(135deg,rgba(255,77,28,.15),rgba(5,5,5,.9))';btn.style.boxShadow='0 0 16px rgba(255,77,28,.3)';};
+  btn.onclick=function(){window.__fillDemo();};
+  document.body.appendChild(btn);
+})();
+</script>
+
 </body>
 </html>

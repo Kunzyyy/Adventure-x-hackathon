@@ -73,8 +73,8 @@ configRouter.get("/presets", (_req: Request, res: Response) => {
         id: "deepseek",
         name: "DeepSeek",
         baseURL: "https://api.deepseek.com",
-        models: ["deepseek-chat", "deepseek-reasoner", "DeepseekV4Pro"],
-        defaultModel: "deepseek-chat",
+        models: ["deepseek-v4-flash", "deepseek-v4-pro"],
+        defaultModel: "deepseek-v4-flash",
       },
       {
         id: "zhipu",
