@@ -541,46 +541,33 @@ function getPrintableResumeHtml(container, templateClass) {
   `;
 }
 
-function exportResume() {
-  const container = document.querySelector('[data-role="resume-result"]');
-  if (!container?.dataset.ready) {
-    setNotice("请先生成简历，再导出 PDF。");
-    return;
-  }
-
-  const templateClass = Array.from(container.classList).find((c) => c.startsWith("resume-template-")) || "resume-template-classic";
+function createPrintIframe(container, templateClass) {
   const iframe = document.createElement("iframe");
   iframe.setAttribute("aria-hidden", "true");
-  iframe.style.cssText = "position:fixed;inset:0;width:1px;height:1px;opacity:0;pointer-events:none;border:0;";
-
-  let cleanedUp = false;
-  function cleanup() {
-    if (cleanedUp) return;
-    cleanedUp = true;
-    if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
-  }
-
+  iframe.style.cssText = "position:fixed;left:-9999px;top:0;width:210mm;height:297mm;border:0;";
   document.body.appendChild(iframe);
 
+  const doc = iframe.contentWindow?.document;
+  if (!doc) {
+    iframe.remove();
+    return null;
+  }
+
+  doc.open();
+  doc.write(getPrintableResumeHtml(container, templateClass));
+  doc.close();
+  return iframe;
+}
+
+function printResumeFallback(container, templateClass) {
+  const iframe = createPrintIframe(container, templateClass);
+  if (!iframe) {
+    window.print();
+    return;
+  }
+
   const printWindow = iframe.contentWindow;
-  if (!printWindow) {
-    cleanup();
-    window.print();
-    return;
-  }
-
-  try {
-    const doc = printWindow.document;
-    doc.open();
-    doc.write(getPrintableResumeHtml(container, templateClass));
-    doc.close();
-  } catch (err) {
-    cleanup();
-    window.print();
-    return;
-  }
-
-  setNotice("正在准备 PDF… 请在打印设置里取消“页眉和页脚”，再保存为 PDF。", "info");
+  setNotice("正在准备打印… 请在打印设置里取消“页眉和页脚”，再保存为 PDF。", "info");
 
   function doPrint() {
     try {
@@ -589,34 +576,78 @@ function exportResume() {
     } catch (err) {
       window.print();
     } finally {
-      // 给打印对话框充分的响应和清理时间
-      setTimeout(cleanup, 2000);
+      setTimeout(() => iframe.remove(), 2000);
     }
   }
 
-  function schedulePrint() {
-    // 等待 iframe 文档稳定、字体就绪，并留出渲染缓冲
-    Promise.all([
-      new Promise((resolve) => {
-        if (printWindow.document.readyState === "complete") {
-          resolve();
-        } else {
-          printWindow.addEventListener("load", resolve, { once: true });
-        }
-      }),
-      printWindow.document.fonts && typeof printWindow.document.fonts.ready === "object"
-        ? printWindow.document.fonts.ready.then(() => {})
-        : Promise.resolve(),
-      new Promise((resolve) => setTimeout(resolve, 350)),
-    ])
-      .then(doPrint)
-      .catch(() => {
-        cleanup();
-        window.print();
-      });
+  Promise.all([
+    new Promise((resolve) => {
+      if (printWindow.document.readyState === "complete") {
+        resolve();
+      } else {
+        printWindow.addEventListener("load", resolve, { once: true });
+      }
+    }),
+    printWindow.document.fonts && typeof printWindow.document.fonts.ready === "object"
+      ? printWindow.document.fonts.ready.then(() => {})
+      : Promise.resolve(),
+    new Promise((resolve) => setTimeout(resolve, 350)),
+  ])
+    .then(doPrint)
+    .catch(() => {
+      iframe.remove();
+      window.print();
+    });
+}
+
+function exportResume() {
+  const container = document.querySelector('[data-role="resume-result"]');
+  if (!container?.dataset.ready) {
+    setNotice("请先生成简历，再导出 PDF。");
+    return;
   }
 
-  schedulePrint();
+  const templateClass = Array.from(container.classList).find((c) => c.startsWith("resume-template-")) || "resume-template-classic";
+
+  if (typeof html2pdf !== "function") {
+    printResumeFallback(container, templateClass);
+    return;
+  }
+
+  setNotice("正在生成 PDF…", "info");
+
+  const iframe = createPrintIframe(container, templateClass);
+  if (!iframe) {
+    printResumeFallback(container, templateClass);
+    return;
+  }
+
+  const element = iframe.contentDocument.querySelector(".resume-paper");
+  const title = element?.querySelector("h2")?.textContent?.trim() || "简历";
+
+  const opt = {
+    margin: 0,
+    filename: `${title}.pdf`,
+    image: { type: "jpeg", quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, backgroundColor: "#fff", logging: false },
+    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+    pagebreak: { mode: ["avoid-all", "css", "legacy"] },
+  };
+
+  html2pdf()
+    .set(opt)
+    .from(element)
+    .save()
+    .then(() => {
+      setNotice("PDF 已下载", "success");
+      iframe.remove();
+    })
+    .catch((err) => {
+      console.error("html2pdf failed:", err);
+      iframe.remove();
+      setNotice("PDF 生成失败，改用系统打印…", "info");
+      printResumeFallback(container, templateClass);
+    });
 }
 
 document.querySelector('[data-action="fill-jd"]').addEventListener("click", () => {

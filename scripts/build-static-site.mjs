@@ -32,5 +32,14 @@ for (const page of pages) {
     );
   }
 
+  // Inline html2pdf library so the generated static pages are self-contained.
+  html = html.replace(
+    '<script src="./js/html2pdf.bundle.min.js"></script>',
+    () => {
+      const lib = fs.readFileSync(path.join(repoRoot, "js", "html2pdf.bundle.min.js"), "utf8");
+      return `<script>\n${lib}\n    </script>`;
+    },
+  );
+
   fs.writeFileSync(path.join(outputDir, page.name), html);
 }
