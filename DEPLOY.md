@@ -5,35 +5,47 @@
 
 ---
 
-## 一、一键部署到 Render(推荐,5 分钟)
+## 一、当前线上结构
 
-网站是"前端页面 + 后端服务"一起跑的。我们用 [Render](https://render.com) 免费版部署,**一个服务同时跑前后端**,部署完就有一个网址(如 `https://ai-career-copilot.onrender.com`),点开就能用。
+当前网站拆成两个部分：
 
-### 步骤
+- 静态前端：https://ucn968075fdn.aiforce.cloud/app/app_17asc20u1gy/
+- Render 后端：https://ai-career-copilot-438i.onrender.com
+- 当前验收代码分支：`Jin-Ziyao`
 
-1. 点仓库 README 里的 **"Deploy to Render"** 按钮(或直接访问:
-   `https://render.com/deploy?repo=https://github.com/Kunzyyy/Adventure-x-hackathon`)
-2. 用 GitHub 账号登录 Render(免费)
-3. 点 **Apply** 或 **Create**,Render 会自动:
-   - 拉取 main 分支代码
-   - 装依赖 + 编译后端
-   - 启动服务
-4. 等 2-5 分钟,部署完成后 Render 会给你一个网址
-5. 点开网址,完整网站可用(点 AI 功能也通,因为后端在云端跑着 mock)
+前端通过页面中的 `data-api-origin` 请求 Render 后端，API Key 只存在 Render
+Environment Variables 中，不会发送到浏览器。
+
+### 用仓库创建自己的 Render 服务
+
+1. 点击 README 里的 **Deploy to Render**
+2. 用 GitHub 登录并创建 Blueprint
+3. `render.yaml` 会从 `Jin-Ziyao` 构建后端和静态前端
+4. 首次部署默认使用 `LLM_MODE=mock`，不需要 AI Key
+5. 需要真实 AI 时，再按下方配置环境变量
 
 ### 配置说明(已在 `render.yaml` 里,一般不用改)
 
-- 运行模式:`LLM_MODE=mock`(用演示数据,不需要 AI key)
-- 自动重新部署:`autoDeploy: true`(以后 push 到 main,Render 自动重新部署,网址内容更新)
+- 默认运行模式：`LLM_MODE=mock`
+- 部署分支：`Jin-Ziyao`
+- 自动部署：关闭，代码更新后需要手动部署最新提交
 - 健康检查:`/api/health`
 
-### 想接真 AI(可选,以后再说)
+### 接入真实 DeepSeek
 
-在 Render 控制台的 "Environment" 里加一个环境变量:
-- `AI_API_KEY` = 你的真实 API key
-- 把 `LLM_MODE` 改成 `live`
+在 Render 控制台的 **Environment** 中配置：
 
-不接也完全能演示,mock 模式够用,而且诚实标着 🔸mock。
+```text
+LLM_MODE=live
+AI_PROVIDER=deepseek
+AI_API_KEY=你的密钥
+AI_BASE_URL=https://api.deepseek.com
+AI_MODEL=deepseek-chat
+LLM_TIMEOUT_MS=30000
+```
+
+保存后重新部署。不要把真实 `AI_API_KEY` 写进代码、README、截图、聊天记录或
+GitHub 文件。
 
 ---
 
@@ -42,7 +54,7 @@
 ### 前置:装 pnpm
 
 ```bash
-npm install -g pnpm
+corepack enable
 ```
 
 ### 跑起来
@@ -50,13 +62,13 @@ npm install -g pnpm
 ```bash
 git clone https://github.com/Kunzyyy/Adventure-x-hackathon.git
 cd Adventure-x-hackathon
-git checkout main              # 在 main 基础上拉一份
+git checkout Jin-Ziyao         # 当前已验收版本
 
 # 启动后端(含前端页面)
+pnpm install --frozen-lockfile # 装依赖
+pnpm --filter backend build    # 编译
 cd backend
-pnpm install                   # 装依赖(第一次才需要)
-pnpm build                     # 编译
-LLM_MODE=mock PORT=3001 node dist/server.js   # 启动
+LLM_MODE=mock PORT=3001 pnpm start
 ```
 
 看到 `🚀 AI Career Copilot API running on http://localhost:3001` 就成功了。
@@ -82,22 +94,25 @@ LLM_MODE=mock PORT=3001 node dist/server.js   # 启动
 
 GitHub 上的 main 是**对外已确认的成果**。本地是草稿台。
 
-1. **在自己分支改**,不要直接动 main
+1. **在自己分支改**,不要直接动 `main` 或 `Jin-Ziyao`
    - Jin → `Jin-Ziyao`
    - 郑鑫尧 → `Zheng-Xinyao`
    - 陈鹏宇 → `Chen-Pengyu`
 2. 本地改完,在 `localhost:3001` 看效果,确认没问题
 3. `git add <你改的文件>`(不要 `git add .`,会抢别人的)、`git commit`
 4. `git push origin <你的分支>`
-5. **要合进 main 时,群里说一声,三个人一起决定**,别自己合
+5. 在 GitHub 创建 Pull Request，附测试结果和页面截图
+6. **合并前群里说一声,三个人一起决定**,别自己合
 
 ### 怎么让云端的网址更新
 
-main 上的代码更新了,Render 自动重新部署。所以:
+当前 Render 关闭自动部署，所以流程是：
 
 ```
-你的分支改好 → push 到自己分支 → 三人确认后合进 main → Render 自动更新网址
+你的分支改好 → push → Pull Request → 团队验收并合并 → Render 手动部署最新提交
 ```
+
+外部协作者的完整步骤见 [CONTRIBUTING.md](./CONTRIBUTING.md)。
 
 ---
 
