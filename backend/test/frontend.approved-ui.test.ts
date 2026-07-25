@@ -11,10 +11,10 @@ function readRepoFile(relativePath: string): string {
 }
 
 describe("approved UI integration", () => {
-  test("all public entry pages use the approved warm-paper design system", () => {
+  test("all public entry pages use the approved keal-terminal design system", () => {
     for (const page of ["index.html", "student.html", "enterprise.html"]) {
       const html = readRepoFile(page);
-      expect(html).toContain('data-design-system="warm-paper-clay"');
+      expect(html).toContain('data-design-system="keal-terminal"');
       expect(html).toContain('./css/approved-ui.css');
       expect(html).not.toMatch(/cdn\.tailwindcss|three\.js|gsap/i);
     }
