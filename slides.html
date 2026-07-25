@@ -1,0 +1,1158 @@
+<!doctype html>
+<html lang="zh-CN" data-design-system="keal-terminal">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="投个明白 × 招个明白：路演幻灯片。AI 双向求职招聘助手。" />
+    <meta name="theme-color" content="#050505" />
+    <title>路演｜投个明白 × 招个明白</title>
+    <link rel="stylesheet" href="./css/approved-ui.css" />
+    <style>
+      /* ---------- 路演 deck 专用布局 ---------- */
+      body.deck {
+        overflow: hidden;
+      }
+
+      .slide {
+        display: none;
+        position: relative;
+        min-height: 100vh;
+        width: 100%;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: clamp(48px, 7vh, 90px) clamp(32px, 7vw, 120px);
+        animation: slide-in 380ms ease;
+      }
+
+      .slide.active {
+        display: flex;
+      }
+
+      @keyframes slide-in {
+        from {
+          opacity: 0;
+          transform: translateY(14px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+
+      .slide-inner {
+        width: min(100%, 1280px);
+      }
+
+      .slide h1 {
+        margin: 0;
+        font-size: clamp(48px, 7vw, 108px);
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        line-height: 1.04;
+        text-shadow: 0 0 60px rgba(255, 77, 36, 0.18);
+      }
+
+      .slide h2 {
+        margin: 0 0 clamp(28px, 4vh, 48px);
+        font-size: clamp(38px, 4.6vw, 72px);
+        font-weight: 800;
+        letter-spacing: -0.01em;
+        line-height: 1.08;
+      }
+
+      .slide-tagline {
+        margin: clamp(20px, 3vh, 32px) 0 0;
+        font-size: clamp(22px, 2.6vw, 40px);
+        font-weight: 800;
+        color: var(--mint);
+        text-shadow: 0 0 30px rgba(62, 230, 168, 0.35);
+      }
+
+      .slide-sub {
+        max-width: 760px;
+        margin: 18px 0 0;
+        color: var(--muted);
+        font-size: clamp(15px, 1.5vw, 19px);
+        line-height: 1.75;
+      }
+
+      .slide-sub em {
+        color: var(--mint);
+        font-style: normal;
+      }
+
+      /* 终端状态芯片行 */
+      .chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: clamp(26px, 4vh, 44px);
+      }
+
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 8px 13px;
+        color: var(--accent-bright);
+        background: var(--accent-soft);
+        border: 1px solid var(--accent-line);
+        border-radius: 3px;
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.1em;
+      }
+
+      .chip-mint {
+        color: var(--mint);
+        background: var(--mint-soft);
+        border-color: var(--mint-line);
+      }
+
+      .chip::before {
+        width: 6px;
+        height: 6px;
+        content: "";
+        background: currentColor;
+        box-shadow: 0 0 8px currentColor;
+      }
+
+      /* 封面布局 */
+      .cover-grid {
+        display: grid;
+        align-items: center;
+        grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
+        gap: clamp(32px, 5vw, 80px);
+      }
+
+      /* 纯 CSS 行星 */
+      .planet-wrap {
+        position: relative;
+        display: grid;
+        min-height: 420px;
+        place-items: center;
+      }
+
+      .planet {
+        position: relative;
+        width: clamp(220px, 24vw, 340px);
+        height: clamp(220px, 24vw, 340px);
+        border-radius: 50%;
+        background: radial-gradient(circle at 34% 30%, #ff9a5c, #ff4d24 46%, #8f1500 78%, #3d0800);
+        box-shadow:
+          0 0 110px rgba(255, 77, 36, 0.4),
+          inset -28px -30px 70px rgba(0, 0, 0, 0.55);
+      }
+
+      .planet::after {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 165%;
+        height: 44%;
+        content: "";
+        border: 2px solid rgba(62, 230, 168, 0.55);
+        border-radius: 50%;
+        box-shadow: 0 0 26px rgba(62, 230, 168, 0.22);
+        transform: translate(-50%, -50%) rotate(-8deg) scaleY(0.42);
+      }
+
+      .orbit-dot {
+        position: absolute;
+        width: 13px;
+        height: 13px;
+        border-radius: 50%;
+        background: var(--mint);
+        box-shadow: 0 0 16px var(--mint);
+      }
+
+      .orbit-dot-a {
+        top: 24%;
+        right: 16%;
+      }
+
+      .orbit-dot-b {
+        bottom: 30%;
+        left: 12%;
+        width: 9px;
+        height: 9px;
+        background: var(--accent-bright);
+        box-shadow: 0 0 14px var(--accent);
+      }
+
+      /* 双栏面板 */
+      .two-col {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 22px;
+      }
+
+      .deck-panel {
+        position: relative;
+        padding: clamp(22px, 3vh, 34px);
+        background: var(--paper-strong);
+        border: 1px solid var(--line);
+      }
+
+      .deck-panel::before,
+      .deck-panel::after {
+        position: absolute;
+        width: 14px;
+        height: 14px;
+        content: "";
+        pointer-events: none;
+      }
+
+      .deck-panel::before {
+        top: -1px;
+        left: -1px;
+        border-top: 2px solid var(--accent-line);
+        border-left: 2px solid var(--accent-line);
+      }
+
+      .deck-panel::after {
+        right: -1px;
+        bottom: -1px;
+        border-right: 2px solid var(--accent-line);
+        border-bottom: 2px solid var(--accent-line);
+      }
+
+      .deck-panel.panel-mint::before {
+        border-color: var(--mint-line);
+      }
+
+      .deck-panel.panel-mint::after {
+        border-color: var(--mint-line);
+      }
+
+      .deck-panel h3 {
+        margin: 0 0 16px;
+        font-size: clamp(17px, 1.7vw, 22px);
+        font-weight: 800;
+      }
+
+      .deck-panel h3::before {
+        content: "▸ ";
+        color: var(--accent);
+      }
+
+      .deck-panel.panel-mint h3::before {
+        color: var(--mint);
+      }
+
+      .deck-panel ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .deck-panel li {
+        position: relative;
+        margin: 13px 0;
+        padding-left: 20px;
+        color: var(--muted);
+        font-size: clamp(14px, 1.35vw, 17px);
+        line-height: 1.6;
+      }
+
+      .deck-panel li::before {
+        position: absolute;
+        left: 0;
+        content: "»";
+        color: var(--accent-bright);
+      }
+
+      .deck-panel.panel-mint li::before {
+        color: var(--mint);
+      }
+
+      .deck-panel li strong {
+        color: var(--ink);
+      }
+
+      /* 洞察大字 */
+      .big-statement {
+        margin: 0;
+        font-size: clamp(40px, 5.4vw, 84px);
+        font-weight: 800;
+        letter-spacing: -0.01em;
+        line-height: 1.18;
+      }
+
+      .big-statement em {
+        color: var(--accent-bright);
+        font-style: normal;
+        text-shadow: 0 0 40px rgba(255, 77, 36, 0.45);
+      }
+
+      .three-col {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 18px;
+        margin-top: clamp(26px, 4vh, 44px);
+      }
+
+      .mini-card {
+        padding: 20px;
+        background: var(--paper-strong);
+        border: 1px solid var(--line);
+      }
+
+      .mini-card h4 {
+        margin: 0 0 9px;
+        color: var(--danger);
+        font-family: var(--mono);
+        font-size: 12px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      .mini-card p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      .mono-flow {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+        margin-top: clamp(26px, 4vh, 40px);
+        font-family: var(--mono);
+      }
+
+      .mono-flow span {
+        padding: 10px 16px;
+        color: var(--mint);
+        background: var(--mint-soft);
+        border: 1px solid var(--mint-line);
+        border-radius: 3px;
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+      }
+
+      .mono-flow b {
+        color: var(--accent);
+        font-size: 18px;
+      }
+
+      /* 方案：引擎 + 步骤方块 */
+      .engine-block {
+        margin: 0 auto clamp(24px, 4vh, 40px);
+        padding: 16px 34px;
+        width: fit-content;
+        color: #fff;
+        background: linear-gradient(180deg, var(--accent-bright), var(--accent) 55%, #d93600);
+        border: 1px solid var(--accent-bright);
+        border-radius: 4px;
+        box-shadow: 0 0 34px rgba(255, 77, 36, 0.45);
+        font-size: clamp(18px, 1.9vw, 26px);
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-align: center;
+      }
+
+      .flow-row {
+        display: grid;
+        align-items: center;
+        grid-template-columns: 96px 1fr;
+        gap: 18px;
+        margin-top: 20px;
+      }
+
+      .flow-row-label {
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 12px;
+        letter-spacing: 0.12em;
+        text-align: right;
+      }
+
+      .step-squares {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .sq {
+        display: grid;
+        min-width: clamp(120px, 13vw, 170px);
+        padding: 13px 16px;
+        background: var(--paper-strong);
+        border: 1px solid var(--line-strong);
+        border-radius: 3px;
+        gap: 5px;
+      }
+
+      .sq i {
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 11px;
+        font-style: normal;
+      }
+
+      .sq strong {
+        font-size: clamp(14px, 1.4vw, 17px);
+      }
+
+      .sq-done {
+        border-color: var(--mint-line);
+        box-shadow: var(--glow-mint);
+      }
+
+      .sq-done i {
+        color: var(--mint);
+      }
+
+      .sq-now {
+        border-color: var(--accent);
+        box-shadow: var(--glow-accent);
+      }
+
+      .sq-now i {
+        color: var(--accent-bright);
+      }
+
+      .step-squares > b {
+        color: var(--line-strong);
+        font-size: 16px;
+      }
+
+      /* 产品截图 */
+      .shot-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+        gap: 18px;
+      }
+
+      .shot-stack {
+        display: grid;
+        gap: 18px;
+      }
+
+      .shot {
+        position: relative;
+        margin: 0;
+        border: 1px solid var(--line-strong);
+        box-shadow: 0 0 30px rgba(255, 77, 36, 0.1);
+        overflow: hidden;
+      }
+
+      .shot img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: top;
+      }
+
+      .shot-main img {
+        max-height: 52vh;
+      }
+
+      .shot-stack .shot img {
+        max-height: 25vh;
+      }
+
+      .shot figcaption {
+        position: absolute;
+        right: 10px;
+        bottom: 10px;
+        padding: 5px 10px;
+        color: var(--mint);
+        background: rgba(5, 5, 5, 0.85);
+        border: 1px solid var(--mint-line);
+        border-radius: 3px;
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.14em;
+      }
+
+      /* 差异化四卡 */
+      .four-col {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .diff-card {
+        position: relative;
+        min-height: 210px;
+        padding: 22px;
+        background: var(--paper-strong);
+        border: 1px solid var(--line);
+      }
+
+      .diff-card .num {
+        display: inline-grid;
+        width: 38px;
+        height: 38px;
+        margin-bottom: 20px;
+        place-items: center;
+        color: var(--mint);
+        background: var(--mint-soft);
+        border: 1px solid var(--mint-line);
+        border-radius: 3px;
+        box-shadow: var(--glow-mint);
+        font-family: var(--mono);
+        font-weight: 700;
+      }
+
+      .diff-card:nth-child(even) .num {
+        color: var(--accent-bright);
+        background: var(--accent-soft);
+        border-color: var(--accent-line);
+        box-shadow: var(--glow-accent);
+      }
+
+      .diff-card h3 {
+        margin: 0 0 10px;
+        font-size: 19px;
+        font-weight: 800;
+      }
+
+      .diff-card p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.65;
+      }
+
+      .diff-card code {
+        color: var(--mint);
+        font-family: var(--mono);
+        font-size: 11px;
+      }
+
+      /* 定价 */
+      .price-num {
+        color: var(--mint);
+        font-family: var(--mono);
+        font-size: clamp(30px, 3.2vw, 46px);
+        font-weight: 700;
+        text-shadow: 0 0 20px rgba(62, 230, 168, 0.4);
+      }
+
+      .price-num small {
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 400;
+      }
+
+      /* 市场数字 */
+      .stat-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 18px;
+        margin-bottom: clamp(24px, 4vh, 40px);
+      }
+
+      .stat-block {
+        padding: 22px;
+        background: var(--paper-strong);
+        border: 1px solid var(--line);
+        text-align: center;
+      }
+
+      .stat-block b {
+        display: block;
+        color: var(--accent-bright);
+        font-family: var(--mono);
+        font-size: clamp(30px, 3.4vw, 52px);
+        font-weight: 700;
+        text-shadow: 0 0 24px rgba(255, 77, 36, 0.4);
+      }
+
+      .stat-block span {
+        display: block;
+        margin-top: 9px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .vs-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: clamp(13px, 1.3vw, 16px);
+      }
+
+      .vs-table th,
+      .vs-table td {
+        padding: 13px 16px;
+        border-bottom: 1px solid var(--line);
+        text-align: left;
+      }
+
+      .vs-table th {
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      .vs-table td:last-child {
+        color: var(--muted);
+      }
+
+      .vs-table tr:last-child td {
+        color: var(--mint);
+        border-bottom: 0;
+        font-weight: 700;
+      }
+
+      /* 路线图 */
+      .roadmap {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 18px;
+      }
+
+      .road-col h4 {
+        margin: 0 0 13px;
+        color: var(--accent-bright);
+        font-family: var(--mono);
+        font-size: 12px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+
+      .road-col ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .road-col li {
+        margin: 9px 0;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.55;
+      }
+
+      .road-col li::before {
+        content: "» ";
+        color: var(--mint);
+      }
+
+      /* 结尾终端框 */
+      .terminal-box {
+        width: min(100%, 860px);
+        margin-top: clamp(30px, 5vh, 52px);
+        padding: 24px 28px;
+        background: var(--paper-strong);
+        border: 1px solid var(--accent-line);
+        box-shadow: 0 0 40px rgba(255, 77, 36, 0.12);
+        font-family: var(--mono);
+        font-size: clamp(13px, 1.5vw, 18px);
+        line-height: 2;
+        text-align: left;
+      }
+
+      .terminal-box .tb-head {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+        color: var(--accent-bright);
+        border-bottom: 1px solid var(--line);
+        font-size: 12px;
+        letter-spacing: 0.16em;
+      }
+
+      .terminal-box .prompt {
+        color: var(--accent);
+      }
+
+      .terminal-box .val {
+        color: var(--mint);
+      }
+
+      /* 翻页 UI */
+      .deck-progress {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 60;
+        width: 100%;
+        height: 3px;
+        background: var(--line);
+      }
+
+      .deck-progress i {
+        display: block;
+        height: 100%;
+        background: linear-gradient(90deg, var(--accent), var(--accent-bright));
+        box-shadow: 0 0 12px rgba(255, 77, 36, 0.6);
+        transition: width 280ms ease;
+      }
+
+      .deck-counter {
+        position: fixed;
+        bottom: 22px;
+        left: 28px;
+        z-index: 60;
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 12px;
+        letter-spacing: 0.16em;
+      }
+
+      .deck-counter b {
+        color: var(--accent-bright);
+      }
+
+      .deck-nav {
+        position: fixed;
+        right: 28px;
+        bottom: 18px;
+        z-index: 60;
+        display: flex;
+        gap: 10px;
+      }
+
+      .deck-nav button {
+        display: grid;
+        width: 46px;
+        height: 46px;
+        cursor: pointer;
+        place-items: center;
+        color: var(--ink);
+        background: var(--paper-strong);
+        border: 1px solid var(--line-strong);
+        border-radius: 3px;
+        font-size: 18px;
+        transition: border-color 150ms ease, box-shadow 150ms ease;
+      }
+
+      .deck-nav button:hover {
+        border-color: var(--accent);
+        box-shadow: var(--glow-accent);
+      }
+
+      .deck-hint {
+        position: fixed;
+        bottom: 26px;
+        left: 50%;
+        z-index: 60;
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.14em;
+        transform: translateX(-50%);
+      }
+
+      @media (max-width: 900px) {
+        body.deck {
+          overflow: auto;
+        }
+
+        .cover-grid,
+        .two-col,
+        .three-col,
+        .four-col,
+        .shot-grid,
+        .stat-row,
+        .roadmap {
+          grid-template-columns: 1fr;
+        }
+
+        .planet-wrap {
+          min-height: 260px;
+        }
+
+        .shot-main img,
+        .shot-stack .shot img {
+          max-height: none;
+        }
+
+        .deck-hint {
+          display: none;
+        }
+      }
+
+      /* 打印成 PDF：每张 slide 一页横版 */
+      @media print {
+        @page {
+          size: A4 landscape;
+          margin: 0;
+        }
+
+        html,
+        body.deck {
+          height: auto;
+          background: #050505 !important;
+          overflow: visible;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+
+        .slide,
+        .slide.active {
+          display: flex;
+          width: 297mm;
+          height: 209mm;
+          min-height: 0;
+          page-break-after: always;
+          animation: none;
+          overflow: hidden;
+        }
+
+        .deck-progress,
+        .deck-counter,
+        .deck-nav,
+        .deck-hint,
+        .skip-link {
+          display: none !important;
+        }
+
+        .shot-main img {
+          max-height: 120mm;
+        }
+
+        .shot-stack .shot img {
+          max-height: 56mm;
+        }
+      }
+    </style>
+  </head>
+  <body class="deck">
+    <div class="deck-progress" aria-hidden="true"><i id="deck-bar"></i></div>
+
+    <!-- 01 封面 -->
+    <section class="slide active" data-slide>
+      <div class="slide-inner cover-grid">
+        <div>
+          <p class="eyebrow">KEAL LINK // NEXT GEN RECRUITMENT</p>
+          <h1>投个明白<br />× 招个明白</h1>
+          <p class="slide-tagline">你会写，它会筛。</p>
+          <p class="slide-sub">求职者与企业复用同一个<em>岗位理解引擎</em> —— 每句话可溯源，绝不编造。</p>
+          <div class="chip-row">
+            <span class="chip">AI_ACTIVE</span>
+            <span class="chip chip-mint">CONTRACTS 5/5 ONLINE</span>
+            <span class="chip chip-mint">TESTS 123 PASSED</span>
+          </div>
+        </div>
+        <div class="planet-wrap" aria-hidden="true">
+          <div class="planet"></div>
+          <span class="orbit-dot orbit-dot-a"></span>
+          <span class="orbit-dot orbit-dot-b"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 02 痛点 -->
+    <section class="slide" data-slide>
+      <div class="slide-inner">
+        <p class="eyebrow">01 · PROBLEM</p>
+        <h2>同一件事，两端都痛苦</h2>
+        <div class="two-col">
+          <div class="deck-panel">
+            <h3>求职者：投不明白</h3>
+            <ul>
+              <li><strong>看不懂 JD</strong> —— “良好的沟通能力”到底要什么？只能泛泛而谈</li>
+              <li><strong>挖不出经历</strong> —— 有真实项目，却写不成招聘方看得懂的证据</li>
+              <li><strong>AI 简历乱编</strong> —— 编造数字和奖项，面试一问就露馅</li>
+            </ul>
+          </div>
+          <div class="deck-panel panel-mint">
+            <h3>企业：招不明白</h3>
+            <ul>
+              <li><strong>JD 靠复制粘贴</strong> —— 要求模糊，收到的简历不匹配</li>
+              <li><strong>面试没标准</strong> —— 不同面试官问不同问题，招错人、错过人</li>
+              <li><strong>校招靠人工筛</strong> —— 成本高、周期长、质量不稳定</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 03 洞察 -->
+    <section class="slide" data-slide>
+      <div class="slide-inner">
+        <p class="eyebrow">02 · INSIGHT</p>
+        <p class="big-statement">不是「不会写简历」，<br />是<em>「事实从哪里来」</em>。</p>
+        <div class="three-col">
+          <div class="mini-card">
+            <h4>现有工具 · 润色</h4>
+            <p>只改排版和措辞，不理解岗位真正需要什么。</p>
+          </div>
+          <div class="mini-card">
+            <h4>现有工具 · 匹配</h4>
+            <p>只做关键词对齐，不管事实是否真实。</p>
+          </div>
+          <div class="mini-card">
+            <h4>现有工具 · 生成</h4>
+            <p>通用 AI 直接编造经历，破坏求职者信誉。</p>
+          </div>
+        </div>
+        <div class="mono-flow">
+          <span>挖掘事实</span><b>→</b><span>用户确认</span><b>→</b><span>生成表达</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 04 方案 -->
+    <section class="slide" data-slide>
+      <div class="slide-inner" style="text-align: center">
+        <p class="eyebrow" style="justify-content: center">03 · SOLUTION</p>
+        <h2 style="margin-bottom: 32px">一个引擎，服务两端</h2>
+        <div class="engine-block">岗位理解引擎</div>
+        <div class="flow-row" style="text-align: left">
+          <span class="flow-row-label">投个明白<br />SEEKER</span>
+          <div class="step-squares">
+            <div class="sq sq-done"><i>1</i><strong>输入 JD</strong></div><b>→</b>
+            <div class="sq sq-now"><i>2</i><strong>AI 提问</strong></div><b>→</b>
+            <div class="sq"><i>3</i><strong>事实确认</strong></div><b>→</b>
+            <div class="sq"><i>4</i><strong>生成简历</strong></div>
+          </div>
+        </div>
+        <div class="flow-row" style="text-align: left">
+          <span class="flow-row-label">招个明白<br />EMPLOYER</span>
+          <div class="step-squares">
+            <div class="sq sq-done"><i>1</i><strong>模糊需求</strong></div><b>→</b>
+            <div class="sq sq-now"><i>2</i><strong>澄清问题</strong></div><b>→</b>
+            <div class="sq"><i>3</i><strong>标准招聘包</strong></div>
+          </div>
+        </div>
+        <p class="slide-sub" style="margin: 28px auto 0; text-align: center">两端共享岗位画像 —— 学生提供的证据，正是企业关心的能力。</p>
+      </div>
+    </section>
+
+    <!-- 05 产品 -->
+    <section class="slide" data-slide>
+      <div class="slide-inner">
+        <p class="eyebrow">04 · PRODUCT</p>
+        <h2>已经上线，可以现场演示</h2>
+        <div class="shot-grid">
+          <figure class="shot shot-main">
+            <img src="./assets/slides/result.jpg" alt="简历生成结果页：左侧步骤全部完成，右侧展示岗位定制简历与证据" />
+            <figcaption>RESUME_RESULT</figcaption>
+          </figure>
+          <div class="shot-stack">
+            <figure class="shot">
+              <img src="./assets/slides/student.jpg" alt="学生端第一步：输入目标岗位与 JD" />
+              <figcaption>SEEKER_FLOW</figcaption>
+            </figure>
+            <figure class="shot">
+              <img src="./assets/slides/enterprise.jpg" alt="企业端第一步：输入模糊招聘需求" />
+              <figcaption>EMPLOYER_FLOW</figcaption>
+            </figure>
+          </div>
+        </div>
+        <div class="hero-actions">
+          <a class="button button-primary" href="./student.html">现场演示 · 投个明白 →</a>
+          <a class="button" href="./enterprise.html">现场演示 · 招个明白 →</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- 06 差异化 -->
+    <section class="slide" data-slide>
+      <div class="slide-inner">
+        <p class="eyebrow">05 · WHY US</p>
+        <h2>四道防线，杜绝编造</h2>
+        <div class="four-col">
+          <div class="diff-card">
+            <span class="num">01</span>
+            <h3>反编造</h3>
+            <p>每条简历内容必须来自用户确认的事实，<code>sourceQuote</code> 为空不写入。</p>
+          </div>
+          <div class="diff-card">
+            <span class="num">02</span>
+            <h3>可溯源</h3>
+            <p>每句要点挂着 <code>evidenceIds</code>，一键回到用户原话。</p>
+          </div>
+          <div class="diff-card">
+            <span class="num">03</span>
+            <h3>同引擎</h3>
+            <p>双端共享岗位画像，求职者与企业用同一把尺子。</p>
+          </div>
+          <div class="diff-card">
+            <span class="num">04</span>
+            <h3>透明模式</h3>
+            <p><code>live / mock / fallback</code> 全标注，不假装真 AI。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 07 商业模式 -->
+    <section class="slide" data-slide>
+      <div class="slide-inner">
+        <p class="eyebrow">06 · BUSINESS MODEL</p>
+        <h2>C 端获客，B 端收费</h2>
+        <div class="two-col">
+          <div class="deck-panel panel-mint">
+            <h3>C 端 · 学生免费</h3>
+            <ul>
+              <li><strong>基础简历生成免费</strong>，降低尝试门槛</li>
+              <li>小红书 / 知乎 / 高校就业中心获客</li>
+              <li>高级模板与面试辅导：<strong>¥19.9/份</strong></li>
+            </ul>
+          </div>
+          <div class="deck-panel">
+            <h3>B 端 · 企业 SaaS</h3>
+            <ul>
+              <li><span class="price-num">¥29<small> / 岗位</small></span></li>
+              <li><span class="price-num">¥99<small> / 月 · 初创团队</small></span></li>
+              <li><span class="price-num">¥499<small> / 月 · 校招团队</small></span></li>
+            </ul>
+          </div>
+        </div>
+        <p class="slide-sub">未来增值：面试辅导 · 简历诊断 · 校园招聘数据服务。</p>
+      </div>
+    </section>
+
+    <!-- 08 市场与竞品 -->
+    <section class="slide" data-slide>
+      <div class="slide-inner">
+        <p class="eyebrow">07 · MARKET</p>
+        <h2>差异化窗口期</h2>
+        <div class="stat-row">
+          <div class="stat-block"><b>1,200万</b><span>高校毕业生 / 年</span></div>
+          <div class="stat-block"><b>3,000万</b><span>实习招聘人次 / 年</span></div>
+          <div class="stat-block"><b>5,000万+</b><span>中小企业潜在客户</span></div>
+        </div>
+        <table class="vs-table">
+          <thead>
+            <tr><th>竞品</th><th>现状</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>超级简历 / WPS</td><td>模板多，不理解岗位，只改排版</td></tr>
+            <tr><td>通用 AI（ChatGPT 等）</td><td>能力强但会编造，不可溯源</td></tr>
+            <tr><td>Jobscan 关键词匹配</td><td>只对齐关键词，不管事实真假</td></tr>
+            <tr><td>投个明白 × 招个明白</td><td>事实溯源 + 双端同引擎</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 09 现状与路线 -->
+    <section class="slide" data-slide>
+      <div class="slide-inner">
+        <p class="eyebrow">08 · TRACTION</p>
+        <h2>MVP 已上线，数据可验证</h2>
+        <div class="stat-row">
+          <div class="stat-block"><b>5</b><span>核心 API 接口</span></div>
+          <div class="stat-block"><b>123</b><span>自动化测试通过</span></div>
+          <div class="stat-block"><b>2</b><span>端完整流程</span></div>
+        </div>
+        <div class="roadmap">
+          <div class="road-col">
+            <h4>// 已完成</h4>
+            <ul>
+              <li>学生端 4 步 + 企业端 2 步</li>
+              <li>PDF 一键导出</li>
+              <li>mock / live / fallback 三模式</li>
+            </ul>
+          </div>
+          <div class="road-col">
+            <h4>// 0-6 个月</h4>
+            <ul>
+              <li>真实 AI 稳定性优化</li>
+              <li>面试体检功能完整度</li>
+              <li>收集 100+ 用户反馈</li>
+            </ul>
+          </div>
+          <div class="road-col">
+            <h4>// 6-12 个月</h4>
+            <ul>
+              <li>企业端付费版上线</li>
+              <li>高校就业中心试点</li>
+              <li>投递效果数据看板</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 10 结尾 -->
+    <section class="slide" data-slide>
+      <div class="slide-inner" style="text-align: center">
+        <p class="eyebrow" style="justify-content: center">09 · LAUNCH</p>
+        <h2 style="margin-bottom: 0">为每一位求职者，<br />构建专属的职业操作系统</h2>
+        <div class="terminal-box">
+          <div class="tb-head"><span>// BIOMETRIC_SCAN</span><span>98.2% MATCH</span></div>
+          <div><span class="prompt">&gt;&gt;</span> DEMO:&nbsp;&nbsp;<span class="val">ai-career-copilot-438i.onrender.com</span></div>
+          <div><span class="prompt">&gt;&gt;</span> SEEKER: <span class="val">/student.html</span>&nbsp;&nbsp;EMPLOYER: <span class="val">/enterprise.html</span></div>
+          <div><span class="prompt">&gt;&gt;</span> STATUS: <span class="val">READY_FOR_YOUR_FUTURE ▊</span></div>
+        </div>
+        <div class="hero-actions" style="justify-content: center">
+          <a class="button button-primary" href="./student.html">进入投个明白</a>
+          <a class="button" href="./enterprise.html">进入招个明白</a>
+        </div>
+      </div>
+    </section>
+
+    <div class="deck-counter" aria-hidden="true"><b id="deck-cur">01</b> / <span id="deck-total">10</span></div>
+    <div class="deck-hint" aria-hidden="true">← → 翻页 · SPACE 下一页 · ⌘P 导出 PDF</div>
+    <div class="deck-nav">
+      <button type="button" id="deck-prev" aria-label="上一页">‹</button>
+      <button type="button" id="deck-next" aria-label="下一页">›</button>
+    </div>
+
+    <script>
+      (() => {
+        const slides = [...document.querySelectorAll("[data-slide]")];
+        const bar = document.getElementById("deck-bar");
+        const cur = document.getElementById("deck-cur");
+        const total = document.getElementById("deck-total");
+        const pad = (n) => String(n).padStart(2, "0");
+        let index = 0;
+
+        total.textContent = pad(slides.length);
+
+        const show = (n) => {
+          index = Math.max(0, Math.min(slides.length - 1, n));
+          slides.forEach((s, k) => s.classList.toggle("active", k === index));
+          cur.textContent = pad(index + 1);
+          bar.style.width = `${((index + 1) / slides.length) * 100}%`;
+          history.replaceState(null, "", `#/${index + 1}`);
+        };
+
+        const fromHash = () => {
+          const n = parseInt(location.hash.replace("#/", ""), 10);
+          if (Number.isFinite(n)) show(n - 1);
+        };
+
+        document.getElementById("deck-prev").addEventListener("click", () => show(index - 1));
+        document.getElementById("deck-next").addEventListener("click", () => show(index + 1));
+
+        window.addEventListener("keydown", (e) => {
+          if (["ArrowRight", "PageDown", " "].includes(e.key)) {
+            e.preventDefault();
+            show(index + 1);
+          } else if (["ArrowLeft", "PageUp"].includes(e.key)) {
+            e.preventDefault();
+            show(index - 1);
+          } else if (e.key === "Home") {
+            show(0);
+          } else if (e.key === "End") {
+            show(slides.length - 1);
+          }
+        });
+
+        let touchX = null;
+        window.addEventListener("touchstart", (e) => {
+          touchX = e.changedTouches[0].clientX;
+        }, { passive: true });
+        window.addEventListener("touchend", (e) => {
+          if (touchX === null) return;
+          const dx = e.changedTouches[0].clientX - touchX;
+          if (Math.abs(dx) > 48) show(index + (dx < 0 ? 1 : -1));
+          touchX = null;
+        }, { passive: true });
+
+        window.addEventListener("hashchange", fromHash);
+        fromHash();
+        show(index);
+      })();
+    </script>
+  </body>
+</html>

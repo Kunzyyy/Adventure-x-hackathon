@@ -11,6 +11,7 @@ const pages = [
   { name: "index.html" },
   { name: "student.html", script: "approved-student.js" },
   { name: "enterprise.html", script: "approved-employer.js" },
+  { name: "slides.html" },
 ];
 
 fs.mkdirSync(outputDir, { recursive: true });
@@ -42,4 +43,10 @@ for (const page of pages) {
   );
 
   fs.writeFileSync(path.join(outputDir, page.name), html);
+}
+
+// Copy static assets (e.g. slide screenshots) so relative paths keep working.
+const assetsDir = path.join(repoRoot, "assets");
+if (fs.existsSync(assetsDir)) {
+  fs.cpSync(assetsDir, path.join(outputDir, "assets"), { recursive: true });
 }
