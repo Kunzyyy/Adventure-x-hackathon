@@ -221,7 +221,7 @@ function renderFacts(facts, missingInformation) {
         <article class="fact-card" data-fact-id="${escapeHtml(fact.id)}">
           <div class="fact-meta">
             <span>${escapeHtml(fact.category)} · 事实 ${index + 1}</span>
-            <span>来源问题：${escapeHtml(fact.sourceQuestionId || "未标记")}</span>
+            <span>来源：${escapeHtml(fact.sourceQuestionId || "来自已有简历")}</span>
           </div>
           <div class="field">
             <label for="fact-${escapeHtml(fact.id)}">事实陈述</label>
@@ -315,26 +315,37 @@ function renderTemplatePreview(templateId) {
 function renderTemplates() {
   const container = document.querySelector('[data-role="template-list"]');
   if (!container) return;
-  container.innerHTML = resumeTemplates
-    .map((template) => {
-      const selected = template.id === state.selectedTemplate;
-      return `
-        <button
-          class="template-card ${selected ? "is-selected" : ""}"
-          type="button"
-          data-action="select-template"
-          data-template-id="${escapeHtml(template.id)}"
-          aria-pressed="${selected ? "true" : "false"}"
-        >
-          ${renderTemplatePreview(template.id)}
-          <span class="template-copy">
-            <strong>${escapeHtml(template.name)}</strong>
-            <span>${escapeHtml(template.description)}</span>
-          </span>
-        </button>
-      `;
-    })
-    .join("");
+
+  // 如果已经渲染过，只更新选中状态，避免重新创建 DOM 导致 focus 丢失和连续点击失败
+  const existing = container.querySelector('[data-action="select-template"]');
+  if (existing) {
+    container.querySelectorAll('[data-action="select-template"]').forEach((button) => {
+      const selected = button.dataset.templateId === state.selectedTemplate;
+      button.classList.toggle("is-selected", selected);
+      button.setAttribute("aria-pressed", String(selected));
+    });
+  } else {
+    container.innerHTML = resumeTemplates
+      .map((template) => {
+        const selected = template.id === state.selectedTemplate;
+        return `
+          <button
+            class="template-card ${selected ? "is-selected" : ""}"
+            type="button"
+            data-action="select-template"
+            data-template-id="${escapeHtml(template.id)}"
+            aria-pressed="${selected ? "true" : "false"}"
+          >
+            ${renderTemplatePreview(template.id)}
+            <span class="template-copy">
+              <strong>${escapeHtml(template.name)}</strong>
+              <span>${escapeHtml(template.description)}</span>
+            </span>
+          </button>
+        `;
+      })
+      .join("");
+  }
 
   const current = document.querySelector('[data-role="template-current"]');
   if (current) current.textContent = `已选：${selectedTemplate().name}`;
@@ -372,6 +383,11 @@ function bullets(items) {
     .join("");
 }
 
+function sectionIfNotEmpty(title, items) {
+  if (!Array.isArray(items) || items.length === 0) return "";
+  return `<section class="resume-section"><h3>${escapeHtml(title)}</h3>${bullets(items)}</section>`;
+}
+
 function renderResume(data) {
   const resume = data.resume;
   const container = document.querySelector('[data-role="resume-result"]');
@@ -383,8 +399,8 @@ function renderResume(data) {
   container.innerHTML = `
     <h2>${escapeHtml(resume.title)}</h2>
     <p>基于你刚刚确认的事实生成 · ${escapeHtml(template.name)}</p>
-    <section class="resume-section"><h3>个人概述</h3>${bullets(resume.summary)}</section>
-    <section class="resume-section"><h3>教育背景</h3>${bullets(resume.education)}</section>
+    ${sectionIfNotEmpty("个人概述", resume.summary)}
+    ${sectionIfNotEmpty("教育背景", resume.education)}
     ${(resume.experiences || [])
       .map(
         (experience) => `
@@ -395,7 +411,7 @@ function renderResume(data) {
         `,
       )
       .join("")}
-    <section class="resume-section"><h3>技能</h3>${bullets(resume.skills)}</section>
+    ${sectionIfNotEmpty("技能", resume.skills)}
   `;
   document.querySelector('[data-role="resume-missing"]').innerHTML = `
     <h3>缺失信息</h3>${list(data.missingInformation, "当前没有明确缺失项。")}
