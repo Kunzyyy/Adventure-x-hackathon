@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NEURAL_MATCH · 学生端 AI 求职陪跑 · KEAL</title>
+<title>NEURAL_MATCH · 学生端 AI 求职陪跑 · 投得明白</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>tailwind.config={theme:{extend:{colors:{'space-black':'#050505','tech-blue':'#ff4d1c','tech-cyan':'#00e5d0','gradient-purple':'#ff4d1c','ai-glow':'#ff4d1c'},fontFamily:{sf:['Inter','"Noto Sans SC"','-apple-system','BlinkMacSystemFont','"PingFang SC"','sans-serif']}}}}</script>
@@ -166,7 +166,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 <!-- ===== NAV ===== -->
 <nav class="nav-glass px-4 md:px-8 py-3 flex items-center justify-between">
   <div class="flex items-center gap-3">
-    <span class="text-xl font-bold bg-gradient-to-r from-tech-blue to-gradient-purple bg-clip-text text-transparent">Keal</span>
+    <span class="text-xl font-bold bg-gradient-to-r from-tech-blue to-gradient-purple bg-clip-text text-transparent">投得明白</span>
     <span class="text-xs text-gray-500 hidden sm:inline">学生端</span>
      <a href="enterprise.html" class="text-xs text-gray-500 hover:text-tech-cyan transition-colors border border-white/10 rounded-full px-3 py-1 hover:border-tech-cyan/40">🏢 企业端</a>
   </div>
@@ -1351,8 +1351,7 @@ function generateInterviewAdvice(review, weakest, avgLogic, avgExpr, avgMatch){
 
 /* ===== Open Resume Editor with Data Bridge ===== */
 function openResumeEditor(){
-  var data={name:'',title:'',phone:'',email:'',location:'',education:[],experience:[],skills:'',eval:''};
-  localStorage.setItem('resumeData',JSON.stringify(data));
+  if(generatedResume){copyToEditor();return;}
   location.href = 'resume-editor/index.html';
 }
 

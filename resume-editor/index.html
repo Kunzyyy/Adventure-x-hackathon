@@ -1001,7 +1001,11 @@ document.getElementById('exportBtn').addEventListener('click', () => {
 // ===== Init =====
 const saved = localStorage.getItem('resumeData');
 if (saved) {
-  try { resumeData = Object.assign(resumeData, JSON.parse(saved)); } catch(e) {}
+  try {
+    const parsed = JSON.parse(saved);
+    const hasContent = parsed && (parsed.name || parsed.title || (parsed.education||[]).length || (parsed.experience||[]).length || parsed.skills || parsed.eval);
+    if (hasContent) resumeData = Object.assign(resumeData, parsed);
+  } catch(e) {}
 }
 renderEduList();
 renderExpList();
